@@ -1,5 +1,0 @@
-# ninja log v6
-13	534	7675185256581747	FrameWork/CMakeFiles/FrameWork.dir/vulkanFrameWork.cpp.obj	fc7edf21596a3e84
-7	552	7675185256521010	FrameWork/thirdPart/volk/CMakeFiles/volk.dir/volk.c.obj	301a255c5a0d98d7
-553	600	7675185261975027	FrameWork/thirdPart/volk/volk.lib	7f259a436cba121c
-601	636	7675185262460809	FrameWork/FrameWork.lib	97ff50bf8eb1ac1c
