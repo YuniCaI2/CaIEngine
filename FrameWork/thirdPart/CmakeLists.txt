@@ -4,3 +4,6 @@ else()
     message(WARNING "volk library not found. You need to download it to ${CMAKE_CURRENT_SOURCE_DIR}/volk")
     # 可以添加下载volk的指令 (例如 FetchContent)
 endif()
+
+add_subdirectory(glfw)
+add_subdirectory(VulkanMemoryAllocator)
