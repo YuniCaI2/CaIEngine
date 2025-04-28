@@ -1,0 +1,6 @@
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/volk")
+    add_subdirectory(volk)
+else()
+    message(WARNING "volk library not found. You need to download it to ${CMAKE_CURRENT_SOURCE_DIR}/volk")
+    # 可以添加下载volk的指令 (例如 FetchContent)
+endif()

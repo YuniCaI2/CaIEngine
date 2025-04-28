@@ -1,0 +1,145 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "FrameWork",
+					"childIndexes" : 
+					[
+						2
+					],
+					"jsonFile" : "directory-FrameWork-Debug-fe5aff9026dfd3fd43bf.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "FrameWork",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "FrameWork/thirdPart",
+					"childIndexes" : 
+					[
+						3
+					],
+					"jsonFile" : "directory-FrameWork.thirdPart-Debug-e3ebe77ead9cb3e78910.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "FrameWork/thirdPart"
+				},
+				{
+					"build" : "FrameWork/thirdPart/volk",
+					"jsonFile" : "directory-FrameWork.thirdPart.volk-Debug-5b6fbe13d455d126c03b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "FrameWork/thirdPart/volk",
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "CaIEngine"
+				},
+				{
+					"childIndexes" : 
+					[
+						2
+					],
+					"directoryIndexes" : 
+					[
+						1,
+						2
+					],
+					"name" : "FrameWork",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						3
+					],
+					"name" : "volk",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "FrameWork::@182ad2d96add5a9464ae",
+					"jsonFile" : "target-FrameWork-Debug-669bad4debdfc12e75ac.json",
+					"name" : "FrameWork",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "volk::@b3c55f03e304a5ff4237",
+					"jsonFile" : "target-volk-Debug-91d91a07b7bb1a545c6b.json",
+					"name" : "volk",
+					"projectIndex" : 2
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/Visual Studio Project/CaIEngine/build",
+		"source" : "D:/Visual Studio Project/CaIEngine"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

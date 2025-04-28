@@ -1,0 +1,14 @@
+[
+{
+  "directory": "D:/Visual Studio Project/CaIEngine/build",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1442~1.344\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -I\"D:\\Visual Studio Project\\CaIEngine\\FrameWork\\thirdPart\\volk\" -external:IC:\\Users\\51092\\vcpkg\\installed\\x64-windows\\include -external:W0 /DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -std:c++20 -MDd /FoFrameWork\\CMakeFiles\\FrameWork.dir\\vulkanFrameWork.cpp.obj /FdFrameWork\\CMakeFiles\\FrameWork.dir\\FrameWork.pdb /FS -c \"D:\\Visual Studio Project\\CaIEngine\\FrameWork\\vulkanFrameWork.cpp\"",
+  "file": "D:\\Visual Studio Project\\CaIEngine\\FrameWork\\vulkanFrameWork.cpp",
+  "output": "FrameWork\\CMakeFiles\\FrameWork.dir\\vulkanFrameWork.cpp.obj"
+},
+{
+  "directory": "D:/Visual Studio Project/CaIEngine/build",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1442~1.344\\bin\\Hostx64\\x64\\cl.exe  /nologo -I\"D:\\Visual Studio Project\\CaIEngine\\FrameWork\\thirdPart\\volk\" -IC:\\Users\\51092\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FoFrameWork\\thirdPart\\volk\\CMakeFiles\\volk.dir\\volk.c.obj /FdFrameWork\\thirdPart\\volk\\CMakeFiles\\volk.dir\\volk.pdb /FS -c \"D:\\Visual Studio Project\\CaIEngine\\FrameWork\\thirdPart\\volk\\volk.c\"",
+  "file": "D:\\Visual Studio Project\\CaIEngine\\FrameWork\\thirdPart\\volk\\volk.c",
+  "output": "FrameWork\\thirdPart\\volk\\CMakeFiles\\volk.dir\\volk.c.obj"
+}
+]
