@@ -1,7 +1,6 @@
 #pragma once
 
 //使用glfw不需要手动加载vulkan的头文件
-#include <sys/types.h>
 #define VK_NO_PROTOTYPES
 #include<volk.h>
 #include<vector>
@@ -10,7 +9,8 @@
 
 //AMD 内存分布器
 #include <vk_mem_alloc.h>
-#include <vulkan/vulkan.h>
+
+#include "pbh.hpp"
 
 
 #define ShaderModeleSet  std::map<VkShaderStageFlagBits, VkShaderModule>
@@ -80,7 +80,7 @@ namespace CaIEngine {
 
     struct UniformBuffer{
         uint32_t binding = 0;
-        VkDeviceSize size = 0;
+        VkDeviceSize size = 0;//Uniform Buffer's size
         VulkanBuffer buffer;
         void* mappedAddress = nullptr;
     };
@@ -103,6 +103,112 @@ namespace CaIEngine {
         uint32_t depthAttachmentIdx = UINT32_MAX;
         uint32_t positionAttachmentIdx = UINT32_MAX;
         uint32_t normalAttachmentIdx = UINT32_MAX;
+        FrameBufferType bufferType = FrameBufferType::Normal;
+        RenderPassType renderPassType = RenderPassType::Normal;
     };
 
+    struct VulkanDrawRecord{
+        uint32_t VAO = 0;
+        uint32_t pipelineID = 0;
+        uint32_t materialDataID = 0;
+        uint32_t instanceNum = 0;
+        uint32_t instanceBuffer = UINT32_MAX;
+
+        VulkanDrawRecord(uint32_t _VAO, uint32_t _pipelineID, uint32_t _materialDataID, uint32_t _instanceNum, uint32_t _instanceBuffer) 
+            : VAO(_VAO), pipelineID(_pipelineID), materialDataID(_materialDataID), instanceNum(_instanceNum), instanceBuffer(_instanceBuffer) {}
+    };
+
+    struct VulkanASInstanceData{
+        uint32_t VAO = 0;
+        uint32_t hitGroupIdx = 0;
+        uint32_t rtMaterialDataID = 0;
+        glm::mat4 transform = glm::mat4(1.0f);
+    };//这个是为了实现光线追踪加速
+
+    struct VulkanCommand{
+        VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+        std::vector<VkSemaphore> signalSemphores;
+    };
+
+    struct VulkanDrawCommand{
+        CommandType commandType = CommandType::NotCare;
+        FrameBufferClearFlags clearFlags = CAI_CLEAR_FRAME_BUFFER_NONE_BIT;
+        std::vector<VulkanCommand> drawCommands;
+        bool inUse = false;
+    };
+    struct VulkanAccelerationStructure{
+        bool isBuilt = false;
+        VulkanBuffer buffer;
+        VkDeviceAddress deviceAddress = 0;//GPU可直接访问的内存地址
+        VkAccelerationStructureKHR as = VK_NULL_HANDLE; 
+    };
+
+    struct VulkanASGroup{
+        std::vector<VulkanAccelerationStructure> asGroup;
+        bool isUsed = false;
+    };
+
+    struct VulkanVAO{
+        uint32_t indexCount = 0;
+        VkBuffer indexBuffer = VK_NULL_HANDLE;
+        VmaAllocation indexBufferAlloc  = nullptr;
+        void* indexBufferAddress = nullptr; //Only for dynamic mesh
+        VkDeviceAddress indexBufferDeviceAddress = 0; //GPU可直接访问的内存地址 Only for ray tracing
+
+        uint32_t vertexCount = 0;
+        VkBuffer vertexBuffer = VK_NULL_HANDLE;
+        VmaAllocation vertexBufferAlloc = nullptr;
+        void* vertexBufferAddress = nullptr; //Only for dynamic mesh
+        VkDeviceAddress vertexBufferDeviceAddress = 0; //GPU可直接访问的内存地址 Only for ray tracing
+
+        bool computeSkinned = false;
+        std::vector<VulkanBuffer> ssbo;//缓冲区对象 
+
+        VulkanAccelerationStructure blas; // Bottom Level Acceleration Structure
+        bool isUsed = false;
+    };
+
+    struct VulkanSSBO{
+        GPUBufferType bufferType = GPUBufferType::Static;
+        std::vector<VulkanBuffer> buffers;
+        uint32_t binding = 0;
+        bool inUse = false;
+    };
+
+    struct VulkanPipeline{
+        std::string name;
+        VkPipeline pipeline = VK_NULL_HANDLE;
+        VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout sceneDescriptorSetLayout = VK_NULL_HANDLE;// For ray tracing
+    };
+
+    struct VulkanMaterialData{
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> descriptorSets;
+        std::vector<UniformBuffer> vertUniformBuffers;
+        std::vector<UniformBuffer> geomUniformBuffers;
+        std::vector<UniformBuffer> fragUniformBuffers;
+        bool inUse = false;
+    };
+
+    struct VulkanRTPipelineData{
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> descriptorSets;
+    };
+
+    struct VulkanShaderBindingTable{
+        VulkanBuffer buffer;//包含了着色器组的句柄
+        VkStridedDeviceAddressRegionKHR raygenRegion = {};
+        VkStridedDeviceAddressRegionKHR missRegion = {};//未命中调用的着色器
+        VkStridedDeviceAddressRegionKHR hitRegion = {}; 
+        VkStridedDeviceAddressRegionKHR callableRegion = {};
+    };//光线追踪的着色器绑定表
+
+    struct VulkanRTSceneData{
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> descriptorSets;
+        std::vector<VulkanBuffer> dataReferenceBuffers;
+    };
+    
 }

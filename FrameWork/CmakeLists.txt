@@ -26,11 +26,12 @@ endif()
 
 
 
-
+target_precompile_headers(FrameWork PUBLIC ./pbh.hpp)
 target_link_libraries(FrameWork PUBLIC volk)
 target_link_libraries(FrameWork PUBLIC glfw)
 target_link_libraries(FrameWork PUBLIC VMA) # Link against the INTERFACE library
 target_link_libraries(FrameWork PUBLIC Vulkan::Vulkan)
+target_link_libraries(FrameWork PUBLIC glm::glm)
 target_include_directories(FrameWork PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/VulkanMemoryAllocator/include
 )
