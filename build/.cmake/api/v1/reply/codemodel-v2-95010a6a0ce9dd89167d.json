@@ -1,0 +1,270 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "FrameWork",
+					"childIndexes" : 
+					[
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-FrameWork-Debug-c832bc060e6401dcc709.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "FrameWork",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "FrameWork/thirdPart",
+					"childIndexes" : 
+					[
+						3,
+						4,
+						7
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-FrameWork.thirdPart-Debug-9a12cb0b7b3a0f886447.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "FrameWork/thirdPart"
+				},
+				{
+					"build" : "FrameWork/thirdPart/volk",
+					"jsonFile" : "directory-FrameWork.thirdPart.volk-Debug-cfff94e6872fbfd69de3.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "FrameWork/thirdPart/volk",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "FrameWork/thirdPart/glfw",
+					"childIndexes" : 
+					[
+						5,
+						6
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-FrameWork.thirdPart.glfw-Debug-0ccc460dcc25e729a598.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 3,
+					"source" : "FrameWork/thirdPart/glfw",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "FrameWork/thirdPart/glfw/src",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-FrameWork.thirdPart.glfw.src-Debug-d38ddee6857bc986ed27.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 4,
+					"projectIndex" : 3,
+					"source" : "FrameWork/thirdPart/glfw/src",
+					"targetIndexes" : 
+					[
+						2,
+						4
+					]
+				},
+				{
+					"build" : "FrameWork/thirdPart/glfw/docs",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-FrameWork.thirdPart.glfw.docs-Debug-f6009638ecd2d0a7f76b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 4,
+					"projectIndex" : 3,
+					"source" : "FrameWork/thirdPart/glfw/docs",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "FrameWork/thirdPart/VulkanMemoryAllocator",
+					"jsonFile" : "directory-FrameWork.thirdPart.VulkanMemoryAllocator-Debug-f12c6555061ceb2f9e2a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 4,
+					"source" : "FrameWork/thirdPart/VulkanMemoryAllocator"
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "CaIEngine"
+				},
+				{
+					"childIndexes" : 
+					[
+						2,
+						3,
+						4
+					],
+					"directoryIndexes" : 
+					[
+						1,
+						2
+					],
+					"name" : "FrameWork",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						3
+					],
+					"name" : "volk",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						4,
+						5,
+						6
+					],
+					"name" : "GLFW",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						7
+					],
+					"name" : "VMA",
+					"parentIndex" : 1
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "FrameWork::@182ad2d96add5a9464ae",
+					"jsonFile" : "target-FrameWork-Debug-5a1b6136286bd9298527.json",
+					"name" : "FrameWork",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "docs::@9638af8219059f83d0c6",
+					"jsonFile" : "target-docs-Debug-7c07adee4f765222042a.json",
+					"name" : "docs",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "glfw::@6e161046829443d73f43",
+					"jsonFile" : "target-glfw-Debug-8fd6485cda65b64f280d.json",
+					"name" : "glfw",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "uninstall::@07d89c2bc7efa471cda4",
+					"jsonFile" : "target-uninstall-Debug-4d93b28946d32d892184.json",
+					"name" : "uninstall",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "update_mappings::@6e161046829443d73f43",
+					"jsonFile" : "target-update_mappings-Debug-b8b6b9fe6ff856a6afdb.json",
+					"name" : "update_mappings",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "volk::@b3c55f03e304a5ff4237",
+					"jsonFile" : "target-volk-Debug-674167303d8546d8c1de.json",
+					"name" : "volk",
+					"projectIndex" : 2
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/yunicai/Code_file/CaIEngine/build",
+		"source" : "/Users/yunicai/Code_file/CaIEngine"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
