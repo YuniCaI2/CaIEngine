@@ -17,8 +17,8 @@
 #include <thread>
 #include <atomic>
 #include <future>
-#include <nlohmann/json.hpp>
-#include <glm/glm.hpp>
+#include <glm.hpp>//不知道为什么不能使用常规方法实现头文件库的导入
+                //在Mac端
 
 
 

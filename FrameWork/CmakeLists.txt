@@ -35,3 +35,7 @@ target_link_libraries(FrameWork PUBLIC glm::glm)
 target_include_directories(FrameWork PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/VulkanMemoryAllocator/include
 )
+target_include_directories(FrameWork PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/glm
+)
+#在Mac端的妥协
