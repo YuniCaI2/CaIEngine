@@ -19,6 +19,13 @@ VKAPI_ATTR VkBool32  VKAPI_CALL FrameWork::VulkanDebug::debugUtilsMessageCallbac
 }
 
 void FrameWork::VulkanDebug::setDebugging(VkInstance instance) {
+    // 初始化 volk
+    if (volkInitialize() != VK_SUCCESS) {
+        throw std::runtime_error("Failed to initialize volk");
+    }
+
+    // 加载实例函数
+    volkLoadInstance(instance);
 
     // 验证扩展函数可用性
     if (vkCreateDebugUtilsMessengerEXT == nullptr) {

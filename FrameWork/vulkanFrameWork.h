@@ -88,7 +88,7 @@ protected:
     std::vector<VkCommandBuffer> drawCmdBuffers;
     VkRenderPass renderPass{ VK_NULL_HANDLE };
     std::vector<VkFramebuffer>frameBuffers;
-    uint32_t currentBuffer = 0;
+    uint32_t currentBuffer{0};
     VkDescriptorPool descriptorPool{ VK_NULL_HANDLE };
     std::vector<VkShaderModule> shaderModules;
     VkPipelineCache pipelineCache{ VK_NULL_HANDLE };
@@ -187,7 +187,7 @@ public:
 
     //设置Vulkan的基础框架
     virtual VkResult createInstance();
-    virtual VkResult render() = 0;
+    virtual void render() = 0;
 
     virtual void setKeyCallback(KeyCallback callback);
     virtual void setMouseButtonCallback(MouseButtonCallback callback);

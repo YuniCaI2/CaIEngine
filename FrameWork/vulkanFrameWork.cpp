@@ -231,9 +231,13 @@ vulkanFrameWork::~vulkanFrameWork() {
 bool vulkanFrameWork::initVulkan() {
     // Instead of checking for the command line switch, validation can be forced via a define
     //设置验证层
-#if defined(_VALIDATION)
     this->settings.validation = true;
-#endif
+
+    //初始化,不然后续关于glfw的操作会报错
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW" << std::endl;
+        return -1;
+    }
 
     //设置实例
     VkResult result = createInstance();
@@ -346,10 +350,7 @@ bool vulkanFrameWork::initVulkan() {
 }
 
 bool vulkanFrameWork::setWindow() {
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return -1;
-    }
+
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     this->window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     if (window == nullptr) {
@@ -371,10 +372,22 @@ VkResult vulkanFrameWork::createInstance() {
 
     volkInitialize();
 
-    std::vector<const char *> instanceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}; //新版本只需要在邏輯設備中設置就行了好像
+    std::vector<const char *> instanceExtensions = {}; //新版本只需要在邏輯設備中設置就行了好像
 
     uint32_t glfwExtensionCount = 0;
     const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+        // 添加调试输出来检查GLFW扩展
+    if (glfwExtensions == nullptr) {
+        std::cerr << "Error: glfwGetRequiredInstanceExtensions returned null - Vulkan may not be supported or GLFW not initialized properly" << std::endl;
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+
+    std::cout << "GLFW requires " << glfwExtensionCount << " Vulkan instance extensions:" << std::endl;
+    for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+        std::cout << "  " << glfwExtensions[i] << std::endl;
+    }
+
     instanceExtensions.insert(instanceExtensions.end(), glfwExtensions, glfwExtensions + glfwExtensionCount);
 
     uint32_t extensionCount = 0;
@@ -466,12 +479,31 @@ VkResult vulkanFrameWork::createInstance() {
         layerSettingsCreateInfo.pNext = instanceCreateInfo.pNext;
         instanceCreateInfo.pNext = &layerSettingsCreateInfo;
     }
-    VkResult result;
-    VK_CHECK_RESULT(result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
+
+    VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+    if (result != VK_SUCCESS) {
+        std::cerr << "Failed to create Vulkan instance. Error code: " << result << std::endl;
+        
+        // 提供详细的错误信息
+        switch (result) {
+            case VK_ERROR_INCOMPATIBLE_DRIVER:
+                std::cerr << "Incompatible driver" << std::endl;
+                break;
+            case VK_ERROR_EXTENSION_NOT_PRESENT:
+                std::cerr << "Required extension not present" << std::endl;
+                break;
+            case VK_ERROR_LAYER_NOT_PRESENT:
+                std::cerr << "Required layer not present" << std::endl;
+                break;
+            default:
+                std::cerr << "Unknown error" << std::endl;
+                break;
+        }
+        return result;
+    }    
     if (result == VK_SUCCESS) {
         volkLoadInstance(instance);
     }
-
     //设置可捕获信息的验证层，并且对其进行初始化
     if (std::find(supportedInstanceExtensions.begin(), supportedInstanceExtensions.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) !=
         supportedInstanceExtensions.end()) {
@@ -543,6 +575,8 @@ void vulkanFrameWork::setupDepthStencil() {
     imageCreateInfo.format = depthFormat;
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    //设置采样数
 
     VK_CHECK_RESULT(vkCreateImage(device, &imageCreateInfo, nullptr, &depthStencil.image));
     VkMemoryRequirements memRequirements{};
@@ -691,8 +725,8 @@ void vulkanFrameWork::prepare() {
         ui.device = vulkanDevice;
         ui.queue = queue;
         ui.shaders = {
-            loadShader(getShaderPath() + "ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(getShaderPath() + "ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            loadShader(getShaderPath() + "imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            loadShader(getShaderPath() + "imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
         };
         ui.prepareResources();
         ui.preparePipeline(pipelineCache, renderPass, swapChain.colorFormat, depthFormat);
@@ -783,9 +817,9 @@ void vulkanFrameWork::renderLoop() {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, true);
-        }
+        // if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        //     glfwSetWindowShouldClose(window, true);
+        // }
         if (prepared)
             nextFrame();
     }

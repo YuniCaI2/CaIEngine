@@ -12,13 +12,8 @@
 
 //获取表面的队列族索引、表面的Format 和ColorSpace
 void VulkanSwapChain::initSurface(GLFWwindow *window) {
-    VkResult result = VK_SUCCESS;
-    result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    VK_CHECK_RESULT(glfwCreateWindowSurface(instance, window, nullptr, &surface));
     //使用glfw的window实现表面的构建
-    if (result != VK_SUCCESS) {
-        std::cerr << "Failed to create window surface!" << std::endl;
-        exit(-1);
-    }
     //得到可用的队列家族
     uint32_t queueCount;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, nullptr);
@@ -36,7 +31,7 @@ void VulkanSwapChain::initSurface(GLFWwindow *window) {
     uint32_t graphicsQueueNodeIndex = UINT32_MAX;
     uint32_t presentQueueNodeIndex = UINT32_MAX;
     for (uint32_t i = 0; i < queueCount; i++) {
-        if ((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) {
+        if ((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
             if (graphicsQueueNodeIndex == UINT32_MAX) {
                 graphicsQueueNodeIndex = i;
             }
@@ -56,7 +51,7 @@ void VulkanSwapChain::initSurface(GLFWwindow *window) {
             }
         }
     }
-    if (graphicsQueueNodeIndex == UINT32_MAX || graphicsQueueNodeIndex == UINT32_MAX) {
+    if (graphicsQueueNodeIndex == UINT32_MAX || presentQueueNodeIndex == UINT32_MAX) {
         std::cerr << "Failed to find queue node!" << std::endl;
         exit(-1);
     }
@@ -259,7 +254,7 @@ void VulkanSwapChain::create(uint32_t width, uint32_t height, bool vsync, bool f
     }
 }
 
-VkResult VulkanSwapChain::acquireNextImage(VkSemaphore presentCompleteSemaphore, uint32_t imageIndex) {
+VkResult VulkanSwapChain::acquireNextImage(VkSemaphore presentCompleteSemaphore, uint32_t& imageIndex) {
     // By setting timeout to UINT64_MAX we will always wait until the next image has been acquired or an actual error is thrown
     // With that we don't have to handle VK_NOT_READY
     //这里就只是做了层浅包装

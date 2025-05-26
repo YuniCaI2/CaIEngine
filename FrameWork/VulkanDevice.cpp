@@ -251,7 +251,7 @@ VkResult FrameWork::VulkanDevice::createBuffer(VkBufferUsageFlags usageFlags, Vk
         VK_CHECK_RESULT(vkMapMemory(logicalDevice, *memory, 0, size, 0, &mapped));
         memcpy(mapped, data, static_cast<size_t>(size));
         //没有设置内存主机一致性，请手动刷新使写入设备可见
-        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0) {
             VkMappedMemoryRange mappedMemoryRange = {};
             mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             mappedMemoryRange.memory = *memory;
@@ -274,6 +274,11 @@ VkResult FrameWork::VulkanDevice::createBuffer(VkBufferUsageFlags usageFlags, Vk
     buffer->device = logicalDevice;
 
     VkBufferCreateInfo bufferInfo = {};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usageFlags;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
     VK_CHECK_RESULT(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &buffer->buffer));
     //创建内存
     VkMemoryRequirements memRequirements;
@@ -301,7 +306,7 @@ VkResult FrameWork::VulkanDevice::createBuffer(VkBufferUsageFlags usageFlags, Vk
     if (data != nullptr) {
         VK_CHECK_RESULT(buffer->map());
         memcpy(buffer->mapped, data, size);
-        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0) {
             buffer->flush();
         }
         buffer->unmap();

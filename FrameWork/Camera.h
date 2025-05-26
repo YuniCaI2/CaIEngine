@@ -1,7 +1,15 @@
-﻿#pragma once
+﻿/*
+* Basic camera class providing a look-at and first-person camera
+*
+* Copyright (C) 2016-2024 by Sascha Willems - www.saschawillems.de
+*
+* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
+*/
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 class Camera
@@ -163,7 +171,7 @@ public:
 				camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
 				camFront = glm::normalize(camFront);
 
-				float moveSpeed = deltaTime * movementSpeed; //计算出移动距离
+				float moveSpeed = deltaTime * movementSpeed;
 
 				if (keys.up)
 					position += camFront * moveSpeed;
