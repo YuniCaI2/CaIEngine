@@ -8,11 +8,12 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(thirdPart)
 
 file(GLOB frameWorkPath
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
     )
 
-add_library(FrameWork ${frameWorkPath}) 
+add_library(FrameWork ${frameWorkPath}
+        )
 
 if (WIN32)
    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
@@ -26,16 +27,17 @@ endif()
 
 
 
-target_precompile_headers(FrameWork PUBLIC ./pbh.hpp)
 target_link_libraries(FrameWork PUBLIC volk)
 target_link_libraries(FrameWork PUBLIC glfw)
-target_link_libraries(FrameWork PUBLIC VMA) # Link against the INTERFACE library
 target_link_libraries(FrameWork PUBLIC Vulkan::Vulkan)
-target_link_libraries(FrameWork PUBLIC glm::glm)
+target_link_libraries(FrameWork PUBLIC imgui)
 target_include_directories(FrameWork PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/VulkanMemoryAllocator/include
 )
 target_include_directories(FrameWork PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/glm
 )
+target_include_directories(FrameWork PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/stb
+    )
 #在Mac端的妥协
