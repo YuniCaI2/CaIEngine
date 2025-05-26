@@ -14,6 +14,8 @@
 #include "VulkanTool.h"
 #define VOLK_IMPLEMENTATION
 
+
+
 std::string vulkanFrameWork::getWindowTitle() const {
     std::string windowTitle = {title + "-" + deviceProperties.deviceName};
     if (!settings.overlay) {
@@ -344,7 +346,10 @@ bool vulkanFrameWork::initVulkan() {
 }
 
 bool vulkanFrameWork::setWindow() {
-    glfwInit();
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW" << std::endl;
+        return -1;
+    }
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     this->window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     if (window == nullptr) {
@@ -363,6 +368,9 @@ bool vulkanFrameWork::setWindow() {
 }
 
 VkResult vulkanFrameWork::createInstance() {
+
+    volkInitialize();
+
     std::vector<const char *> instanceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}; //新版本只需要在邏輯設備中設置就行了好像
 
     uint32_t glfwExtensionCount = 0;
@@ -458,8 +466,11 @@ VkResult vulkanFrameWork::createInstance() {
         layerSettingsCreateInfo.pNext = instanceCreateInfo.pNext;
         instanceCreateInfo.pNext = &layerSettingsCreateInfo;
     }
-
-    VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+    VkResult result;
+    VK_CHECK_RESULT(result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
+    if (result == VK_SUCCESS) {
+        volkLoadInstance(instance);
+    }
 
     //设置可捕获信息的验证层，并且对其进行初始化
     if (std::find(supportedInstanceExtensions.begin(), supportedInstanceExtensions.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) !=
@@ -706,6 +717,16 @@ void vulkanFrameWork::windowResize() {
     prepared = false;
     resized = true;
 
+    int _width = 0, _height = 0;
+    glfwGetFramebufferSize(window, &_width, &_height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window, &_width, &_height);
+        glfwWaitEvents();
+    }
+    //传递变换后的窗口尺寸
+    destWidth = _width;
+    destHeight = _height;
+
     vkDeviceWaitIdle(device);
 
     width = destWidth;
@@ -717,6 +738,7 @@ void vulkanFrameWork::windowResize() {
     vkDestroyImage(device, depthStencil.image, nullptr);
     vkFreeMemory(device, depthStencil.memory, nullptr);
     setupDepthStencil();
+
     for (auto& frameBuffer : frameBuffers) {
         vkDestroyFramebuffer(device, frameBuffer, nullptr);
     }
@@ -764,18 +786,8 @@ void vulkanFrameWork::renderLoop() {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
         }
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        if (width == 0 || height == 0) {
-            continue; // 跳过渲染
-        }
-
-        if (width != destWidth || height != destHeight) {
-            destWidth = width;
-            destHeight = height;
-            windowResize();//没有处理最小化
-        }
-        nextFrame();
+        if (prepared)
+            nextFrame();
     }
     if (device != VK_NULL_HANDLE) {
         //保证资源同步退出循环可以被删除

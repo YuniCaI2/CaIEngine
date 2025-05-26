@@ -59,6 +59,7 @@ protected:
     //得到一个绝对路径
     std::string getShaderPath() const;
 
+
     //Frame counter to display fps
     uint32_t frameCounter = 0;
     uint32_t lastFPS = 0;
@@ -177,7 +178,7 @@ public:
     ScrollCallback userScrollCallback;
 
 
-    vulkanFrameWork();
+    vulkanFrameWork(){};
     virtual ~vulkanFrameWork();
     //设置Vulkan的实例，设置准许的扩展和链接可用的物理设备
     bool initVulkan();

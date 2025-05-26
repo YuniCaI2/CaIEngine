@@ -5,6 +5,8 @@
 #include "VulkanDebug.h"
 #include<iostream>
 
+// 定义静态成员变量
+VkDebugUtilsMessengerEXT FrameWork::VulkanDebug::debugUtilsMessenger = VK_NULL_HANDLE;
 
 VKAPI_ATTR VkBool32  VKAPI_CALL FrameWork::VulkanDebug::debugUtilsMessageCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
@@ -17,13 +19,6 @@ VKAPI_ATTR VkBool32  VKAPI_CALL FrameWork::VulkanDebug::debugUtilsMessageCallbac
 }
 
 void FrameWork::VulkanDebug::setDebugging(VkInstance instance) {
-    // 初始化 volk
-    if (volkInitialize() != VK_SUCCESS) {
-        throw std::runtime_error("Failed to initialize volk");
-    }
-
-    // 加载实例函数
-    volkLoadInstance(instance);
 
     // 验证扩展函数可用性
     if (vkCreateDebugUtilsMessengerEXT == nullptr) {
