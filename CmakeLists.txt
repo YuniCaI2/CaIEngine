@@ -3,6 +3,10 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(CaIEngine)
 
-
-
 add_subdirectory(FrameWork)
+
+add_executable(${PROJECT_NAME} Triangle.cpp)
+
+target_link_libraries(${PROJECT_NAME} FrameWork)
+
+target_include_directories(${PROJECT_NAME} PUBLIC FrameWork)

@@ -68,7 +68,7 @@ PROJECT_LOGO           =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = "/Users/yunicai/Code_file/CaIEngine/build/FrameWork/thirdPart/glfw/docs"
+OUTPUT_DIRECTORY       = "D:/Visual Studio Project/CaIEngine/build/FrameWork/thirdPart/glfw/docs"
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create up to 4096
 # sub-directories (in 2 levels) under the output directory of each output format
@@ -816,7 +816,7 @@ FILE_VERSION_FILTER    =
 # DoxygenLayout.xml, doxygen will parse it automatically even if the LAYOUT_FILE
 # tag is left empty.
 
-LAYOUT_FILE            = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/DoxygenLayout.xml"
+LAYOUT_FILE            = "D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/DoxygenLayout.xml"
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files containing
 # the reference definitions. This must be a list of .bib files. The .bib
@@ -932,7 +932,7 @@ WARN_LINE_FORMAT       = "at line $line of file $file"
 # specified the warning and error messages are written to standard output
 # (stdout).
 
-WARN_LOGFILE           = "/Users/yunicai/Code_file/CaIEngine/build/FrameWork/thirdPart/glfw/docs/warnings.txt"
+WARN_LOGFILE           = "D:/Visual Studio Project/CaIEngine/build/FrameWork/thirdPart/glfw/docs/warnings.txt"
 
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
@@ -945,22 +945,22 @@ WARN_LOGFILE           = "/Users/yunicai/Code_file/CaIEngine/build/FrameWork/thi
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  =  \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/include/GLFW/glfw3.h" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/include/GLFW/glfw3native.h" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/main.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/news.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/quick.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/moving.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/compile.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/build.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/intro.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/context.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/monitor.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/window.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/input.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/vulkan.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/compat.md" \
-"/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/internal.md"
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/include/GLFW/glfw3.h" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/include/GLFW/glfw3native.h" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/main.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/news.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/quick.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/moving.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/compile.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/build.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/intro.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/context.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/monitor.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/window.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/input.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/vulkan.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/compat.md" \
+"D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/internal.md"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1045,7 +1045,7 @@ EXCLUDE_SYMBOLS        = APIENTRY GLFWAPI
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/examples"
+EXAMPLE_PATH           = "D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/examples"
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
@@ -1285,7 +1285,7 @@ HTML_FILE_EXTENSION    = .html
 # of the possible markers and block names see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_HEADER            = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/header.html"
+HTML_HEADER            = "D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/header.html"
 
 # The HTML_FOOTER tag can be used to specify a user-defined HTML footer for each
 # generated HTML page. If the tag is left blank doxygen will generate a standard
@@ -1295,7 +1295,7 @@ HTML_HEADER            = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/footer.html"
+HTML_FOOTER            = "D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/footer.html"
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1325,7 +1325,7 @@ HTML_STYLESHEET        =
 # documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/extra.css"
+HTML_EXTRA_STYLESHEET  = "D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/extra.css"
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1335,7 +1335,7 @@ HTML_EXTRA_STYLESHEET  = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       = "/Users/yunicai/Code_file/CaIEngine/FrameWork/thirdPart/glfw/docs/spaces.svg"
+HTML_EXTRA_FILES       = "D:/Visual Studio Project/CaIEngine/FrameWork/thirdPart/glfw/docs/spaces.svg"
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.

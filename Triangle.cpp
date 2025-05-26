@@ -1,19 +1,7 @@
 ﻿//
 // Created by AI Assistant on 25-5-26.
 //
-
-#include "FrameWork/vulkanFrameWork.h"
-#include "FrameWork/VulkanBuffer.h"
-#include "FrameWork/VulkanTool.h"
-#include <imgui.h>
-#include <iostream>
-#include <vector>
-#include <array>
-#include <cstddef>  // for offsetof
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
+#include <vulkanFrameWork.h>
 #define _VALIDATION 1
 
 class TriangleRenderer : public vulkanFrameWork {
