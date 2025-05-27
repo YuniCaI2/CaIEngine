@@ -300,6 +300,8 @@ bool vulkanFrameWork::initVulkan() {
     vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
 
+
+
     //给派生类接口可以添加特性
     getEnabledFeatures();
 
@@ -409,11 +411,6 @@ VkResult vulkanFrameWork::createInstance() {
             instanceExtensions.push_back(enableExtension);
         }
     }
-    //保证跨平台
-#if defined(_WIN32) || defined(_WIN64)
-#elif defined(__APPLE__) && defined(__MACH__)
-    instanceExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-#endif
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -424,6 +421,13 @@ VkResult vulkanFrameWork::createInstance() {
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &appInfo;
+
+    //保证跨平台
+#if defined(_WIN32) || defined(_WIN64)
+#elif defined(__APPLE__) && defined(__MACH__)
+    instanceExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    instanceCreateInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
     if (settings.validation) {
