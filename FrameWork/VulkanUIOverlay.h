@@ -7,36 +7,29 @@
 #include <glm/vec2.hpp>
 
 #include "VulkanDevice.h"
-#include <imgui.h>
 #include "pubh.h"
+
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
+#include "imgui.h"
+#include "imgui_internal.h"
+#include "VulkanSwapChain.h"
+
+// 在类声明前添加版本检查
+#if IMGUI_VERSION_NUM < 18700
+#error "ImGui version too old. Please use ImGui 1.87 or newer."
+#endif
 
 
 namespace FrameWork {
     class VulkanUIOverlay {
     public:
         FrameWork::VulkanDevice *device;
-        VkQueue queue{VK_NULL_HANDLE};
 
         VkSampleCountFlagBits rasterizationSamples{VK_SAMPLE_COUNT_1_BIT};
-        uint32_t subpass{0};
-
-        Buffer vertexBuffer;
-        Buffer indexBuffer;
-        int32_t vertexCount{0};
-        int32_t indexCount{0};
-
-        std::vector<VkPipelineShaderStageCreateInfo> shaders;
 
         VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
-        VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
-        VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-        VkPipeline pipeline{VK_NULL_HANDLE};
 
-        VkDeviceMemory fontMemory{VK_NULL_HANDLE};
-        VkImage fontImage{VK_NULL_HANDLE};
-        VkImageView fontView{VK_NULL_HANDLE};
-        VkSampler sampler{VK_NULL_HANDLE};
 
         struct PushConstBlock {
             glm::vec2 scale;
@@ -52,12 +45,9 @@ namespace FrameWork {
 
         ~VulkanUIOverlay();
 
-        void preparePipeline(const VkPipelineCache &pipelineCache, const VkRenderPass &renderPass,
-                             const VkFormat &colorFormat, const VkFormat &depthFormat);
+        void prepareResources(GLFWwindow* window,VkInstance instance,
+             VkRenderPass &renderPass,  VulkanSwapChain& swapChain, VkQueue queue);
 
-        void prepareResources();
-
-        bool update();
 
         void draw(const VkCommandBuffer &commandBuffer);
 

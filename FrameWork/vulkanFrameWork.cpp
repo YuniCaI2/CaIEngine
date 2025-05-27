@@ -88,7 +88,7 @@ void vulkanFrameWork::updateOverlay() {
     int middleButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE);
     float xscale, yscale;
     glfwGetWindowContentScale(window, &xscale, &yscale);
-    ui.scale = (xscale + yscale) / 2; // 或者使用 yscale，或者两者的平均值
+    ui.scale = (xscale + yscale) / 2;
 
     double mouseX, mouseY;
     glfwGetCursorPos(window, &mouseX, &mouseY);
@@ -99,11 +99,11 @@ void vulkanFrameWork::updateOverlay() {
     io.MouseDown[1] = rightButton == GLFW_PRESS;
     io.MouseDown[2] = middleButton == GLFW_PRESS;
 
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    ImGui::SetNextWindowPos(ImVec2(10 * ui.scale, 10 * ui.scale));
-    ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
     //设置窗口不能被调节大小和移动
     ImGui::Begin("CaI Engine FrameWork", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
@@ -122,12 +122,7 @@ void vulkanFrameWork::updateOverlay() {
     ImGui::PopStyleVar(); //弹出刚才的样式
     ImGui::Render();
 
-    if (ui.update() || ui.updated) {
-        buildCommandBuffers(); //更新了则重建命令缓冲区
-        ui.updated = false;
-    }
-
-
+    buildCommandBuffers(); //更新了则重建命令缓冲区
 }
 
 void vulkanFrameWork::createPipelineCache() {
@@ -144,7 +139,7 @@ void vulkanFrameWork::createCommandPool() {
     VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &commandPool));
 }
 
-//信号量在initVulkan中已经进行了重置
+//信号量在initVulkan中已经进行了设置
 void vulkanFrameWork::createSynchronizationPrimitives() {
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -322,6 +317,7 @@ bool vulkanFrameWork::initVulkan() {
 
     //获得图像队列的句柄
     //注意获得的句柄需要保证再device获取的时候存在
+    queue = VK_NULL_HANDLE;
     vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphics, 0, &queue);
 
     VkBool32 validFormat{false};
@@ -404,8 +400,8 @@ VkResult vulkanFrameWork::createInstance() {
         }
     }
 
-    if (!enabledDeviceExtensions.empty()) {
-        for (const auto* enableExtension : enabledDeviceExtensions) {
+    if (!enabledInstanceExtensions.empty()) {
+        for (const auto* enableExtension : enabledInstanceExtensions) {
             if (std::find(supportedInstanceExtensions.begin(), supportedInstanceExtensions.end(), enableExtension) == supportedInstanceExtensions.end()) {
                 std::cerr << "Error: " << enableExtension << " is not supported by the instance" << std::endl;
                 return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -727,13 +723,7 @@ void vulkanFrameWork::prepare() {
 
     if (settings.overlay) {
         ui.device = vulkanDevice;
-        ui.queue = queue;
-        ui.shaders = {
-            loadShader(getShaderPath() + "imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(getShaderPath() + "imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-        };
-        ui.prepareResources();
-        ui.preparePipeline(pipelineCache, renderPass, swapChain.colorFormat, depthFormat);
+        ui.prepareResources(window, instance, renderPass, swapChain, queue);
     }
 }
 
@@ -814,8 +804,6 @@ void vulkanFrameWork::windowResize() {
 }
 
 void vulkanFrameWork::renderLoop() {
-    destWidth = width;
-    destHeight = height;
     lastTimestamp = std::chrono::high_resolution_clock::now();
     tPrevEnd = lastTimestamp;
 
@@ -835,18 +823,6 @@ void vulkanFrameWork::renderLoop() {
 
 void vulkanFrameWork::drawUI(const VkCommandBuffer &commandBuffer) {
     if (settings.overlay && ui.visible) {
-        VkViewport viewport = {};
-        VkRect2D scissor = {};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = static_cast<float>(width);
-        viewport.height = static_cast<float>(height);
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        scissor.offset = {0, 0};
-        scissor.extent = {width, height};
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
         ui.draw(commandBuffer);
     }
 }
