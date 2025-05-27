@@ -86,6 +86,10 @@ void vulkanFrameWork::updateOverlay() {
     int leftButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     int rightButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     int middleButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE);
+    float xscale, yscale;
+    glfwGetWindowContentScale(window, &xscale, &yscale);
+    ui.scale = (xscale + yscale) / 2; // 或者使用 yscale，或者两者的平均值
+
     double mouseX, mouseY;
     glfwGetCursorPos(window, &mouseX, &mouseY);
 
