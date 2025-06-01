@@ -2,6 +2,8 @@
 // Created by AI Assistant on 25-5-26.
 //
 #include <vulkanFrameWork.h>
+
+#include "VulkanWindow.h"
 #define _VALIDATION 1
 
 class TriangleRenderer : public vulkanFrameWork {
@@ -30,23 +32,46 @@ private:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
-    // 三角形顶点数据
+    // 立方体顶点数据
     std::vector<Vertex> vertices = {
-			    { {  1.0f,  1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-                { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-                { {  0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } }
+        // 前面 (Z = 0.5)
+        {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}}, // 左下
+        {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}}, // 右下
+        {{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}, // 右上
+        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}}, // 左上
+
+        // 后面 (Z = -0.5)
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}}, // 左下
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}}, // 右下
+        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, // 右上
+        {{-0.5f,  0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}}  // 左上
     };
 
-    std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
+    // 立方体索引数据（定义12个三角形组成6个面）
+    std::vector<uint32_t> indices = {
+        // 前面
+        0, 1, 2,   2, 3, 0,
 
+        // 后面
+        4, 6, 5,   6, 4, 7,
+
+        // 左面
+        4, 0, 3,   3, 7, 4,
+
+        // 右面
+        1, 5, 6,   6, 2, 1,
+
+        // 上面
+        3, 2, 6,   6, 7, 3,
+
+        // 下面
+        4, 5, 1,   1, 0, 4
+    };
 
 public:
     TriangleRenderer() {
         title = "Triangle Renderer";
-        camera.type = Camera::CameraType::lookat;
-        camera.setPosition(glm::vec3(0.0f, 0.0f, -2.5f));
-        camera.setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-        camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 100.0f);
+        camera.Position = glm::vec3(0.0f, 0.0f, 3.0f);
     }
 
     ~TriangleRenderer() {
@@ -55,7 +80,7 @@ public:
             vkDestroyPipeline(device, graphicsPipeline, nullptr);
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
             vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-            
+
             vertexBuffer.destroy();
             indexBuffer.destroy();
             uniformBuffer.destroy();
@@ -80,51 +105,48 @@ public:
         renderPassBeginInfo.clearValueCount = 2;
         renderPassBeginInfo.pClearValues = clearValues;
 
-        for (int32_t i = 0; i < drawCmdBuffers.size(); ++i) {
-            renderPassBeginInfo.framebuffer = frameBuffers[i];
+        renderPassBeginInfo.framebuffer = frameBuffers[imageIndex];
 
-            VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+        VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[currentFrame], &cmdBufInfo));
 
-            vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(drawCmdBuffers[currentFrame], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            VkViewport viewport = {};
-            viewport.width = (float)width;
-            viewport.height = (float)height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+        VkViewport viewport = {};
+        viewport.width = (float) width;
+        viewport.height = (float) height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(drawCmdBuffers[currentFrame], 0, 1, &viewport);
 
-            VkRect2D scissor = {};
-            scissor.extent.width = width;
-            scissor.extent.height = height;
-            scissor.offset.x = 0;
-            scissor.offset.y = 0;
-            vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+        VkRect2D scissor = {};
+        scissor.extent.width = width;
+        scissor.extent.height = height;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        vkCmdSetScissor(drawCmdBuffers[currentFrame], 0, 1, &scissor);
 
-            // 绑定图形管线
-            vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        // 绑定图形管线
+        vkCmdBindPipeline(drawCmdBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-            // 绑定描述符集
-            vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        // 绑定描述符集
+        vkCmdBindDescriptorSets(drawCmdBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+                                &descriptorSet, 0, nullptr);
 
-            // 绑定顶点缓冲区
-            VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
-            VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, vertexBuffers, offsets);
+        // 绑定顶点缓冲区
+        VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(drawCmdBuffers[currentFrame], 0, 1, vertexBuffers, offsets);
 
-            // 绑定索引缓冲区
-            vkCmdBindIndexBuffer(drawCmdBuffers[i], indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        // 绑定索引缓冲区
+        vkCmdBindIndexBuffer(drawCmdBuffers[currentFrame], indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            // 绘制三角形
-            vkCmdDrawIndexed(drawCmdBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        // 绘制三角形
+        vkCmdDrawIndexed(drawCmdBuffers[currentFrame], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
-            // 绘制UI
-            drawUI(drawCmdBuffers[i]);
 
-            vkCmdEndRenderPass(drawCmdBuffers[i]);
+        vkCmdEndRenderPass(drawCmdBuffers[currentFrame]);
 
-            VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
-        }
+        VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[currentFrame]));
     }
 
     void createVertexBuffer() {
@@ -145,7 +167,7 @@ public:
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             &vertexBuffer,
-            bufferSize));        // 复制数据
+            bufferSize)); // 复制数据
         vulkanDevice->copyBuffer(&stagingBuffer, &vertexBuffer, queue);
         stagingBuffer.destroy();
     }
@@ -168,14 +190,14 @@ public:
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             &indexBuffer,
-            bufferSize));        // 复制数据
+            bufferSize)); // 复制数据
         vulkanDevice->copyBuffer(&stagingBuffer, &indexBuffer, queue);
         stagingBuffer.destroy();
     }
 
     void createUniformBuffer() {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-        
+
         VK_CHECK_RESULT(vulkanDevice->createBuffer(
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -183,22 +205,14 @@ public:
             bufferSize));
 
         VK_CHECK_RESULT(uniformBuffer.map());
-    }    void updateUniformBuffer() {
+    }
+
+    void updateUniformBuffer() {
         UniformBufferObject ubo = {};
         // 暂时不旋转，让三角形保持静止以便调试
         ubo.model = glm::mat4(1.0f); // 单位矩阵，无变换
-        ubo.view = camera.matrices.view;
-        ubo.projection = camera.matrices.perspective;
-
-        // 调试输出
-        static bool debugPrinted = false;
-        if (!debugPrinted) {
-            std::cout << "=== 矩阵调试信息 ===" << std::endl;
-            std::cout << "相机位置: (" << camera.position.x << ", " << camera.position.y << ", " << camera.position.z << ")" << std::endl;
-            std::cout << "透视矩阵第一行: (" << ubo.projection[0][0] << ", " << ubo.projection[0][1] << ", " << ubo.projection[0][2] << ", " << ubo.projection[0][3] << ")" << std::endl;
-            std::cout << "视图矩阵第四行: (" << ubo.view[3][0] << ", " << ubo.view[3][1] << ", " << ubo.view[3][2] << ", " << ubo.view[3][3] << ")" << std::endl;
-            debugPrinted = true;
-        }
+        ubo.view = camera.GetViewMatrix();
+        ubo.projection = glm::perspective(glm::radians(camera.Zoom), (float)width / (float)height, 0.1f, 100.0f);
 
         uniformBuffer.copyTo(&ubo, sizeof(ubo));
     }
@@ -217,7 +231,9 @@ public:
         layoutInfo.pBindings = &uboLayoutBinding;
 
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout));
-    }    void createDescriptorPool() {
+    }
+
+    void createDescriptorPool() {
         VkDescriptorPoolSize poolSize = {};
         poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSize.descriptorCount = 1;
@@ -259,8 +275,10 @@ public:
 
     void createGraphicsPipeline() {
         // 加载着色器
-        auto vertShaderStageInfo = loadShader(getShaderPath() + "triangle/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        auto fragShaderStageInfo = loadShader(getShaderPath() + "triangle/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        auto vertShaderStageInfo = loadShader(getShaderPath() + "triangle/triangle.vert.spv",
+                                              VK_SHADER_STAGE_VERTEX_BIT);
+        auto fragShaderStageInfo = loadShader(getShaderPath() + "triangle/triangle.frag.spv",
+                                              VK_SHADER_STAGE_FRAGMENT_BIT);
 
         VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
@@ -268,7 +286,8 @@ public:
         VkVertexInputBindingDescription bindingDescription = {};
         bindingDescription.binding = 0;
         bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;        VkVertexInputAttributeDescription attributeDescriptions[2] = {};
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        VkVertexInputAttributeDescription attributeDescriptions[2] = {};
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -296,8 +315,8 @@ public:
         VkViewport viewport = {};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = (float)width;
-        viewport.height = (float)height;
+        viewport.width = (float) width;
+        viewport.height = (float) height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -340,7 +359,8 @@ public:
 
         // 颜色混合状态
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                              VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
 
         VkPipelineColorBlendStateCreateInfo colorBlending = {};
@@ -348,12 +368,12 @@ public:
         colorBlending.logicOpEnable = VK_FALSE;
         colorBlending.logicOp = VK_LOGIC_OP_COPY;
         colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;        // 管线布局
+        colorBlending.pAttachments = &colorBlendAttachment; // 管线布局
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;  // 明确指定不使用push constants
+        pipelineLayoutInfo.pushConstantRangeCount = 0; // 明确指定不使用push constants
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
         VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
@@ -376,40 +396,32 @@ public:
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &graphicsPipeline));
-    }    void prepare() override {
+    }
+
+    void prepare() override {
         vulkanFrameWork::prepare();
 
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffer();
         createDescriptorSetLayout();
-        createDescriptorPool();  // 添加这行：在创建描述符集之前先创建描述符池
+        createDescriptorPool(); // 添加这行：在创建描述符集之前先创建描述符池
         createDescriptorSet();
         createGraphicsPipeline();
-        buildCommandBuffers();
-        prepared = true;
-    }void render() override {
-        if (!prepared) return;
-        
-        updateUniformBuffer();
-        // 调用框架的渲染流程
-        vulkanFrameWork::prepareFrame();
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-        VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-        vulkanFrameWork::submitFrame();
     }
 
-    void OnUpdateUIOverlay(FrameWork::VulkanUIOverlay* overlay) override {
-        if (overlay->header("Triangle Renderer")) {
-            overlay->text("FPS: %.2f", lastFPS);
-            overlay->text("Frame time: %.2fms", (1000.0f / lastFPS));
-        }
+    void render() override {
+        updateUniformBuffer();
+        vulkanFrameWork::prepareFrame();
+        vulkanFrameWork::submitFrame();
     }
 };
 
 // 主函数
 int main() {
+    FrameWork::Locator::RegisterService<FrameWork::InputManager>
+    (std::make_shared<FrameWork::InputManager>(FrameWork::VulkanWindow::GetInstance().GetWindow())
+        );
     TriangleRenderer app;
     app.initVulkan();
     app.setWindow();

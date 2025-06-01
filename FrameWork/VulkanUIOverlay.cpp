@@ -119,11 +119,7 @@ void FrameWork::VulkanUIOverlay::prepareResources(GLFWwindow* window,VkInstance 
 
     std::cout << "ImGui Vulkan..." << std::endl;
 
-    if (!ImGui_ImplVulkan_Init(&init_info)) {
-        std::cerr << "ImGui Vulkan failed！" << std::endl;
-        ImGui_ImplGlfw_Shutdown();
-        return;
-    }
+    ImGui_ImplVulkan_Init(&init_info);
 
     std::cout << "ImGui success！" << std::endl;
 }

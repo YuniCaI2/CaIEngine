@@ -11,15 +11,7 @@
 #include <functional>
 #include <chrono>
 
-// GLM 定义
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE // Vulkan 通常使用这个深度范围
-#define GLM_ENABLE_EXPERIMENTAL     // 如果你使用了 GLM 的实验性特性
-// GLM 包含
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/matrix_inverse.hpp> // 如果需要
-#include <glm/gtc/type_ptr.hpp>       // 如果需要
+
 
 // --- Vulkan 配置和头文件 ---
 // 1. 定义 VK_NO_PROTOTYPES 来阻止 Vulkan SDK 定义函数符号。
@@ -32,7 +24,7 @@
 #include "VulkanSwapChain.h"    // 确保这些头文件也不会以冲突的方式包含 vulkan.h。
 #include "VulkanUIOverlay.h"    // 它们应该依赖此处的设置或 volk。
 #include "Camera.h"
-
+#define MAX_FRAME 2
 
 
 
@@ -43,9 +35,7 @@ private:
     uint32_t destWidth{};//宽度
     uint32_t destHeight{};//高度
     bool resizing = false;//是否能调整大小
-    void handleMouseMove(int32_t x, int32_t y); //处理鼠标移动
     void nextFrame();
-    void updateOverlay();//更新屏幕上的覆盖层
     void createPipelineCache();
     void createCommandPool();
     void createSynchronizationPrimitives(); //创建一些同步图元的对象
@@ -54,6 +44,7 @@ private:
     void createCommandBuffers();
     void destroyCommandBuffers();
     std::string shaderDir = "glsl";
+
 
 protected:
     //得到一个绝对路径
@@ -88,18 +79,20 @@ protected:
     std::vector<VkCommandBuffer> drawCmdBuffers;
     VkRenderPass renderPass{ VK_NULL_HANDLE };
     std::vector<VkFramebuffer>frameBuffers;
-    uint32_t currentBuffer{0};
+    uint32_t imageIndex{0};
     VkDescriptorPool descriptorPool{ VK_NULL_HANDLE };
     std::vector<VkShaderModule> shaderModules;
     VkPipelineCache pipelineCache{ VK_NULL_HANDLE };
     VulkanSwapChain swapChain;
 
     //同步信号量
-    struct {
+    struct Semaphores {
         //SwapChain Image Presentation
-        VkSemaphore presentComplete{};
+        std::vector<VkSemaphore> presentComplete;
         //Command Buffer submission and execution
-        VkSemaphore renderComplete{};
+        std::vector<VkSemaphore> renderComplete;
+        Semaphores(): presentComplete(MAX_FRAME), renderComplete(MAX_FRAME) {
+        }
 
     } semaphores{};
 
@@ -107,16 +100,13 @@ protected:
     bool requiresStencil{false};
 
 public:
-    bool prepared{false};
-    bool resized{false};
-    bool viewUpdated{false}; // 这个是啥
-
+    uint32_t currentFrame = 0;
+    uint32_t MaxFrame = MAX_FRAME;
     uint32_t width{1280};
     uint32_t height{720};
     //UI
-    FrameWork::VulkanUIOverlay ui;
 
-    float frameTimer = 1.0f;
+    double frameTimer = 1.0;
 
     FrameWork::VulkanDevice* vulkanDevice{};
 
@@ -129,19 +119,9 @@ public:
         bool vsync = false;
 
         // 允许UI覆盖
-        bool overlay = true;
+        bool overlay = false;
     } settings;
 
-    //鼠标的状态
-    // struct {
-    //     struct {
-    //         bool left = false;
-    //         bool middle = false;
-    //         bool right = false;
-    //     } buttons;
-    //     glm::vec2 position;
-    // } mouseState;
-    //我认为使用GFLW下是是不需要使用这个的
 
     VkClearColorValue defaultClearColor = {0.025f, 0.025f, 0.025f, 1.0f};
 
@@ -153,7 +133,7 @@ public:
 
     bool paused = false;
 
-    Camera camera;
+    FrameWork::Camera camera;
 
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
@@ -166,16 +146,9 @@ public:
         VkImageView view;
     } depthStencil;
 
-    using KeyCallback = std::function<void(GLFWwindow*, int, int, int, int)>;
-    using MouseButtonCallback = std::function<void(GLFWwindow*, int, int, int)>;
-    using CursorPosCallback = std::function<void(GLFWwindow*, double, double)>;
-    using ScrollCallback = std::function<void(GLFWwindow*, double, double)>;
     //GLFW Window
     GLFWwindow* window{nullptr};
-    KeyCallback userKeyCallback;
-    MouseButtonCallback userMouseButtonCallback;
-    CursorPosCallback userCursorPosCallback;
-    ScrollCallback userScrollCallback;
+
 
 
     vulkanFrameWork(){};
@@ -187,18 +160,7 @@ public:
 
     //设置Vulkan的基础框架
     virtual VkResult createInstance();
-    virtual void render() = 0;
-
-    virtual void setKeyCallback(KeyCallback callback);
-    virtual void setMouseButtonCallback(MouseButtonCallback callback);
-    virtual void setCursorPosCallback(CursorPosCallback callback);
-    virtual void setScrollCallback(ScrollCallback callback);
-
-    static void KeyCallbackInternal(GLFWwindow* window, int key, int scancode, int action, int mods);
-    static void MouseButtonCallbackInternal(GLFWwindow* window, int button, int action, int mods);
-    static void CursorPosCallbackInternal(GLFWwindow* window, double xpos, double ypos);
-    static void ScrollCallbackInternal(GLFWwindow* window, double xoffset, double yoffset);
-    //内部转发回调的函数
+    virtual void render();
 
     virtual void windowResized();
 
@@ -223,15 +185,12 @@ public:
 
     void renderLoop();
 
-    void drawUI(const VkCommandBuffer& commandBuffer);
 
     void prepareFrame();
 
     void submitFrame();
 
-    virtual void renderFrame();
-
-    virtual void OnUpdateUIOverlay(FrameWork::VulkanUIOverlay* overlay);
+    void finishRender();
 };
 
 

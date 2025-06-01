@@ -12,6 +12,7 @@
 #include <array>
 #include "VulkanDebug.h"
 #include "VulkanTool.h"
+#include "VulkanWindow.h"
 #define VOLK_IMPLEMENTATION
 
 
@@ -20,28 +21,25 @@ std::string vulkanFrameWork::getWindowTitle() const {
     std::string windowTitle = {title + "-" + deviceProperties.deviceName};
     if (!settings.overlay) {
         windowTitle += "-" + std::to_string(frameCounter) + "fps";
+        windowTitle += "-frameTimer:";
+        windowTitle += std::to_string(frameTimer);
     }
     return windowTitle;
 }
 
-void vulkanFrameWork::handleMouseMove(int32_t x, int32_t y) {
-}
 
+//主要为渲染场景，其中render的内容需要自己写
 void vulkanFrameWork::nextFrame() {
-    auto tStart = std::chrono::high_resolution_clock::now();
-    if (viewUpdated) {
-        viewUpdated = false;
-    }
-    render(); //渲染
+
     frameCounter++;
     auto tEnd = std::chrono::high_resolution_clock::now();
-    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    frameTimer = static_cast<float>(tDiff) / 1000.0f;
+    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
+    frameTimer = static_cast<double>(tDiff) / 1000.0f;
+    //测试
+    FrameWork::Locator::GetService<FrameWork::InputManager>()->update();
     camera.update(frameTimer);
-    if (camera.moving())
-    {
-        viewUpdated = true; //视图更新为真
-    }
+    //logic();
+    render(); //渲染
     // Convert to clamped timer value
     if (!paused)
     {
@@ -51,6 +49,7 @@ void vulkanFrameWork::nextFrame() {
             timer -= 1.0f;
         }
     }
+    // 计时，一秒钟，更新一次
     float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - lastTimestamp).count());
     if (fpsTimer > 1000.0f) {
         lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / fpsTimer));
@@ -62,68 +61,8 @@ void vulkanFrameWork::nextFrame() {
         lastTimestamp = tEnd;
     }
     tPrevEnd = tEnd;
-    //更新UI
-    updateOverlay();
 }
 
-void vulkanFrameWork::updateOverlay() {
-    if (!settings.overlay) {
-        return;
-    }
-    //ui不需要每一帧都更新
-    ui.updateTimer -= frameTimer;
-    if (ui.updateTimer >= 0.0f) {
-        return;
-    }
-    ui.updateTimer = 1.0f / 30.0f;
-    //30帧ui
-
-    ImGuiIO &io = ImGui::GetIO();
-
-    io.DisplaySize = ImVec2((float)width, (float)height);
-    io.DeltaTime = frameTimer;
-
-    int leftButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    int rightButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
-    int middleButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE);
-    float xscale, yscale;
-    glfwGetWindowContentScale(window, &xscale, &yscale);
-    ui.scale = (xscale + yscale) / 2;
-
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
-
-    io.MousePos = ImVec2(static_cast<float>(mouseX), static_cast<float>(mouseY));
-    //可能imgui中会管理按钮是否重复触发
-    io.MouseDown[0] = leftButton == GLFW_PRESS;
-    io.MouseDown[1] = rightButton == GLFW_PRESS;
-    io.MouseDown[2] = middleButton == GLFW_PRESS;
-
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    //设置窗口不能被调节大小和移动
-    ImGui::Begin("CaI Engine FrameWork", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-    ImGui::TextUnformatted(title.c_str());
-    //显示设备名称
-    ImGui::TextUnformatted(deviceProperties.deviceName);
-    //显示帧数
-    ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
-
-    ImGui::PushItemWidth(110.0f * ui.scale); //设置ui控件的宽度 ,这是一个参数栈
-    OnUpdateUIOverlay(&ui); //自己添加ui , framework 中为空
-    ImGui::PopItemWidth(); //弹出刚才的设置
-
-    ImGui::End();
-    ImGui::PopStyleVar(); //弹出刚才的样式
-    ImGui::Render();
-
-    buildCommandBuffers(); //更新了则重建命令缓冲区
-}
 
 void vulkanFrameWork::createPipelineCache() {
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
@@ -143,11 +82,13 @@ void vulkanFrameWork::createCommandPool() {
 void vulkanFrameWork::createSynchronizationPrimitives() {
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     //Fence
-    waitFences.resize(drawCmdBuffers.size());
+    waitFences.resize(MAX_FRAME);
     for (size_t i = 0; i < waitFences.size(); i++) {
         VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, nullptr, &waitFences[i]));
     }
+    waitFences.resize(MAX_FRAME);
 }
 
 void vulkanFrameWork::createSurface() {
@@ -206,15 +147,14 @@ vulkanFrameWork::~vulkanFrameWork() {
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     vkDestroyCommandPool(device, commandPool, nullptr);
-
-    vkDestroySemaphore(device, semaphores.presentComplete, nullptr);
-    vkDestroySemaphore(device, semaphores.renderComplete, nullptr);
     for (auto& fence : waitFences) {
         vkDestroyFence(device, fence, nullptr);
     }
 
-    if (settings.overlay) {
-        ui.freeResources();
+
+    for (int i = 0 ; i < MAX_FRAME; i ++) {
+        vkDestroySemaphore(device, semaphores.presentComplete[i], nullptr);
+        vkDestroySemaphore(device, semaphores.renderComplete[i], nullptr);
     }
 
     delete vulkanDevice;
@@ -232,11 +172,6 @@ bool vulkanFrameWork::initVulkan() {
     //设置验证层
     this->settings.validation = true;
 
-    //初始化,不然后续关于glfw的操作会报错
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return -1;
-    }
 
     //设置实例
     VkResult result = createInstance();
@@ -337,36 +272,17 @@ bool vulkanFrameWork::initVulkan() {
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     //创建同步变量
-    VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.presentComplete));
-    VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.renderComplete));
-
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &semaphores.presentComplete;
-    //等待上一个渲染的哪个阶段完成
-    submitInfo.pWaitDstStageMask = &submitPipelineStages;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &semaphores.renderComplete;
+    for (int i = 0 ; i < MAX_FRAME; i ++) {
+        VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.presentComplete[i]));
+        VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.renderComplete[i]));
+    }
 
     return true;
 }
 
 bool vulkanFrameWork::setWindow() {
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    this->window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-    if (window == nullptr) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return false;
-    }
-    glfwSetWindowUserPointer(window, this);
-    glfwSetCursorPosCallback(window, vulkanFrameWork::CursorPosCallbackInternal);
-    glfwSetMouseButtonCallback(window, vulkanFrameWork::MouseButtonCallbackInternal);
-    glfwSetKeyCallback(window, vulkanFrameWork::KeyCallbackInternal);
-    glfwSetScrollCallback(window, vulkanFrameWork::ScrollCallbackInternal);
-    //还有尺寸调整的回调
-
+    window = FrameWork::VulkanWindow::GetInstance().GetWindow();
     return true;
 }
 
@@ -516,48 +432,13 @@ VkResult vulkanFrameWork::createInstance() {
     return result;
 }
 
-void vulkanFrameWork::setKeyCallback(KeyCallback callback) {
-    this->userKeyCallback = std::move(callback);
+void vulkanFrameWork::render() {
 }
 
-void vulkanFrameWork::setMouseButtonCallback(MouseButtonCallback callback) {
-    this->userMouseButtonCallback = std::move(callback);
-}
-
-void vulkanFrameWork::setCursorPosCallback(CursorPosCallback callback) {
-    this->userCursorPosCallback = std::move(callback);
-}
-
-void vulkanFrameWork::setScrollCallback(ScrollCallback callback) {
-    this->userScrollCallback = std::move(callback);
-}
-
-//所以要记得先将this指针和window绑定
-void vulkanFrameWork::KeyCallbackInternal(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    auto* instance = static_cast<vulkanFrameWork*>(glfwGetWindowUserPointer(window));
-    if (instance && instance->userKeyCallback) {
-        instance->userKeyCallback(window, key, scancode, action, mods);
-    }
-}
-
-void vulkanFrameWork::MouseButtonCallbackInternal(GLFWwindow *window, int button, int action, int mods) {
-    auto* instance = static_cast<vulkanFrameWork*>(glfwGetWindowUserPointer(window));
-    if (instance && instance->userMouseButtonCallback) {
-        instance->userMouseButtonCallback(window, button, action, mods);
-    }
-}
-
-void vulkanFrameWork::CursorPosCallbackInternal(GLFWwindow *window, double xpos, double ypos) {
-    auto* instance = static_cast<vulkanFrameWork*>(glfwGetWindowUserPointer(window));
-    if (instance && instance->userCursorPosCallback) {
-        instance->userCursorPosCallback(window, xpos, ypos);
-    }
-}
-
-void vulkanFrameWork::ScrollCallbackInternal(GLFWwindow *window, double xoffset, double yoffset) {
-    auto* instance = static_cast<vulkanFrameWork*>(glfwGetWindowUserPointer(window));
-    if (instance && instance->userScrollCallback) {
-        instance->userScrollCallback(window, xoffset, yoffset);
+void vulkanFrameWork::finishRender() {
+    //保证渲染资源退出后同步，可以一起删除
+    if (device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(device);
     }
 }
 
@@ -724,11 +605,6 @@ void vulkanFrameWork::prepare() {
     setupRenderPass();
     createPipelineCache();
     setupFrameBuffer();
-
-    if (settings.overlay) {
-        ui.device = vulkanDevice;
-        ui.prepareResources(window, instance, renderPass, swapChain, queue);
-    }
 }
 
 VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &fileName, VkShaderStageFlagBits stage) {
@@ -743,12 +619,6 @@ VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &f
 }
 
 void vulkanFrameWork::windowResize() {
-    if (!prepared) {
-        return;
-    }
-    prepared = false;
-    resized = true;
-
     int _width = 0, _height = 0;
     glfwGetFramebufferSize(window, &_width, &_height);
     while (width == 0 || height == 0) {
@@ -776,12 +646,6 @@ void vulkanFrameWork::windowResize() {
     }
     setupFrameBuffer();
 
-    if ((width > 0.0f) && (height > 0.0f)) {
-        if (settings.overlay) {
-            ui.resize(width, height);
-        }
-    }
-
     // Command buffers need to be recreated as they may store
     // references to the recreated frame buffer
     destroyCommandBuffers();
@@ -796,15 +660,10 @@ void vulkanFrameWork::windowResize() {
 
     vkDeviceWaitIdle(device);
 
-    if ((width > 0.0f) && (height > 0.0f)) {
-        camera.updateAspectRatio((float)width / (float)height);
-    }
+
 
     // Notify derived class
     windowResized();
-
-    prepared = true;
-
 }
 
 void vulkanFrameWork::renderLoop() {
@@ -813,11 +672,13 @@ void vulkanFrameWork::renderLoop() {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        // if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        //     glfwSetWindowShouldClose(window, true);
-        // }
-        if (prepared)
-            nextFrame();
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            //因为鼠标在第一人称的时候会被隐藏，
+            //后续实现Input模块和实现鼠标的显示和切换的时候则处理
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+        nextFrame();
+        currentFrame = (currentFrame + 1) % MAX_FRAME;
     }
     if (device != VK_NULL_HANDLE) {
         //保证资源同步退出循环可以被删除
@@ -825,14 +686,12 @@ void vulkanFrameWork::renderLoop() {
     }
 }
 
-void vulkanFrameWork::drawUI(const VkCommandBuffer &commandBuffer) {
-    if (settings.overlay && ui.visible) {
-        ui.draw(commandBuffer);
-    }
-}
+
 
 void vulkanFrameWork::prepareFrame() {
-    VkResult result = swapChain.acquireNextImage(semaphores.presentComplete, currentBuffer);
+    vkWaitForFences(device, 1, &waitFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &waitFences[currentFrame]);
+    VkResult result = swapChain.acquireNextImage(semaphores.presentComplete[currentFrame], imageIndex);
     // 如果交换链与表面不再兼容（OUT_OF_DATE），则重新创建交换链
     // SRS - 如果不再是最优状态（VK_SUBOPTIMAL_KHR），等到 submitFrame() 中再处理，
     // 以防调整大小时交换链图像数量发生变化
@@ -848,7 +707,19 @@ void vulkanFrameWork::prepareFrame() {
 }
 
 void vulkanFrameWork::submitFrame() {
-    auto result = swapChain.queuePresent(queue, currentBuffer, semaphores.renderComplete);
+    vkResetCommandBuffer(drawCmdBuffers[currentFrame], 0);
+    buildCommandBuffers();
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &semaphores.presentComplete[currentFrame];
+    //等待上一个渲染的哪个阶段完成
+    submitInfo.pWaitDstStageMask = &submitPipelineStages;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &semaphores.renderComplete[currentFrame];
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &drawCmdBuffers[currentFrame];
+    VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, waitFences[currentFrame]));
+    auto result = swapChain.queuePresent(queue, imageIndex, semaphores.renderComplete[currentFrame]);
     // Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or \
     // no longer optimal for presentation (SUBOPTIMAL)
     if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
@@ -860,17 +731,4 @@ void vulkanFrameWork::submitFrame() {
     else {
         VK_CHECK_RESULT(result);
     }
-    VK_CHECK_RESULT(vkQueueWaitIdle(queue));
-}
-
-void vulkanFrameWork::renderFrame() {
-    prepareFrame();
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-    VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-    submitFrame();
-}
-
-void vulkanFrameWork::OnUpdateUIOverlay(FrameWork::VulkanUIOverlay *overlay) {
-    //空的
 }

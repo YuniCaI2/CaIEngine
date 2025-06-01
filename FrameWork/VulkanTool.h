@@ -13,6 +13,7 @@
 #include <intrin.h>
 
 #include "pubh.h"
+#include<functional>
 
 #define VK_CHECK_RESULT(f)                                                      \
 {                                                                               \
@@ -26,6 +27,14 @@ exit(-1);                                              \
 }
 
 namespace VulkanTool {
+
+    //因为GLFW的特殊性质，这里要对其进行包装
+    //回调包装
+    using KeyCallback = std::function<void(int, int, int, int)>;
+    using MouseButtonCallback = std::function<void(int, int, int)>;
+    using CursorPosCallback = std::function<void(double, double)>;
+    using ScrollCallback = std::function<void(double, double)>;
+
     //手动硬编码
     inline std::string resourcePath = "../resources/";
 
