@@ -24,6 +24,7 @@
 #include "VulkanSwapChain.h"    // 确保这些头文件也不会以冲突的方式包含 vulkan.h。
 #include "VulkanUIOverlay.h"    // 它们应该依赖此处的设置或 volk。
 #include "Camera.h"
+#include "PublicStruct.h"
 #define MAX_FRAME 2
 
 
@@ -71,7 +72,7 @@ protected:
 
     void* deviceCreatepNextChain = nullptr; //扩展结构
     VkDevice device{VK_NULL_HANDLE};
-    VkQueue queue{VK_NULL_HANDLE};
+    VkQueue graphicsQueue{VK_NULL_HANDLE};
     VkFormat depthFormat{VK_FORMAT_UNDEFINED};
     VkCommandPool commandPool{VK_NULL_HANDLE};
     VkPipelineStageFlags submitPipelineStages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -98,6 +99,12 @@ protected:
 
     std::vector<VkFence> waitFences;
     bool requiresStencil{false};
+
+    //各种池
+    std::vector<FrameWork::Texture*> textures;
+    std::vector<FrameWork::Mesh*> meshes;
+    std::vector<FrameWork::VulkanAttachment*> attachmentBuffers;
+    std::vector<FrameWork::VulkanFBO*> vulkanFBOs;
 
 public:
     uint32_t currentFrame = 0;
@@ -185,12 +192,92 @@ public:
 
     void renderLoop();
 
-
     void prepareFrame();
-
     void submitFrame();
-
     void finishRender();
+
+
+    void CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer& buffer, void* data);//将数据直接设置到GPU内存方便后续创建local 内存
+    void CreateTexture(uint32_t& textureId, FrameWork::TextureFullData& textureData);
+    void CreateImageView(FrameWork::VulkanImage& image, VkImageView& imageView, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
+    VkSampler CreateSampler(uint32_t mipmapLevels);
+    void SetUpStaticMesh(unsigned int& meshID, std::vector<FrameWork::Vertex>& vertices, std::vector<uint32_t>& indices, bool skinned);
+
+    // 封装对象的池
+    template<class T>
+    decltype(auto) getVectorRef() {
+        if constexpr (std::is_same_v<T, FrameWork::Texture>) {
+            return reinterpret_cast<std::vector<T*>&>(textures);
+        }
+        else if constexpr (std::is_same_v<T, FrameWork::Mesh>) {
+            return reinterpret_cast<std::vector<T*>&>(meshes);
+        }
+        else if constexpr (std::is_same_v<T, FrameWork::VulkanAttachment>) {
+            return reinterpret_cast<std::vector<T*>&>(attachmentBuffers);
+        }
+        else if constexpr (std::is_same_v<T, FrameWork::VulkanFBO>) {
+            return reinterpret_cast<std::vector<T*>&>(vulkanFBOs);
+        }
+        else {
+            std::cerr << "Unknown type in getNextIndex!" << std::endl;
+            exit(-1);
+        }
+    }
+
+    template<class T>
+    uint32_t inline getNextIndex() {
+        auto& vec = getVectorRef<T>();
+        auto len = vec.size();
+        for (uint32_t i = 0; i < vec.size(); i++) {
+            if (vec[i]->inUse == false) {
+                return i;
+            }
+        }
+        vec.push_back(new T());
+        return static_cast<uint32_t>(len);
+    }
+
+    template<class T>
+    auto inline getByIndex(uint32_t index) -> T* {
+        return getVectorRef<T>()[index];
+    }
+
+    template<class T>
+    void inline destroyByIndex(uint32_t index) {
+        decltype(auto) vec = getVectorRef<T>();
+        if (std::is_same_v<T, FrameWork::Texture>) {
+            auto texture = textures[index];
+            texture->inUse = false;
+            vkDestroyImageView(device, texture->imageView, nullptr);
+            texture->image.destroy();
+            texture->imageView = VK_NULL_HANDLE;
+            if (texture->sampler != VK_NULL_HANDLE) {
+                vkDestroySampler(device, texture->sampler, nullptr);
+                texture->sampler = VK_NULL_HANDLE;
+            }
+        }
+        else if (std::is_same_v<T, FrameWork::Mesh>) {
+            auto mesh = meshes[index];
+            mesh->inUse = false;
+            mesh->vertexCount = 0;
+            mesh->indexCount = 0;
+            mesh->inUse = false;
+            mesh->VertexBuffer.destroy();
+            mesh->IndexBuffer.destroy();
+        }
+        else if (std::is_same_v<T, FrameWork::VulkanAttachment>) {
+            auto attachment = attachmentBuffers[index];
+            attachment->inUse = false;
+            for (auto& t : attachment->attachmentsArray) {
+                destroyByIndex<FrameWork::Texture>(t);
+            }
+            attachment->attachmentsArray.clear();
+            attachment->attachmentsArray.resize(MAX_FRAME);
+        }
+
+
+    }
+
 };
 
 

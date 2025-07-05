@@ -10,6 +10,8 @@
 #include <vcruntime_startup.h>
 
 #include <array>
+#include <queue>
+
 #include "VulkanDebug.h"
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
@@ -38,7 +40,7 @@ void vulkanFrameWork::nextFrame() {
     //测试
     FrameWork::Locator::GetService<FrameWork::InputManager>()->update();
     camera.update(frameTimer);
-    //logic();
+
     render(); //渲染
     // Convert to clamped timer value
     if (!paused)
@@ -119,6 +121,23 @@ std::string vulkanFrameWork::getShaderPath() const {
 }
 
 vulkanFrameWork::~vulkanFrameWork() {
+    //删除池中的内容,完全释放
+    for (int i = 0; i < textures.size(); i++) {
+        destroyByIndex<FrameWork::Texture>(i);
+        delete textures[i];
+        textures[i] = nullptr;
+    }
+    for (int i = 0; i < meshes.size(); i++) {
+        destroyByIndex<FrameWork::Mesh>(i);
+        delete meshes[i];
+        meshes[i] = nullptr;
+    }
+    //Attachment删除
+    for (int i = 0; i < attachmentBuffers.size(); i++) {
+        destroyByIndex<FrameWork::VulkanAttachment>(i);
+        delete attachmentBuffers[i];
+        attachmentBuffers[i] = nullptr;
+    }
     // Clean up Vulkan resources
     swapChain.cleanup();
     //实际的描述符池应该在派生类中设置
@@ -254,8 +273,8 @@ bool vulkanFrameWork::initVulkan() {
 
     //获得图像队列的句柄
     //注意获得的句柄需要保证再device获取的时候存在
-    queue = VK_NULL_HANDLE;
-    vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphics, 0, &queue);
+    graphicsQueue = VK_NULL_HANDLE;
+    vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphics, 0, &graphicsQueue);
 
     VkBool32 validFormat{false};
 
@@ -433,6 +452,7 @@ VkResult vulkanFrameWork::createInstance() {
 }
 
 void vulkanFrameWork::render() {
+
 }
 
 void vulkanFrameWork::finishRender() {
@@ -441,6 +461,143 @@ void vulkanFrameWork::finishRender() {
         vkDeviceWaitIdle(device);
     }
 }
+
+void vulkanFrameWork::CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer,
+    void *data) {
+    FrameWork::Buffer stagingBuffer;
+    vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &stagingBuffer, size, data);
+    vulkanDevice->createBuffer(usageFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        &buffer, size, nullptr);
+    vulkanDevice->copyBuffer(&stagingBuffer, &buffer, graphicsQueue);
+
+    //删除中转内存
+    stagingBuffer.destroy();
+}
+
+
+// 这里之创建常规的纹理，不创建天空盒类型的纹理
+void vulkanFrameWork::CreateTexture(uint32_t &textureId, FrameWork::TextureFullData& data) {
+    FrameWork::Buffer stagingBuffer;
+    vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &stagingBuffer, data.width *data.height * data.numChannels , data.data);
+    textureId = getNextIndex<FrameWork::Texture>();
+    auto texture = getByIndex<FrameWork::Texture>(textureId);
+    auto mipmapLevels = VulkanTool::GetMipMapLevels(data.width, data.height);
+    VkFormat  format = VK_FORMAT_R8G8B8A8_SRGB;
+    if (data.numChannels == 3) {
+        if (data.isRGB) {
+            format = VK_FORMAT_R8G8B8_SRGB;
+        }else {
+            format = VK_FORMAT_B8G8R8_UNORM;
+        }
+    }
+    if (data.numChannels == 4) {
+        if (data.isRGB) {
+            format = VK_FORMAT_R8G8B8A8_SRGB;
+        }else {
+            format = VK_FORMAT_B8G8R8A8_UNORM;
+        }
+    }
+    if (data.numChannels == 1) {
+        format = VK_FORMAT_R8_UNORM;
+    }
+    //这里为了统一性array的加载只支持单层的，如果多层可以使用copy的方法叠起来
+    vulkanDevice->createImage(&texture->image, VkExtent2D(data.width, data.height), mipmapLevels, 1,VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    auto cmd = VulkanTool::beginSingleTimeCommands(vulkanDevice->logicalDevice, vulkanDevice->commandPool);
+    VulkanTool::transitionImageLayout(cmd,texture->image.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    VulkanTool::endSingleTimeCommands(device, graphicsQueue, commandPool, cmd);
+
+    vulkanDevice->copyBufferToImage(&stagingBuffer, &texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, graphicsQueue);
+
+    VulkanTool::GenerateMipMaps(*vulkanDevice, texture->image);
+
+    stagingBuffer.destroy();
+
+    CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+    texture->sampler = CreateSampler(mipmapLevels);
+
+    texture->inUse = true;
+    //使用
+}
+
+void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView&imageView,
+                                      VkImageAspectFlags aspectFlags, VkImageViewType viewType) {
+    VkImageViewCreateInfo viewCreateInfo = {};
+    viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewCreateInfo.image = image.image;
+    viewCreateInfo.viewType = viewType;
+    viewCreateInfo.format = image.format;
+
+    viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
+    viewCreateInfo.subresourceRange.baseMipLevel = 0;
+    viewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+    viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    viewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+
+    VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView));
+}
+
+VkSampler vulkanFrameWork::CreateSampler(uint32_t mipmapLevels) {
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    // 开启各向异性filter
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = vulkanDevice->properties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    // 这里填false，纹理采样坐标范围就是正常的[0, 1)，如果填true，就会变成[0, texWidth)和[0, texHeight)，绝大部分情况下都是用[0, 1)
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    // 一般用不到这个，某些场景，比如shadow map的percentage-closer filtering会用到
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    // mipmap设置
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = static_cast<float>(mipmapLevels);
+
+    VkSampler sampler;
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+        throw std::runtime_error("failed to create texture sampler!");
+
+    return sampler;
+}
+
+void vulkanFrameWork::SetUpStaticMesh(unsigned int &meshID, std::vector<FrameWork::Vertex> &vertices,
+    std::vector<uint32_t> &indices, bool skinned) {
+    meshID = getNextIndex<FrameWork::Mesh>();
+    auto meshBuffer = getByIndex<FrameWork::Mesh>(meshID);
+    meshBuffer->indexCount = indices.size();
+    meshBuffer->vertexCount = vertices.size();
+
+    //Vertex Buffer
+    //TO do 光追的处理
+    VkDeviceSize vertexBufferSize = sizeof(FrameWork::Vertex) * vertices.size();
+    CreateGPUBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, meshBuffer->VertexBuffer, static_cast<void*>(vertices.data()));
+
+    //光追的话需要获得GPU地址
+
+    // Index  Buffer
+    VkDeviceSize indexBufferSize = sizeof(uint32_t) * indices.size();
+    CreateGPUBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, meshBuffer->IndexBuffer, indices.data());
+
+    //非常重要设置inUse
+    meshBuffer->inUse = true;
+}
+
 
 void vulkanFrameWork::windowResized() {
 }//虚函数
@@ -718,8 +875,8 @@ void vulkanFrameWork::submitFrame() {
     submitInfo.pSignalSemaphores = &semaphores.renderComplete[currentFrame];
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &drawCmdBuffers[currentFrame];
-    VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, waitFences[currentFrame]));
-    auto result = swapChain.queuePresent(queue, imageIndex, semaphores.renderComplete[currentFrame]);
+    VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFences[currentFrame]));
+    auto result = swapChain.queuePresent(graphicsQueue, imageIndex, semaphores.renderComplete[currentFrame]);
     // Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or \
     // no longer optimal for presentation (SUBOPTIMAL)
     if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {

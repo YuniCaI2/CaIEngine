@@ -8,9 +8,9 @@
 #include<vector>
 #include <string>
 
-#include "VulkanTool.h"
-#include "VulkanBuffer.h"
 
+#include "VulkanBuffer.h"
+#include "VulkanImage.h"
 namespace FrameWork {
     class VulkanDevice {
     public:
@@ -25,6 +25,7 @@ namespace FrameWork {
         std::vector<VkQueueFamilyProperties> queueFamilyProperties;
         std::vector<std::string> supportedExtensions;
         VkCommandPool commandPool = VK_NULL_HANDLE;
+        //Command Pool实现逻辑设备唯一, 当然也可以自建
 
         struct {
             uint32_t graphics;
@@ -45,6 +46,9 @@ namespace FrameWork {
         //支持封装后的Buffer
         VkResult createBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, Buffer* buffer, VkDeviceSize size, void* data = nullptr);
         void copyBuffer(Buffer* src, Buffer* dst, VkQueue queue, VkBufferCopy* copyRegion = nullptr);
+        //支持封装后的Image
+        VkResult createImage(VulkanImage* vulkanImage, VkExtent2D extent, uint32_t mipmapLevels, uint32_t arrayLayers, VkSampleCountFlagBits numSamples, VkFormat format,VkImageTiling tiling, VkImageUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags);
+        VkResult copyBufferToImage(Buffer* src, VulkanImage* dst, VkImageLayout imageLayout, VkQueue queue,VkBufferImageCopy* copyRegion = nullptr);
         VkCommandPool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT); // 允许单独重置命令池中的命令缓冲
         VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin = false);
         VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, bool begin = false);

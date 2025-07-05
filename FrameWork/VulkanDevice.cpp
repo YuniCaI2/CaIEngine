@@ -4,9 +4,11 @@
 
 #include "VulkanDevice.h"
 #include <assert.h>
+#include <format>
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
+#include "VulkanTool.h"
 
 
 FrameWork::VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice, VkInstance instance) {
@@ -332,6 +334,84 @@ void FrameWork::VulkanDevice::copyBuffer(Buffer *src, Buffer *dst, VkQueue queue
 
     flushCommandBuffer(copyBuffer, queue);
 }
+
+VkResult FrameWork::VulkanDevice::createImage(VulkanImage* vulkanImage, VkExtent2D extent, uint32_t mipmapLevels, uint32_t arrayLayers,
+    VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usageFlags,
+    VkMemoryPropertyFlags memoryPropertyFlags) {
+    VkImageCreateInfo imageInfo = {};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = extent.width;
+    imageInfo.extent.height = extent.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = mipmapLevels;
+    imageInfo.arrayLayers = arrayLayers;
+    imageInfo.samples = numSamples;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;//只能被一个队列簇访问
+    imageInfo.format = format;
+    imageInfo.tiling = tiling;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //初始创建都为UNDEFINE 如果为别的初始状态可以使用tansition改变
+    imageInfo.usage = usageFlags;
+    imageInfo.flags = arrayLayers == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0; //支持天空盒的扩展
+
+    vulkanImage->device = logicalDevice;
+    vulkanImage->extent = extent;
+    vulkanImage->mipLevels = mipmapLevels;
+    vulkanImage->arrayLayers = arrayLayers;
+    vulkanImage->format = format;
+    vulkanImage->tiling = tiling;
+    vulkanImage->usage = usageFlags;
+    vulkanImage->samples = numSamples;
+
+    VK_CHECK_RESULT(vkCreateImage(logicalDevice, &imageInfo, nullptr, &vulkanImage->image));
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(logicalDevice, vulkanImage->image, &memRequirements);
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = getMemoryType(memRequirements.memoryTypeBits, memoryPropertyFlags);
+
+    VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &vulkanImage->memory));
+
+    return vkBindImageMemory(logicalDevice, vulkanImage->image, vulkanImage->memory, 0);
+}
+
+VkResult FrameWork::VulkanDevice::copyBufferToImage(Buffer *src, VulkanImage *dst,VkImageLayout imageLayout,//imageLayout是当前图片的布局
+    VkQueue queue,VkBufferImageCopy *copyRegion) {
+    if (copyRegion == nullptr) {
+        VkBufferImageCopy region{};
+        // 从buffer读取数据的起始偏移量
+        region.bufferOffset = 0;
+        // 这两个参数明确像素在内存里的布局方式，如果我们只是简单的紧密排列数据，就填0
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+        // 下面4个参数都是在设置我们要把数据拷贝到image的哪一部分
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;//一般不会有深度图需要拷贝
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        // 这个也是在设置我们要把图像拷贝到哪一部分
+        // 如果是整张图片，offset就全是0，extent就直接是图像高宽
+        region.imageOffset = { 0, 0, 0 };
+        region.imageExtent = { (uint32_t)dst->extent.width, (uint32_t)dst->extent.height, 1 };
+
+        auto imCommandBuffer = VulkanTool::beginSingleTimeCommands(logicalDevice, commandPool);
+        vkCmdCopyBufferToImage(imCommandBuffer, src->buffer, dst->image, imageLayout, 1, &region);
+        VulkanTool::endSingleTimeCommands(logicalDevice, queue,commandPool, imCommandBuffer);
+
+    }else {
+        if (commandPool == VK_NULL_HANDLE) {
+            std::cerr << "Command pool is null, you should create logical device first !" << std::endl;
+            exit(-1);
+        }
+        auto imCommandBuffer = VulkanTool::beginSingleTimeCommands(logicalDevice, commandPool);
+        vkCmdCopyBufferToImage(imCommandBuffer, src->buffer, dst->image, imageLayout, 1, copyRegion);
+        VulkanTool::endSingleTimeCommands(logicalDevice, queue,commandPool, imCommandBuffer);
+    }
+    return VK_SUCCESS;
+}
+
 
 VkCommandPool FrameWork::VulkanDevice::createCommandPool(uint32_t queueFamilyIndex,
                                                          VkCommandPoolCreateFlags createFlags) {

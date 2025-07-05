@@ -5,9 +5,6 @@
 #ifndef PUBLICENUM_H
 #define PUBLICENUM_H
 
-#endif //PUBLICENUM_H
-
-
 enum class MouseButton {
     Mid,
     Right,
@@ -67,6 +64,21 @@ enum Key {
 
     //退出
     Key_Escape,
-
-
 };
+
+enum class ShaderType {
+    Comp,
+    Vertex,
+    Frag,
+    Count
+};
+
+enum class DescriptorType {
+    Uniform,
+    Texture
+};
+
+
+#endif //PUBLICENUM_H
+
+
