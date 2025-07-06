@@ -121,7 +121,7 @@ namespace VulkanTool {
             moduleCreateInfo.codeSize = size;
             moduleCreateInfo.pCode = (uint32_t *) shaderCode;
 
-            VK_CHECK_RESULT(vkCreateShaderModule(device, &moduleCreateInfo, NULL, &shaderModule));
+            VK_CHECK_RESULT(vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderModule));
 
             delete[] shaderCode;
 

@@ -38,7 +38,8 @@ void vulkanFrameWork::nextFrame() {
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
     frameTimer = static_cast<double>(tDiff) / 1000.0f;
     //测试
-    FrameWork::Locator::GetService<FrameWork::InputManager>()->update();
+
+    inputManager->update();
     camera.update(frameTimer);
 
     render(); //渲染
@@ -191,6 +192,9 @@ bool vulkanFrameWork::initVulkan() {
     //设置验证层
     this->settings.validation = true;
 
+    //获得外部服务
+    inputManager = FrameWork::Locator::GetService<FrameWork::InputManager>();
+    resourceManager = FrameWork::Locator::GetService<FrameWork::Resource>();
 
     //设置实例
     VkResult result = createInstance();
@@ -769,7 +773,7 @@ VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &f
     shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStageInfo.stage = stage;
     shaderStageInfo.pName = "main";
-    shaderStageInfo.module = VulkanTool::loadShader(fileName, device);
+    shaderStageInfo.module = resourceManager->getShaderModulFromFile(device, fileName, stage);
     assert(shaderStageInfo.module != VK_NULL_HANDLE);
     shaderModules.emplace_back(shaderStageInfo.module);
     return shaderStageInfo;
@@ -835,7 +839,6 @@ void vulkanFrameWork::renderLoop() {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         nextFrame();
-        currentFrame = (currentFrame + 1) % MAX_FRAME;
     }
     if (device != VK_NULL_HANDLE) {
         //保证资源同步退出循环可以被删除
@@ -888,4 +891,5 @@ void vulkanFrameWork::submitFrame() {
     else {
         VK_CHECK_RESULT(result);
     }
+    currentFrame = (currentFrame + 1) % MAX_FRAME;
 }

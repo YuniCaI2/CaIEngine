@@ -25,6 +25,7 @@
 #include "VulkanUIOverlay.h"    // 它们应该依赖此处的设置或 volk。
 #include "Camera.h"
 #include "PublicStruct.h"
+#include "Resource.h"
 #define MAX_FRAME 2
 
 
@@ -45,6 +46,8 @@ private:
     void createCommandBuffers();
     void destroyCommandBuffers();
     std::string shaderDir = "glsl";
+    std::shared_ptr<FrameWork::InputManager> inputManager;
+    std::shared_ptr<FrameWork::Resource> resourceManager;
 
 
 protected:

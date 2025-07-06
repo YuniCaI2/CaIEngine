@@ -58,6 +58,8 @@ namespace FrameWork {
 
 
     public:
+        InputManager(GLFWwindow *window); //设置窗口输入回调
+
         //因为GLFW的特殊性质，这里要对其进行包装
         using KeyCallback = VulkanTool::KeyCallback;
         using MouseButtonCallback = VulkanTool::MouseButtonCallback;
@@ -69,10 +71,6 @@ namespace FrameWork {
         std::vector<MouseButtonCallback> userMouseButtonCallbacks;
         std::vector<CursorPosCallback> userCursorPosCallbacks;
         std::vector<ScrollCallback> userScrollCallbacks;
-
-        explicit InputManager(GLFWwindow *window); //设置窗口输入回调
-        //构造即初始化
-
 
         [[nodiscard]] glm::vec2 GetMousePosition() const;
 
