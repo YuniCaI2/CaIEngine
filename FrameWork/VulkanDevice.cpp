@@ -168,12 +168,14 @@ VkResult FrameWork::VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures e
     std::vector<const char *> deviceExtensions(enabledExtensions);
     if (useSwapChain) {
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME);
     }
 
     //保证Apple扩展支持
 #if defined(__APPLE__) && defined(__MACH__)
         deviceExtensions.push_back("VK_KHR_portability_subset");
 #endif
+
 
 
 

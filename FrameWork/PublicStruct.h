@@ -19,26 +19,74 @@ namespace FrameWork {
         bool inUse = false;
     };
 
-    struct VulkanDescriptor {
-        DescriptorType descriptorType; // 将类型暴露出来方便使用
-        VkDescriptorPool descriptorPool;
-        VkDescriptorSetLayout descriptorSetLayout;
-        VkDescriptorSet descriptorSet;
+    struct VulkanPipelineInfo {
+        std::unordered_map<VkShaderStageFlagBits, VkPipelineShaderStageCreateInfo> shaderModules;
+        //顶点输入状况
+        std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions;
+        std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions;
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .primitiveRestartEnable = VK_FALSE //禁用片元重启
+            //片元重启：可以分离一组三角形条带为两组，进而减少调用DrawCall的数量
+        };
+
+        //视口状态
+        VkViewport viewport;
+        VkRect2D scissor;
+
+        VkPipelineViewportStateCreateInfo viewportState;
+        VkPipelineRasterizationStateCreateInfo rasterizationState;
+        VkPipelineMultisampleStateCreateInfo multisampleState;
+        VkPipelineDepthStencilStateCreateInfo depthStencilState;
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+
+        //管线默认接受动态更新视口大小和和裁剪窗口大小
+
+        bool inUse = false;
     };
 
-    struct Shader {
-        std::vector<VkShaderModule> shaderModules; //shader对应pipeline
-        std::vector<VkPipeline> pipelines; //每个pipeline对应一个renderpass
-        std::vector<VkRenderPass> renderPasses;
-        std::vector<uint32_t> vulkanFBOIdx; //相同每个framebuffer对应一个renderpass
-        std::vector<uint32_t> vulkanDescriptorIdx;//其在Vector中的索引就是对应绑定的DescriptorSet的编号
+    struct VulkanPipeline{
+        VkPipeline pipeline {VK_NULL_HANDLE};
+        VkPipelineLayout pipelineLayout {VK_NULL_HANDLE};
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        uint32_t pipelineInfoIdx = -1;
+
+        bool inUse = false;
     };
 
     struct Material {
-        std::vector<uint32_t> texturesIdx;
-        std::vector<uint32_t> shaderIdx;
+        //此处规定texture的DescriptorSet在Uniform后部
+        std::vector<std::pair<VkDescriptorSet,VkDescriptorSetLayout>> descriptorPairs{};
+        std::vector<VkDescriptorSet> descriptorSets;
+        std::vector<Buffer> uniformBuffer{};
+        std::vector<uint32_t> uniformBufferSizes{};
+        std::vector<uint32_t> textures{};
+
+        bool inUse = false;
     };
 
+    struct TextureFullData {
+        std::optional<uint32_t> textureID; //兼容纹理创建
+
+        int width;
+        int height;
+        int numChannels;
+        unsigned char* data{nullptr};
+        std::string path;
+        bool isRGB{true};
+
+    };
+
+    struct MaterialCreateInfo {
+        std::vector<VkDescriptorSetLayout> UniformDescriptorLayouts;
+        std::vector<VkDescriptorSetLayout> TexturesDescriptorLayouts;
+        std::vector<std::pair<void*, uint32_t>> UniformData;
+                            //data, size
+        std::vector<TextureFullData> TexturesDatas;
+
+    };
 
     struct Mesh {
         FrameWork::Buffer VertexBuffer;
@@ -46,25 +94,21 @@ namespace FrameWork {
         uint32_t vertexCount;
         uint32_t indexCount;
 
+        //每个网格有对应的渲染优先级来对应不同的渲染程度
+        RenderQueue renderQueue{RenderQueue::Opaque};
+
         bool inUse = false;
     };
 
     struct Model {
         glm::vec3 position;
+        //材质和网格是一一对应的
         std::vector<Material> materials;
         std::vector<Mesh> meshes;
 
         bool inUse = false;
     };
 
-    struct TextureFullData {
-        int width;
-        int height;
-        int numChannels;
-        unsigned char* data{nullptr};
-        std::string path;
-        bool isRGB{true};
-    };
 
     struct Texture {
         VulkanImage image;
@@ -77,6 +121,9 @@ namespace FrameWork {
 
     struct VulkanAttachment {
         std::vector<uint32_t> attachmentsArray; // because flight frame 其中这个uint32_t 的含义是Texture的句柄
+        AttachmentType type;
+        uint32_t width;
+        uint32_t height;
         bool inUse = false;
     };
 
@@ -109,17 +156,6 @@ namespace FrameWork {
 
             return attributeDescriptions;
         }
-    };
-
-    struct VulkanCommand {
-        VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
-        std::vector<VkSemaphore> signalSemaphores;
-        std::vector<VulkanCommand> commands;
-        bool inUse = false;
-    };
-
-    struct VulkanDrawCommand {
-
     };
 
 }

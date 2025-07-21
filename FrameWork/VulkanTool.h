@@ -104,6 +104,7 @@ namespace VulkanTool {
 
     inline VkShaderModule loadShader(const std::string &fileName, VkDevice device) {
         std::ifstream is(fileName, std::ios::ate | std::ios::binary | std::ios::in);
+        is.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
         //打开时光标到文件末尾，以二进制模式打开，以读取模式打开
         if (is.is_open()) {

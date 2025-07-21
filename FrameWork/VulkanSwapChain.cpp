@@ -220,7 +220,10 @@ void VulkanSwapChain::create(uint32_t width, uint32_t height, bool vsync, bool f
     //如果交换链被重新创建，销毁旧的交换链以及资源
     if (oldSwapChain != VK_NULL_HANDLE) {
         for (size_t i = 0; i < images.size(); i++) {
-            vkDestroyImageView(device, imageViews[i], nullptr);
+            if (imageViews[i] != VK_NULL_HANDLE) {
+                vkDestroyImageView(device, imageViews[i], nullptr);
+                imageViews[i] = VK_NULL_HANDLE;
+            }
         }
         vkDestroySwapchainKHR(device, oldSwapChain, nullptr);
     }
@@ -280,7 +283,10 @@ VkResult VulkanSwapChain::queuePresent(VkQueue queue, uint32_t imageIndex, VkSem
 void VulkanSwapChain::cleanup() {
     if (swapChain != VK_NULL_HANDLE) {
         for (size_t i = 0; i < imageViews.size(); i++) {
-            vkDestroyImageView(device, imageViews[i], nullptr);
+            if (imageViews[i] != VK_NULL_HANDLE) {
+                vkDestroyImageView(device, imageViews[i], nullptr);
+                imageViews[i] = VK_NULL_HANDLE;
+            }
         }
         //Image的生命周期所有权在swapchain之中
         vkDestroySwapchainKHR(device, swapChain, nullptr);

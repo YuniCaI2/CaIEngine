@@ -46,6 +46,7 @@ VkResult FrameWork::VulkanImage::invalidate(VkDeviceSize size, VkDeviceSize offs
 }
 
 void FrameWork::VulkanImage::destroy() {
+    //保证图片可以删除
     if (image) {
         vkDestroyImage(device, image, nullptr);
         image = VK_NULL_HANDLE;

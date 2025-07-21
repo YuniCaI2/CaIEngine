@@ -78,7 +78,22 @@ enum class DescriptorType {
     Texture
 };
 
+enum class RenderQueue {
+    Transparent,
+    Opaque
+};
 
+enum class AttachmentType {
+    Present,
+    Color,
+    Depth
+};
+
+enum class BlendOp {
+    Opaque,
+    Transparent,
+    Multiply
+};
 #endif //PUBLICENUM_H
 
 

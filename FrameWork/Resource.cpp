@@ -26,5 +26,12 @@ VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, cons
     }
     shaderPath += ".spv";
 
-    return VulkanTool::loadShader(shaderPath, device);
+    VkShaderModule shaderModule;
+    try {
+        shaderModule = VulkanTool::loadShader(shaderPath, device);
+    }catch(const std::ios_base::failure &e) {
+        std::cerr << e.what() << std::endl;
+        return VK_NULL_HANDLE;
+    }
+    return shaderModule;
 }

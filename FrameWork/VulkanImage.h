@@ -20,6 +20,7 @@ namespace FrameWork {
         VkFormat format;
         VkImageTiling tiling;
         VkImageUsageFlags usage{};
+        VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
 
         VkDeviceMemory memory;
         //这里为动态做准备
