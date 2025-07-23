@@ -94,6 +94,21 @@ enum class BlendOp {
     Transparent,
     Multiply
 };
+
+enum class TextureType {
+    DiffuseColor,
+    SpecColor,
+    Metallic,
+    Normal,
+    Emissive,
+    Ambient,
+    Roughness,
+};
+
+enum class ModelType {
+    OBJ
+};
+
 #endif //PUBLICENUM_H
 
 

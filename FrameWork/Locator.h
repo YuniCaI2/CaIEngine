@@ -17,11 +17,13 @@ namespace FrameWork {
     class Locator {
         inline static std::unordered_map<std::type_index, std::shared_ptr<void>> services;
     public:
+        Locator(){};
         template<typename T>
         inline static void RegisterService(std::shared_ptr<void> service) {
             services[std::type_index(typeid(T))] = service;
         }
 
+        //这是一个不好的设计
         template<typename T>
         inline static std::shared_ptr<T> GetService() {
             auto it = services.find(std::type_index(typeid(T)));

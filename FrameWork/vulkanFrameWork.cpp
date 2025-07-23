@@ -10,6 +10,9 @@
 #include <vcruntime_startup.h>
 
 #include <array>
+#include <ostream>
+#include <ostream>
+#include <ostream>
 #include <queue>
 #include <vector>
 
@@ -32,41 +35,41 @@ std::string vulkanFrameWork::getWindowTitle() const {
 
 
 //主要为渲染场景，其中render的内容需要自己写
-void vulkanFrameWork::nextFrame() {
-
-    frameCounter++;
-    auto tEnd = std::chrono::high_resolution_clock::now();
-    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
-    frameTimer = static_cast<double>(tDiff) / 1000.0f;
-    //测试
-
-    inputManager->update();
-    camera.update(frameTimer);
-
-    render(); //渲染
-    // Convert to clamped timer value
-    if (!paused)
-    {
-        timer += timerSpeed * frameTimer;
-        if (timer > 1.0)
-        {
-            timer -= 1.0f;
-        }
-    }
-    // 计时，一秒钟，更新一次
-    float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - lastTimestamp).count());
-    if (fpsTimer > 1000.0f) {
-        lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / fpsTimer));
-
-        if (!settings.overlay) {
-            glfwSetWindowTitle(window, getWindowTitle().c_str());
-        }
-        frameCounter = 0;
-        lastTimestamp = tEnd;
-    }
-    tPrevEnd = tEnd;
-}
-
+// void vulkanFrameWork::nextFrame() {
+//
+//     frameCounter++;
+//     auto tEnd = std::chrono::high_resolution_clock::now();
+//     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
+//     frameTimer = static_cast<double>(tDiff) / 1000.0f;
+//     //测试
+//
+//     inputManager->update();
+//     camera.update(frameTimer);
+//
+//     render(); //渲染
+//     // Convert to clamped timer value
+//     if (!paused)
+//     {
+//         timer += timerSpeed * frameTimer;
+//         if (timer > 1.0)
+//         {
+//             timer -= 1.0f;
+//         }
+//     }
+//     // 计时，一秒钟，更新一次
+//     float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - lastTimestamp).count());
+//     if (fpsTimer > 1000.0f) {
+//         lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / fpsTimer));
+//
+//         if (!settings.overlay) {
+//             glfwSetWindowTitle(window, getWindowTitle().c_str());
+//         }
+//         frameCounter = 0;
+//         lastTimestamp = tEnd;
+//     }
+//     tPrevEnd = tEnd;
+// }
+//
 
 void vulkanFrameWork::createPipelineCache() {
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
@@ -74,13 +77,19 @@ void vulkanFrameWork::createPipelineCache() {
     VK_CHECK_RESULT(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache));
 }
 
-void vulkanFrameWork::createCommandPool() {
-    VkCommandPoolCreateInfo cmdPoolInfo = {};
-    cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    cmdPoolInfo.queueFamilyIndex = swapChain.queueNodeIndex;
-    cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &commandPool));
+void vulkanFrameWork::RecreatePresent() {
+    uint32_t colorAttachmentID = presentColorAttachmentIndex;
+    auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
+    std::vector<FrameWork::TextureFullData> textureDatas(colorAttachment->attachmentsArray.size());
+    for (int i = 0; i < colorAttachment->attachmentsArray.size(); i++) {
+        textureDatas[i].textureID = colorAttachment->attachmentsArray[i];
+        //将纹理信息进行传递
+    }
+    CreateMaterial(presentMaterialIndex, presentMaterialCreateInfo);
+    textureDatas.clear();
+
 }
+
 
 //信号量在initVulkan中已经进行了设置
 void vulkanFrameWork::createSynchronizationPrimitives() {
@@ -89,8 +98,8 @@ void vulkanFrameWork::createSynchronizationPrimitives() {
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     //Fence
     waitFences.resize(MAX_FRAME);
-    for (size_t i = 0; i < waitFences.size(); i++) {
-        VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, nullptr, &waitFences[i]));
+    for (auto & waitFence : waitFences) {
+        VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, nullptr, &waitFence));
     }
     waitFences.resize(MAX_FRAME);
 }
@@ -118,8 +127,39 @@ void vulkanFrameWork::destroyCommandBuffers() {
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(drawCmdBuffers.size()), drawCmdBuffers.data());
 }
 
+void vulkanFrameWork::RecreateAllWindowFrameBuffers() {
+    //遍历所有帧缓冲得到其对应的大小
+    for (uint32_t i = 0; i < vulkanFBOs.size(); i++) {
+        if (vulkanFBOs[i]->inUse && vulkanFBOs[i]->isFollowWindow) {
+            destroyByIndex<FrameWork::VulkanFBO>(i);
+            auto fbo = vulkanFBOs[i];
+            if (getByIndex<FrameWork::VulkanFBO>(i)->isPresent) {
+                CreateAttachment(fbo->AttachmentsIdx[0], GetFrameWidth(),
+                    GetFrameHeight(), AttachmentType::Present, VK_SAMPLE_COUNT_1_BIT, false);
+                CreatePresentFrameBuffer(i, fbo->AttachmentsIdx[0], fbo->renderPass);
+                break;
+            }
+            for (auto& a : vulkanFBOs[i]->AttachmentsIdx) {
+                auto attachment = getByIndex<FrameWork::VulkanAttachment>(a);
+                attachment->height = GetFrameHeight();
+                attachment->width = GetFrameWidth();
+                CreateAttachment(a, GetFrameWidth(), GetFrameHeight(), attachment->type, attachment->samples, attachment->isSampled);
+            }
+            CreateFrameBuffer(i, vulkanFBOs[i]->AttachmentsIdx, GetFrameWidth(), GetFrameHeight(), vulkanFBOs[i]->renderPass);
+        }
+    }
+}
+
+void vulkanFrameWork::Update() {
+    inputManager->update();
+    camera.update(GetFrameTime());
+}
+
 std::string vulkanFrameWork::getShaderPath() const {
     return VulkanTool::getShaderBasePath() + shaderDir + "/";
+}
+
+vulkanFrameWork::vulkanFrameWork() {
 }
 
 vulkanFrameWork::~vulkanFrameWork() {
@@ -167,6 +207,13 @@ vulkanFrameWork::~vulkanFrameWork() {
             meshes[i] = nullptr;
         }
     }
+    for (int i = 0; i < models.size(); i++) {
+        if (models[i] != nullptr) {
+            destroyByIndex<FrameWork::Model>(i);
+            delete models[i];
+            models[i] = nullptr;
+        }
+    }
     for (auto& [_, r] : renderPasses) {
        if (r != VK_NULL_HANDLE) {
            vkDestroyRenderPass(device, r, nullptr);
@@ -179,7 +226,6 @@ vulkanFrameWork::~vulkanFrameWork() {
     {
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     }
-    destroyCommandBuffers();
 
     // for (auto& frameBuffer : frameBuffers)
     // {
@@ -190,14 +236,8 @@ vulkanFrameWork::~vulkanFrameWork() {
     {
         vkDestroyShaderModule(device, shaderModule, nullptr);
     }
-    if (depthStencil.view != VK_NULL_HANDLE)
-        vkDestroyImageView(device, depthStencil.view, nullptr);
-    vkDestroyImage(device, depthStencil.image, nullptr);
-    vkFreeMemory(device, depthStencil.memory, nullptr);
 
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
-
-    vkDestroyCommandPool(device, commandPool, nullptr);
     for (auto& fence : waitFences) {
         vkDestroyFence(device, fence, nullptr);
     }
@@ -305,6 +345,7 @@ bool vulkanFrameWork::initVulkan() {
     getEnabledExtensions();
 
     result = vulkanDevice->createLogicalDevice(enabledFeatures, enabledDeviceExtensions, deviceCreatepNextChain);
+    commandPool = vulkanDevice->commandPool;
     if (result != VK_SUCCESS) {
         std::cerr << "Failed to create logical device" << std::endl;
         exit(-1);
@@ -342,6 +383,9 @@ bool vulkanFrameWork::initVulkan() {
 
     setWindow();
     prepare();
+
+    lastTimestamp = std::chrono::high_resolution_clock::now();
+    tPrevEnd = lastTimestamp;
     return true;
 }
 
@@ -531,15 +575,12 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FrameWork::TextureFullD
     auto texture = getByIndex<FrameWork::Texture>(textureId);
     auto mipmapLevels = VulkanTool::GetMipMapLevels(data.width, data.height);
     VkFormat  format = VK_FORMAT_R8G8B8A8_SRGB;
+    //这里是为处理一些法线贴图和AO贴图等等，防止它们发生错误的空间映射
     if (data.numChannels == 3) {
-        if (data.isRGB) {
-            format = VK_FORMAT_R8G8B8_SRGB;
-        }else {
-            format = VK_FORMAT_B8G8R8_UNORM;
-        }
+        std::cerr << "Texture Channels are 3 that GPU is Not Supported" << std::endl;
     }
     if (data.numChannels == 4) {
-        if (data.isRGB) {
+        if (data.type == TextureType::DiffuseColor || data.type == TextureType::SpecColor) {
             format = VK_FORMAT_R8G8B8A8_SRGB;
         }else {
             format = VK_FORMAT_B8G8R8A8_UNORM;
@@ -553,13 +594,20 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FrameWork::TextureFullD
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     auto cmd = VulkanTool::beginSingleTimeCommands(vulkanDevice->logicalDevice, vulkanDevice->commandPool);
-    VulkanTool::transitionImageLayout(cmd,texture->image.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    VkImageSubresourceRange subresourceRange = {
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .baseMipLevel = 0,
+        .levelCount = mipmapLevels,
+        .baseArrayLayer = 0,
+        .layerCount = 1
+    };
+    VulkanTool::setImageLayout(cmd, texture->image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange,
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
     VulkanTool::endSingleTimeCommands(device, graphicsQueue, commandPool, cmd);
 
     vulkanDevice->copyBufferToImage(&stagingBuffer, &texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, graphicsQueue);
 
-    VulkanTool::GenerateMipMaps(*vulkanDevice, texture->image);
+    VulkanTool::GenerateMipMaps(*vulkanDevice, texture->image, graphicsQueue);
 
     //在生成mipmap的时候会将布局转换成着色器可读
     texture->image.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -601,6 +649,8 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
     attachment->type = attachmentType;
     attachment->width = width;
     attachment->height = height;
+    attachment->isSampled = isSampled;
+    attachment->samples = numSample;
     if (attachmentType == AttachmentType::Depth) {
         attachment->attachmentsArray.resize(MAX_FRAME);
         attachment->inUse = true;
@@ -641,7 +691,7 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
     }
 }
 
-void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, std::vector<uint32_t> &attachments, VkRenderPass renderPass) {
+void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, std::vector<uint32_t> &attachments, uint32_t width, uint32_t height, VkRenderPass renderPass) {
     //只允许传入颜色附件和深度附件
     for (auto& attachment : attachments) {
         auto attachmentObj = getByIndex<FrameWork::VulkanAttachment>(attachment);
@@ -652,9 +702,14 @@ void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, std::vector<uin
     }
     frameBufferId = getNextIndex<FrameWork::VulkanFBO>();
     auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
+    fbo->isPresent = false;
     fbo->inUse = true;
     fbo->framebuffers.resize(MAX_FRAME);
     fbo->AttachmentsIdx = attachments;
+    fbo->renderPass = renderPass;
+    if (windowHeight == width && windowWidth == height) {
+        fbo->isFollowWindow = true;
+    }
     for (uint32_t i = 0; i < MAX_FRAME; i++) {
         std::vector<VkImageView> attachmentViews(attachments.size());
         for (uint32_t j = 0; j < attachments.size(); j++) {
@@ -681,8 +736,10 @@ void vulkanFrameWork::CreatePresentFrameBuffer(uint32_t &frameBufferId, uint32_t
     }
     frameBufferId = getNextIndex<FrameWork::VulkanFBO>();
     auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
+    fbo->isPresent = true;
     fbo->inUse = true;
     fbo->framebuffers.resize(swapChain.imageViews.size());
+    fbo->renderPass = renderPass;
     fbo->AttachmentsIdx = std::vector {
         attachment,
     };
@@ -1067,6 +1124,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     //管线创建------------------------------------------------------------------------------------------------------------
 
     auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
+    presentColorAttachmentIndex = colorAttachmentID;
     std::vector<FrameWork::TextureFullData> textureDatas(colorAttachment->attachmentsArray.size());
     for (int i = 0; i < colorAttachment->attachmentsArray.size(); i++) {
         textureDatas[i].textureID = colorAttachment->attachmentsArray[i];
@@ -1079,6 +1137,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
         .UniformData = {},
         .TexturesDatas = textureDatas,
     };
+    presentMaterialCreateInfo = materialInfo;
     CreateMaterial(presentMaterialIndex, materialInfo);
     textureDatas.clear();
 }
@@ -1122,7 +1181,7 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
     auto material = getByIndex<FrameWork::Material>(presentMaterialIndex);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipelineLayout, 0,
-        1, &material->descriptorSets[GetCurrentFrame()]
+        1, &material->textureDescriptorSets[GetCurrentFrame()]
         , 0, nullptr
         );
 
@@ -1177,7 +1236,13 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
         for (int k = 0; k < MAX_FRAME; k++) {
             memcpy(static_cast<char*>(material->uniformBuffer[i].mapped) + dynamicSize * k, materialInfo.UniformData[i].first, dynamicSize);
         }
-        vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.UniformDescriptorLayouts[i], VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, uniformDescriptorSets[i].first);
+        try {
+            vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.UniformDescriptorLayouts[i],
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, uniformDescriptorSets[i].first);
+        }catch (std::exception &e) {
+           std::cout << e.what() << std::endl;
+            exit(1);
+        }
         uniformDescriptorSets[i].second = materialInfo.UniformDescriptorLayouts[i];
         VkDescriptorBufferInfo uniformBufferInfo = {
             .buffer = material->uniformBuffer[i].buffer,
@@ -1205,8 +1270,13 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
         if (materialInfo.TexturesDatas[i].textureID.has_value()) {
             material->textures[i] = materialInfo.TexturesDatas[i].textureID.value();
             auto texture = getByIndex<FrameWork::Texture>(material->textures[i]);
-            vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[i],
+            try {
+                vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[i],
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, texturesDescriptorSets[i].first);
+            }catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                exit(1);
+            }
             textureImageInfo = {
                 .sampler = texture->sampler,
                 .imageView = texture->imageView,
@@ -1217,13 +1287,19 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
             auto texture = getByIndex<FrameWork::Texture>(material->textures[i]);
             CreateTexture(material->textures[i], materialInfo.TexturesDatas[i]);
             texturesDescriptorSets[i].second = materialInfo.TexturesDescriptorLayouts[i];
+            try {
+                vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[i],
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, texturesDescriptorSets[i].first);
+            }catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                exit(1);
+            }
             textureImageInfo = {
                 .sampler = texture->sampler,
                 .imageView = texture->imageView,
                 .imageLayout =VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             };
         }
-
         VkWriteDescriptorSet descriptorWrite = {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext = nullptr,
@@ -1238,12 +1314,17 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
         };
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
+    material->uniformDescriptorSets.resize(materialInfo.UniformData.size());
+    for (int i = 0; i < materialInfo.UniformData.size(); i++) {
+        material->uniformDescriptorSets[i] = uniformDescriptorSets[i].first;
+    }
     material->descriptorPairs = std::move(uniformDescriptorSets);
     material->descriptorPairs.insert(material->descriptorPairs.end(), texturesDescriptorSets.begin(), texturesDescriptorSets.end());
-    material->descriptorSets.resize(material->descriptorPairs.size());
-    for (int i = 0; i < material->descriptorPairs.size(); i++) {
-        material->descriptorSets[i] = material->descriptorPairs[i].first;
+    material->textureDescriptorSets.resize(materialInfo.TexturesDatas.size());
+    for (int i = 0; i < materialInfo.TexturesDatas.size(); i++) {
+        material->textureDescriptorSets[i] = texturesDescriptorSets[i].first;
     }
+    //分开存储便于绑定
 }
 
 void vulkanFrameWork::UpdateUniformBuffer(const std::vector<FrameWork::Buffer> &uniformBuffer, const std::vector<void *> &data,
@@ -1306,6 +1387,54 @@ void vulkanFrameWork::SetUpStaticMesh(unsigned int &meshID, std::vector<FrameWor
     meshBuffer->inUse = true;
 }
 
+void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, FrameWork::MaterialCreateInfo materialInfo) {
+    modelID = getNextIndex<FrameWork::Model>();
+    auto model = getByIndex<FrameWork::Model>(modelID);
+    FrameWork::ModelData modelData = {};
+    modelData.meshDatas = resourceManager->LoadOBJMesh(fileName);
+    model->materials.resize(modelData.meshDatas.size());
+    model->meshes.resize(modelData.meshDatas.size());
+    for (int i = 0; i < modelData.meshDatas.size(); i++) {
+        //创建顶点信息
+        SetUpStaticMesh(model->meshes[i], modelData.meshDatas[i].vertices, modelData.meshDatas[i].indices, false);
+        //创建纹理
+        materialInfo.TexturesDatas = modelData.meshDatas[i].texData;
+        CreateMaterial(model->materials[i], materialInfo);
+    }
+}
+
+void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) {
+    auto model = getByIndex<FrameWork::Model>(modelID);
+    for (int i = 0; i < model->meshes.size(); i++) {
+        auto mesh = getByIndex<FrameWork::Mesh>(model->meshes[i]);
+        auto material = getByIndex<FrameWork::Material>(model->materials[i]);
+        std::vector vertexBuffer = {
+            mesh->VertexBuffer.buffer,
+        };
+        std::vector descriptorOffset = {
+            vulkanRenderAPI.currentFrame * vulkanRenderAPI.getByIndex<FrameWork::Material>(model->materials[i])->uniformBufferSizes[0]
+            / vulkanRenderAPI.MaxFrame
+        };
+        //Uniform
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
+            material->uniformDescriptorSets.size(),
+            material->uniformDescriptorSets.data(), descriptorOffset.size(), descriptorOffset.data());
+        //Tex
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, material->uniformDescriptorSets.size(),
+            material->textureDescriptorSets.size(), material->textureDescriptorSets.data(), 0, nullptr);
+        VkDeviceSize offset[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, (uint32_t)vertexBuffer.size(), vertexBuffer.data(), offset);
+        vkCmdBindIndexBuffer(commandBuffer, mesh->IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer, mesh->indexCount, 1, 0, 0, 0);
+    }
+}
+
+vulkanFrameWork& vulkanFrameWork::GetInstance() {
+    static vulkanFrameWork vulkan;
+    return vulkan;
+}
+
+
 uint32_t vulkanFrameWork::GetFrameWidth() const {
     return windowWidth;
 }
@@ -1330,12 +1459,26 @@ double vulkanFrameWork::GetFrameTime() const {
     return frameTimer;
 }
 
+FrameWork::VulkanDevice* vulkanFrameWork::GetVulkanDevice() const {
+    return vulkanDevice;
+}
 
-void vulkanFrameWork::windowResized() {
-}//虚函数
+FrameWork::Camera vulkanFrameWork::GetCamera() const {
+    return camera;
+}
 
-void vulkanFrameWork::buildCommandBuffers() {
-}//虚函数
+void vulkanFrameWork::SetTitle(const std::string &title) {
+    this->title = title;
+}
+
+VkCommandBuffer vulkanFrameWork::GetCurrentCommandBuffer() const {
+    return drawCmdBuffers[currentFrame];
+}
+
+uint32_t vulkanFrameWork::GetCurrentImageIndex() const {
+    return imageIndex;
+}
+
 
 void vulkanFrameWork::setupDepthStencil() {
     VkImageCreateInfo imageCreateInfo{};
@@ -1407,6 +1550,7 @@ void vulkanFrameWork::setupFrameBuffer() {
 //虚函数
 void vulkanFrameWork::setupRenderPass() {
 
+    VkRenderPass renderPass;
     std::array<VkAttachmentDescription, 2> attachments = {};
 	// Color attachment
 	attachments[0].format = swapChain.colorFormat;
@@ -1485,6 +1629,8 @@ void vulkanFrameWork::setupRenderPass() {
 	renderPassInfo.pDependencies = dependencies.data();
 
 	VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
+
+    renderPasses["forward"] = renderPass;
 }
 //虚函数
 void vulkanFrameWork::getEnabledFeatures() {
@@ -1495,14 +1641,11 @@ void vulkanFrameWork::getEnabledExtensions() {
 
 void vulkanFrameWork::prepare() {
     createSurface();
-    createCommandPool();
     createSwapChain();
     createCommandBuffers();
     createSynchronizationPrimitives();
-    setupDepthStencil();
     setupRenderPass();
     createPipelineCache();
-    setupFrameBuffer();
 }
 
 VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &fileName, VkShaderStageFlagBits stage) {
@@ -1524,70 +1667,65 @@ void vulkanFrameWork::windowResize() {
         glfwWaitEvents();
     }
     //传递变换后的窗口尺寸
-    destWidth = _width;
-    destHeight = _height;
 
     vkDeviceWaitIdle(device);
 
-    windowWidth = destWidth;
-    windowHeight = destHeight;
+    windowWidth = _width;
+    windowHeight = _height;
+
+    //重建交换链
     createSwapChain();
 
     // Recreate the frame buffers
-    vkDestroyImageView(device, depthStencil.view, nullptr);
-    vkDestroyImage(device, depthStencil.image, nullptr);
-    vkFreeMemory(device, depthStencil.memory, nullptr);
-    setupDepthStencil();
-
-    for (auto& frameBuffer : frameBuffers) {
-        vkDestroyFramebuffer(device, frameBuffer, nullptr);
-    }
-    setupFrameBuffer();
+    //删除附件、重建附件
+    //删除帧缓冲、重建帧缓冲
+    RecreateAllWindowFrameBuffers();
 
     // Command buffers need to be recreated as they may store
     // references to the recreated frame buffer
-    destroyCommandBuffers();
-    createCommandBuffers();
-    buildCommandBuffers();
 
     // SRS - Recreate fences in case number of swapchain images has changed on resize
-    for (auto& fence : waitFences) {
-        vkDestroyFence(device, fence, nullptr);
-    }
-    createSynchronizationPrimitives();
+    // for (auto& fence : waitFences) {
+    //     vkDestroyFence(device, fence, nullptr);
+    // }
+    // createSynchronizationPrimitives();
+    //我的Fence的数量好像和交换链无关，这里先注释掉
 
     vkDeviceWaitIdle(device);
 
-
-
-    // Notify derived class
-    windowResized();
 }
-
-void vulkanFrameWork::renderLoop() {
-    lastTimestamp = std::chrono::high_resolution_clock::now();
-    tPrevEnd = lastTimestamp;
-
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            //因为鼠标在第一人称的时候会被隐藏，
-            //后续实现Input模块和实现鼠标的显示和切换的时候则处理
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
-        nextFrame();
-    }
-    if (device != VK_NULL_HANDLE) {
-        //保证资源同步退出循环可以被删除
-        vkDeviceWaitIdle(device);
-    }
-}
-
 
 
 void vulkanFrameWork::prepareFrame() {
     vkWaitForFences(device, 1, &waitFences[currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &waitFences[currentFrame]);
+
+    frameCounter++;
+    auto tEnd = std::chrono::high_resolution_clock::now();
+    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
+    frameTimer = static_cast<double>(tDiff) / 1000.0f;
+    //     // Convert to clamped timer value
+    if (!paused)
+    {
+        timer += timerSpeed * frameTimer;
+        if (timer > 1.0)
+        {
+            timer -= 1.0f;
+        }
+    }
+    //     // 计时，一秒钟，更新一次
+    float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - lastTimestamp).count());
+    if (fpsTimer > 1000.0f) {
+        lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / fpsTimer));
+
+        if (!settings.overlay) {
+            glfwSetWindowTitle(window, getWindowTitle().c_str());
+        }
+        frameCounter = 0;
+        lastTimestamp = tEnd;
+    }
+    tPrevEnd = tEnd;
+
     VkResult result = swapChain.acquireNextImage(semaphores.presentComplete[currentFrame], imageIndex);
     // 如果交换链与表面不再兼容（OUT_OF_DATE），则重新创建交换链
     // SRS - 如果不再是最优状态（VK_SUBOPTIMAL_KHR），等到 submitFrame() 中再处理，
@@ -1601,11 +1739,10 @@ void vulkanFrameWork::prepareFrame() {
     else {
         VK_CHECK_RESULT(result);
     }
+    vkResetCommandBuffer(drawCmdBuffers[currentFrame], 0);
 }
 
 void vulkanFrameWork::submitFrame() {
-    vkResetCommandBuffer(drawCmdBuffers[currentFrame], 0);
-    buildCommandBuffers();
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = &semaphores.presentComplete[currentFrame];

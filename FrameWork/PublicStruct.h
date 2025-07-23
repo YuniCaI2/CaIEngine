@@ -16,6 +16,9 @@ namespace FrameWork {
     struct VulkanFBO {
         std::vector<VkFramebuffer> framebuffers;
         std::vector<uint32_t> AttachmentsIdx; //这里只是使用一个数组存储东西，因为我不确定其中的内容有哪些，所以这里和其对应的renderpass所对应，当然需要检查
+        VkRenderPass renderPass {VK_NULL_HANDLE};
+        bool isPresent = false;
+        bool isFollowWindow = true;
         bool inUse = false;
     };
 
@@ -59,7 +62,8 @@ namespace FrameWork {
     struct Material {
         //此处规定texture的DescriptorSet在Uniform后部
         std::vector<std::pair<VkDescriptorSet,VkDescriptorSetLayout>> descriptorPairs{};
-        std::vector<VkDescriptorSet> descriptorSets;
+        std::vector<VkDescriptorSet> uniformDescriptorSets;
+        std::vector<VkDescriptorSet> textureDescriptorSets;
         std::vector<Buffer> uniformBuffer{};
         std::vector<uint32_t> uniformBufferSizes{};
         std::vector<uint32_t> textures{};
@@ -69,14 +73,13 @@ namespace FrameWork {
 
     struct TextureFullData {
         std::optional<uint32_t> textureID; //兼容纹理创建
-
+        TextureType type;
         int width;
         int height;
         int numChannels;
+        //这里和stb中的对齐
         unsigned char* data{nullptr};
         std::string path;
-        bool isRGB{true};
-
     };
 
     struct MaterialCreateInfo {
@@ -88,11 +91,12 @@ namespace FrameWork {
 
     };
 
+
     struct Mesh {
         FrameWork::Buffer VertexBuffer;
         FrameWork::Buffer IndexBuffer;
-        uint32_t vertexCount;
-        uint32_t indexCount;
+        uint32_t vertexCount{0};
+        uint32_t indexCount{0};
 
         //每个网格有对应的渲染优先级来对应不同的渲染程度
         RenderQueue renderQueue{RenderQueue::Opaque};
@@ -103,8 +107,8 @@ namespace FrameWork {
     struct Model {
         glm::vec3 position;
         //材质和网格是一一对应的
-        std::vector<Material> materials;
-        std::vector<Mesh> meshes;
+        std::vector<uint32_t> materials;
+        std::vector<uint32_t> meshes;
 
         bool inUse = false;
     };
@@ -115,6 +119,8 @@ namespace FrameWork {
         VkImageView imageView{VK_NULL_HANDLE};
         VkSampler sampler{VK_NULL_HANDLE}; //optional
 
+        TextureType textureType;//这个先没使用
+
         bool inUse = false;
     };
 
@@ -124,12 +130,16 @@ namespace FrameWork {
         AttachmentType type;
         uint32_t width;
         uint32_t height;
+        VkSampleCountFlagBits samples{VK_SAMPLE_COUNT_1_BIT};
+        bool isSampled = false;
         bool inUse = false;
     };
 
     struct Vertex {
         glm::vec3 position;
-        glm::vec3 color;
+        glm::vec3 normal;
+        glm::vec3 tangent;
+        glm::vec2 texCoord;
 
 
         //设置描述，以便在创建管线的时期使用
@@ -143,7 +153,7 @@ namespace FrameWork {
         }
 
         static auto getAttributeDescription() {
-            std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
+            std::vector<VkVertexInputAttributeDescription> attributeDescriptions(4);
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
             attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -152,10 +162,30 @@ namespace FrameWork {
             attributeDescriptions[1].binding = 0;
             attributeDescriptions[1].location = 1;
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[1].offset = offsetof(Vertex, color);
+            attributeDescriptions[1].offset = offsetof(Vertex, normal);
+
+
+            attributeDescriptions[2].binding = 0;
+            attributeDescriptions[2].location = 2;
+            attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[2].offset = offsetof(Vertex, tangent);
+
+            attributeDescriptions[3].binding = 0;
+            attributeDescriptions[3].location = 3;
+            attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[3].offset = offsetof(Vertex, texCoord);
 
             return attributeDescriptions;
         }
+    };
+    struct MeshData {
+        std::vector<uint32_t> indices;
+        std::vector<Vertex> vertices;
+        std::vector<TextureFullData> texData;
+    };
+
+    struct ModelData {
+        std::vector<MeshData> meshDatas;
     };
 
 }

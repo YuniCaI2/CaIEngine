@@ -86,7 +86,11 @@ void FrameWork::VulkanDescriptorPool::AllocateDescriptorSet(VkDescriptorSetLayou
                 .pSetLayouts = &descriptorSetLayout,
             };
             VK_CHECK_RESULT(vkAllocateDescriptorSets(vulkanDevice->logicalDevice, &descriptorSetAllocateInfo, &descriptorSet));
+
         }
+    }
+    if (descriptorSet == VK_NULL_HANDLE) {
+        throw std::runtime_error("failed to allocate descriptor set, the descriptor set is null");
     }
 }
 

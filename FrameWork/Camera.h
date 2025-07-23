@@ -72,7 +72,7 @@ namespace FrameWork {
                     firstMouse = false;
                 }
                 auto xOffset = xPos - lastX;
-                auto yOffset = yPos - lastY;
+                auto yOffset = lastY - ypos;
 
                 lastX = xPos;
                 lastY = yPos;

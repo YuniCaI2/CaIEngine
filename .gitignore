@@ -135,4 +135,5 @@ build/FrameWork/thirdPart/volk/CMakeFiles/volk.dir/volk.c.obj
 build/FrameWork/thirdPart/volk/CMakeFiles/volk.dir/volk.pdb
 .vscode
 cmake-build-debug
+cmake-build-release
 build

@@ -14,6 +14,7 @@
 
 #include "pubh.h"
 #include<functional>
+#include <queue>
 
 #include "VulkanDevice.h"
 
@@ -133,6 +134,7 @@ namespace VulkanTool {
         }
     }
 
+    //subresourcerange必須自定義，這個設置太過於靈活
     inline void setImageLayout(
         VkCommandBuffer cmdBuffer,
         VkImage image,
@@ -235,34 +237,6 @@ namespace VulkanTool {
 
 
     //单层资源
-    inline void transitionImageLayout(
-        VkCommandBuffer cmdBuffer,
-        VkImage image,
-        VkImageAspectFlags aspectMask,
-        VkImageLayout oldImageLayout,
-        VkImageLayout newImageLayout,
-        VkPipelineStageFlags srcStageMask,
-        VkPipelineStageFlags dstStageMask
-    ) {
-        //子资源规范了图片的具体哪些部分会被转换
-        VkImageSubresourceRange subresourceRange = {};
-        subresourceRange.aspectMask = aspectMask;
-        subresourceRange.baseMipLevel = 0;
-        subresourceRange.levelCount = 1;
-        subresourceRange.baseArrayLayer = 0;
-        subresourceRange.layerCount = 1;
-
-        //在不声明的情况下，必须将使用的函数写在前面
-        setImageLayout(
-            cmdBuffer,
-            image,
-            oldImageLayout,
-            newImageLayout,
-            subresourceRange,
-            srcStageMask,
-            dstStageMask
-        );
-    }
 
     inline uint32_t GetMipMapLevels(int width, int height) {
         // 计算mipmap等级
@@ -308,7 +282,7 @@ namespace VulkanTool {
 
 
     //因为这些操作需要使用到物理设备和逻辑设备和池，所以直接传入封装的对象
-    inline void GenerateMipMaps(FrameWork::VulkanDevice &device, FrameWork::VulkanImage &image) {
+    inline void GenerateMipMaps(FrameWork::VulkanDevice &device, FrameWork::VulkanImage &image, VkQueue queue) {
         //检查图片格式是否支持
         VkFormatProperties formatProperties;
         vkGetPhysicalDeviceFormatProperties(device.physicalDevice, image.format, &formatProperties);
@@ -421,7 +395,7 @@ namespace VulkanTool {
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                 0, 0, nullptr, 0, nullptr, 1, &barrier
             );
-
+        endSingleTimeCommands(device, queue, device.commandPool, cmd);
     }
 }
 

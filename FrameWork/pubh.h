@@ -21,4 +21,6 @@
 #include <glm/gtc/matrix_inverse.hpp> // 如果需要
 #include <glm/gtc/type_ptr.hpp>       // 如果需要
 
+//Assimp
+
 #endif //PUBH_H

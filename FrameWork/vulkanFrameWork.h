@@ -27,6 +27,7 @@
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
 #include "Resource.h"
+#include "VulkanWindow.h"
 #define MAX_FRAME 2
 
 
@@ -34,11 +35,9 @@
 class VulkanSwapChain;
 class vulkanFrameWork {
 private:
+    vulkanFrameWork();
     std::string getWindowTitle() const; //窗口标题
-    uint32_t destWidth{};//宽度
-    uint32_t destHeight{};//高度
-    bool resizing = false;//是否能调整大小
-    void nextFrame();
+    // void nextFrame();
     void createPipelineCache();
     void createCommandPool();
     void createSynchronizationPrimitives(); //创建一些同步图元的对象
@@ -46,12 +45,17 @@ private:
     void createSwapChain();
     void createCommandBuffers();
     void destroyCommandBuffers();
+
+    void RecreateAllWindowFrameBuffers(); //重建所有大小和窗口一样大的帧缓冲以便显示
+
     std::string shaderDir = "glsl";
     std::shared_ptr<FrameWork::InputManager> inputManager;
     std::shared_ptr<FrameWork::Resource> resourceManager;
 
     //动态的描述符池
     FrameWork::VulkanDescriptorPool vulkanDescriptorPool;
+
+
 
 protected:
     //得到一个绝对路径
@@ -85,8 +89,6 @@ protected:
     VkPipelineStageFlags submitPipelineStages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSubmitInfo submitInfo{};
     std::vector<VkCommandBuffer> drawCmdBuffers;
-    VkRenderPass renderPass{ VK_NULL_HANDLE };
-    std::vector<VkFramebuffer>frameBuffers;
     uint32_t imageIndex{0};
     VkDescriptorPool descriptorPool{ VK_NULL_HANDLE };
     std::vector<VkShaderModule> shaderModules;
@@ -96,6 +98,8 @@ protected:
     uint32_t presentFrameBufferIndex{0};
     uint32_t presentPipelineIndex{0};
     uint32_t presentMaterialIndex{0};
+    uint32_t presentColorAttachmentIndex{0};
+    FrameWork::MaterialCreateInfo presentMaterialCreateInfo{}; //用来记录重建信息
 
     //同步信号量
     struct Semaphores {
@@ -120,6 +124,13 @@ protected:
     std::vector<FrameWork::VulkanPipelineInfo*> vulkanPipelineInfos;
     std::unordered_map<std::string, VkRenderPass> renderPasses;//记录renderpass
     std::vector<FrameWork::Material*> materials;
+    std::vector<FrameWork::Model*> models;
+
+    std::string title = "Vulkan FrameWork";
+    std::string name = "VulkanFrameWork";
+
+    FrameWork::Camera camera;
+
 
 public:
     uint32_t currentFrame = 0;
@@ -155,10 +166,7 @@ public:
 
     bool paused = false;
 
-    FrameWork::Camera camera;
 
-    std::string title = "Vulkan FrameWork";
-    std::string name = "VulkanFrameWork";
     uint32_t apiVersion = VK_API_VERSION_1_3;
 
     //默认的renderpass使用的深度模板附件
@@ -173,7 +181,6 @@ public:
 
 
 
-    vulkanFrameWork(){};
     virtual ~vulkanFrameWork();
     //设置Vulkan的实例，设置准许的扩展和链接可用的物理设备
     bool initVulkan();
@@ -183,10 +190,6 @@ public:
     //设置Vulkan的基础框架
     virtual VkResult createInstance();
     virtual void render();
-
-    virtual void windowResized();
-
-    virtual void buildCommandBuffers();
 
     virtual void setupDepthStencil();
 
@@ -205,7 +208,7 @@ public:
 
     void windowResize();
 
-    void renderLoop();
+    // void renderLoop();
 
     void prepareFrame();
     void submitFrame();
@@ -216,7 +219,7 @@ public:
     void CreateTexture(uint32_t& textureId, FrameWork::TextureFullData& textureData);
     void CreateImageView(FrameWork::VulkanImage& image, VkImageView& imageView, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
     void CreateAttachment(uint32_t& attachmentId, uint32_t width, uint32_t height, AttachmentType attachmentType, VkSampleCountFlagBits numSample, bool isSampled); //最后一个参数的含义是是否会作为纹理被着色器采样
-    void CreateFrameBuffer(uint32_t& frameBufferId, std::vector<uint32_t>& attachments, VkRenderPass renderPass);
+    void CreateFrameBuffer(uint32_t& frameBufferId, std::vector<uint32_t>& attachments, uint32_t width, uint32_t height, VkRenderPass renderPass);
     void CreatePresentFrameBuffer(uint32_t& frameBufferId, uint32_t attachment, VkRenderPass renderPass);
     void RegisterRenderPass(VkRenderPass renderPass, const std::string& name);
     void UnRegisterRenderPass(const std::string& name);
@@ -241,6 +244,7 @@ public:
     //初始化呈现
     void InitPresent(const std::string& presentShaderName, uint32_t colorAttachmentID);
     void PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void RecreatePresent(); //主要是为了重建那个descriptorSet
     //描述符
     VkDescriptorSetLayout CreateDescriptorSetLayout(
         VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags
@@ -249,17 +253,26 @@ public:
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer>& uniformBuffer, const std::vector<void*>& data, const std::vector<uint32_t>& sizes, uint32_t offset);
     VkSampler CreateSampler(uint32_t mipmapLevels);
     void SetUpStaticMesh(unsigned int& meshID, std::vector<FrameWork::Vertex>& vertices, std::vector<uint32_t>& indices, bool skinned);
+    void LoadModel(uint32_t& modelID, const std::string& fileName, FrameWork::MaterialCreateInfo materialInfo);
+    void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
 
     //参数变量向外接口
+    static vulkanFrameWork& GetInstance(); //单例接口
     uint32_t GetFrameWidth() const;
     uint32_t GetFrameHeight() const;
     uint32_t GetCurrentFrame() const;
     VkRenderPass GetRenderPass(const std::string& name) const;
     double GetFrameTime() const;
+    FrameWork::VulkanDevice* GetVulkanDevice() const;
+    FrameWork::Camera GetCamera() const;
+    void SetTitle(const std::string& title);
+    VkCommandBuffer GetCurrentCommandBuffer() const;
+    uint32_t GetCurrentImageIndex() const;
+
 
     //更新
-    void Update();
+    void Update(); //向外抛出渲染器中需要每帧更新的对象——相机
 
     // 封装对象的池
     template<class T>
@@ -284,6 +297,9 @@ public:
         }
         else if constexpr (std::is_same_v<T, FrameWork::Material>) {
             return reinterpret_cast<std::vector<T*>&>(materials);
+        }
+        else if constexpr (std::is_same_v<T, FrameWork::Model>) {
+            return reinterpret_cast<std::vector<T*>&>(models);
         }
         else {
             std::cerr << "Unknown type in getNextIndex!" << std::endl;
@@ -401,10 +417,36 @@ public:
             // vkFreeDescriptorSets(device, vulkanDescriptorPool.GetDescriptorPool(), material->descriptorSets.size(),
             //     material->descriptorSets.data());
             //不释放，而是使用的时候进行重写对应的DescriptorSet
+        }else if (std::is_same_v<T, FrameWork::Model>) {
+            auto model = models[index];
+            model->inUse = false;
+            for (auto& ma : model->materials) {
+                destroyByIndex<FrameWork::Material>(ma);
+            }
+            for (auto& mesh : model->meshes) {
+                destroyByIndex<FrameWork::Mesh>(mesh);
+            }
         }
     }
 
 };
+
+//代替繁琐调用
+#define vulkanRenderAPI vulkanFrameWork::GetInstance()
+
+#define WINDOW_LOOP(f)          \
+{                   \
+while (!glfwWindowShouldClose(FrameWork::VulkanWindow::GetInstance().GetWindow())) {            \
+f           \
+if (FrameWork::Locator::GetService<FrameWork::InputManager>()->GetKey(Key_Escape)) { \
+glfwSetWindowShouldClose(FrameWork::VulkanWindow::GetInstance().GetWindow(), GLFW_TRUE);     \
+}                                                   \
+if (vulkanFrameWork::GetInstance().GetVulkanDevice()->logicalDevice != VK_NULL_HANDLE) {                     \
+vkDeviceWaitIdle(vulkanFrameWork::GetInstance().GetVulkanDevice()->logicalDevice); \
+}               \
+}           \
+}
+
 
 
 
