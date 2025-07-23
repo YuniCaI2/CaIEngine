@@ -77,20 +77,6 @@ void vulkanFrameWork::createPipelineCache() {
     VK_CHECK_RESULT(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache));
 }
 
-void vulkanFrameWork::RecreatePresent() {
-    uint32_t colorAttachmentID = presentColorAttachmentIndex;
-    auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
-    std::vector<FrameWork::TextureFullData> textureDatas(colorAttachment->attachmentsArray.size());
-    for (int i = 0; i < colorAttachment->attachmentsArray.size(); i++) {
-        textureDatas[i].textureID = colorAttachment->attachmentsArray[i];
-        //将纹理信息进行传递
-    }
-    CreateMaterial(presentMaterialIndex, presentMaterialCreateInfo);
-    textureDatas.clear();
-
-}
-
-
 //信号量在initVulkan中已经进行了设置
 void vulkanFrameWork::createSynchronizationPrimitives() {
     VkFenceCreateInfo fenceCreateInfo = {};
@@ -1124,7 +1110,6 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     //管线创建------------------------------------------------------------------------------------------------------------
 
     auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
-    presentColorAttachmentIndex = colorAttachmentID;
     std::vector<FrameWork::TextureFullData> textureDatas(colorAttachment->attachmentsArray.size());
     for (int i = 0; i < colorAttachment->attachmentsArray.size(); i++) {
         textureDatas[i].textureID = colorAttachment->attachmentsArray[i];
@@ -1662,16 +1647,18 @@ VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &f
 void vulkanFrameWork::windowResize() {
     int _width = 0, _height = 0;
     glfwGetFramebufferSize(window, &_width, &_height);
+    windowWidth = _width;
+    windowHeight = _height;
     while (windowWidth == 0 || windowHeight == 0) {
         glfwGetFramebufferSize(window, &_width, &_height);
+        windowWidth = _width;
+        windowHeight = _height;
         glfwWaitEvents();
     }
     //传递变换后的窗口尺寸
 
     vkDeviceWaitIdle(device);
 
-    windowWidth = _width;
-    windowHeight = _height;
 
     //重建交换链
     createSwapChain();
@@ -1679,17 +1666,20 @@ void vulkanFrameWork::windowResize() {
     // Recreate the frame buffers
     //删除附件、重建附件
     //删除帧缓冲、重建帧缓冲
+    //--------------------------对呈现的descriptorSet重建--------------------------------------
+    destroyByIndex<FrameWork::Material>(presentMaterialIndex);
+    //--------------------------对呈现的descriptorSet重建--------------------------------------
+
     RecreateAllWindowFrameBuffers();
 
-    // Command buffers need to be recreated as they may store
-    // references to the recreated frame buffer
-
-    // SRS - Recreate fences in case number of swapchain images has changed on resize
-    // for (auto& fence : waitFences) {
-    //     vkDestroyFence(device, fence, nullptr);
-    // }
-    // createSynchronizationPrimitives();
-    //我的Fence的数量好像和交换链无关，这里先注释掉
+    //--------------------------对呈现的descriptorSet重建--------------------------------------
+    CreateMaterial(presentMaterialIndex, presentMaterialCreateInfo);
+    //--------------------------对呈现的descriptorSet重建--------------------------------------
+    /*这里这样做的原因是因为这里的我是把descriptorSet封装到我的Material中，所以在显示的时候我并未单独的设计slot单独使用，
+     *而是拿封装好的Material来作为一个DescriptorSet Slot
+     * 所以Destroy一个Material 会吧Texture的所有内容删除——vulkanImage 和 vulkanImageView 等等
+     * 所以先删除再创建，防止重新创建好的附件的imageView被删除了
+     */
 
     vkDeviceWaitIdle(device);
 

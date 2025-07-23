@@ -98,7 +98,6 @@ protected:
     uint32_t presentFrameBufferIndex{0};
     uint32_t presentPipelineIndex{0};
     uint32_t presentMaterialIndex{0};
-    uint32_t presentColorAttachmentIndex{0};
     FrameWork::MaterialCreateInfo presentMaterialCreateInfo{}; //用来记录重建信息
 
     //同步信号量
@@ -244,7 +243,7 @@ public:
     //初始化呈现
     void InitPresent(const std::string& presentShaderName, uint32_t colorAttachmentID);
     void PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    void RecreatePresent(); //主要是为了重建那个descriptorSet
+
     //描述符
     VkDescriptorSetLayout CreateDescriptorSetLayout(
         VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags
