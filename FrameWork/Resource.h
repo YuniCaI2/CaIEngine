@@ -17,6 +17,8 @@ namespace FrameWork {
     //这个类的作用是将外部的资源加载或者转为程序可用的资源
     class Resource {
     private:
+        Resource();
+
         std::string resourcePath{"../resources/"};
         std::string generalShaderPath{"../resources/shaders/glsl/"};
         std::string generalModelPath{"../resources/models/"};
@@ -27,13 +29,13 @@ namespace FrameWork {
         FrameWork::MeshData processMesh(aiMesh *mesh, const aiScene *scene, std::string);
     public:
 
-        Resource();
         VkShaderModule getShaderModulFromFile(VkDevice device,const std::string& fileName, VkShaderStageFlags stage) const;
         std::vector<MeshData> LoadOBJMesh(const std::string& fileName);
         std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, aiTextureType type, std::string directory);
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureType type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
 
+        static Resource& GetInstance();
     };
 }
 

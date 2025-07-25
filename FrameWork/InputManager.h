@@ -55,10 +55,8 @@ namespace FrameWork {
         static void CursorPosCallbackInternal(GLFWwindow* window, double xpos, double ypos);
         static void ScrollCallbackInternal(GLFWwindow* window, double xoffset, double yoffset);
 
-
-
+        InputManager();
     public:
-        InputManager(GLFWwindow *window); //设置窗口输入回调
 
         //因为GLFW的特殊性质，这里要对其进行包装
         using KeyCallback = VulkanTool::KeyCallback;
@@ -93,6 +91,8 @@ namespace FrameWork {
         void addMouseButtonCallback(MouseButtonCallback&& callback);
         void addCursorPosCallback(CursorPosCallback&& callback);
         void addScrollCallback(ScrollCallback&& callback);
+
+        static InputManager& GetInstance();
 
         //更新函数，需要写在渲染循环中
         void update();

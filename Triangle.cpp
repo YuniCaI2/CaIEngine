@@ -2,6 +2,8 @@
 // Created by AI Assistant on 25-5-26.
 //
 #include <vulkanFrameWork.h>
+
+#include "Timer.h"
 #include "VulkanWindow.h"
 #define _VALIDATION 1
 
@@ -24,29 +26,14 @@ private:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
     UniformBufferObject ubo{};
-    // std::vector<FrameWork::Vertex> vertices = {
-    //     {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
-    //     {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
-    //     {{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-    //     {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}},
-    //
-    //     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
-    //     {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}},
-    //     {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    //     {{-0.5f,  0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}}
-    // };
-    // std::vector<uint32_t> indices = {
-    //     0, 1, 2,   2, 3, 0,
-    //     4, 6, 5,   6, 4, 7,
-    //     4, 0, 3,   3, 7, 4,
-    //     1, 5, 6,   6, 2, 1,
-    //     3, 2, 6,   6, 7, 3,
-    //     4, 5, 1,   1, 0, 4
-    // };
+
+    FrameWork::Camera camera{};
+    FrameWork::Timer timer;
+
 public:
     TriangleRenderer() {
         vulkanRenderAPI.SetTitle("Triangle Renderer");
-        vulkanRenderAPI.GetCamera().Position = glm::vec3(0.0f, 0.0f, 3.0f);
+        camera.Position = glm::vec3(0.0f, 0.0f, 3.0f);
     }
     ~TriangleRenderer() {
         // 清理资源
@@ -96,8 +83,8 @@ public:
     }
     void updateUniformBuffer() {
         ubo.model = glm::mat4(1.0f);
-        ubo.view = vulkanRenderAPI.GetCamera().GetViewMatrix();
-        ubo.projection = glm::perspective(glm::radians(vulkanRenderAPI.GetCamera().Zoom), (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight, 0.1f, 100.0f);
+        ubo.view = camera.GetViewMatrix();
+        ubo.projection = glm::perspective(glm::radians(camera.Zoom), (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight, 0.1f, 100.0f);
         ubo.projection[1][1] *= -1;
         for (auto& m : (vulkanRenderAPI.getByIndex<FrameWork::Model>(modelID)->materials)) {
             auto material = vulkanRenderAPI.getByIndex<FrameWork::Material>(m);
@@ -114,18 +101,7 @@ public:
                 1, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     }
-    void createDescriptorSet() {
-        ubo.model = glm::mat4(1.0f);
-        ubo.view = vulkanRenderAPI.GetCamera().GetViewMatrix();
-        ubo.projection = glm::perspective(glm::radians(vulkanRenderAPI.GetCamera().Zoom), (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight, 0.1f, 100.0f);
-        FrameWork::MaterialCreateInfo materialInfo = {
-            .UniformDescriptorLayouts = {dynamicDescriptorSetLayout}, //设置uniform
-            .TexturesDescriptorLayouts = {},
-            .UniformData = {{&ubo, sizeof(UniformBufferObject)}},
-            .TexturesDatas = {}
-        };
-        vulkanRenderAPI.CreateMaterial(materialID, materialInfo);
-    }
+
     void createGraphicsPipeline() {
         VkVertexInputBindingDescription bindingDescription = FrameWork::Vertex::getBindingDescription();
         auto attributeDescriptions = FrameWork::Vertex::getAttributeDescription();
@@ -180,8 +156,8 @@ public:
         VkRenderPass renderPass = vulkanRenderAPI.GetRenderPass("forward");
         createGraphicsPipeline();
         ubo.model = glm::mat4(1.0f);
-        ubo.view = vulkanRenderAPI.GetCamera().GetViewMatrix();
-        ubo.projection = glm::perspective(glm::radians(vulkanRenderAPI.GetCamera().Zoom), (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight, 0.1f, 100.0f);
+        ubo.view = camera.GetViewMatrix();
+        ubo.projection = glm::perspective(glm::radians(camera.Zoom), (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight, 0.1f, 100.0f);
         FrameWork::MaterialCreateInfo materialInfo = {
             .UniformDescriptorLayouts = {dynamicDescriptorSetLayout},
             .TexturesDescriptorLayouts = {textureDescriptorSetLayout},
@@ -200,21 +176,25 @@ public:
         vulkanRenderAPI.InitPresent("uniformPresent", colorAttachIdx);
     }
     void render() {
+        camera.update(timer.GetElapsedSeconds());
         updateUniformBuffer();
-        vulkanRenderAPI.prepareFrame();
+        vulkanRenderAPI.prepareFrame(timer.GetElapsedMilliTime());
         buildCommandBuffers();
         vulkanRenderAPI.submitFrame();
+        timer.Restart();
     }
+
+
 };
 
 int main() {
-    FrameWork::Locator::RegisterService<FrameWork::InputManager>(std::make_shared<FrameWork::InputManager>(FrameWork::VulkanWindow::GetInstance().GetWindow()));
-    FrameWork::Locator::RegisterService<FrameWork::Resource>(std::make_shared<FrameWork::Resource>());
     TriangleRenderer app;
     vulkanRenderAPI.initVulkan();
     app.prepare();
+    auto& inputManager = FrameWork::InputManager::GetInstance();
     WINDOW_LOOP(
-        vulkanRenderAPI.Update();
-        app.render();)
+        inputManager.update();
+        app.render();
+            )
     return 0;
 }

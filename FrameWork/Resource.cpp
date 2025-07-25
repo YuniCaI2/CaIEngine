@@ -203,3 +203,8 @@ void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureF
         }
     }
 }
+
+FrameWork::Resource& FrameWork::Resource::GetInstance() {
+    static Resource instance;
+    return instance;
+}

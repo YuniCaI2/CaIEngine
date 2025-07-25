@@ -39,7 +39,6 @@ private:
     std::string getWindowTitle() const; //窗口标题
     // void nextFrame();
     void createPipelineCache();
-    void createCommandPool();
     void createSynchronizationPrimitives(); //创建一些同步图元的对象
     void createSurface();
     void createSwapChain();
@@ -49,8 +48,10 @@ private:
     void RecreateAllWindowFrameBuffers(); //重建所有大小和窗口一样大的帧缓冲以便显示
 
     std::string shaderDir = "glsl";
-    std::shared_ptr<FrameWork::InputManager> inputManager;
-    std::shared_ptr<FrameWork::Resource> resourceManager;
+
+    //外部服务注册
+    FrameWork::InputManager& inputManager = FrameWork::InputManager::GetInstance();
+    FrameWork::Resource& resourceManager = FrameWork::Resource::GetInstance();
 
     //动态的描述符池
     FrameWork::VulkanDescriptorPool vulkanDescriptorPool;
@@ -65,7 +66,7 @@ protected:
     //Frame counter to display fps
     uint32_t frameCounter = 0;
     uint32_t lastFPS = 0;
-    std::chrono::time_point<std::chrono::high_resolution_clock> lastTimestamp, tPrevEnd;
+    double frameCountTimeStamp, tPrevEnd;
     // Vulkan instance, store all pre-application states
     VkInstance instance{VK_NULL_HANDLE};
     std::vector<std::string> supportedInstanceExtensions;
@@ -128,7 +129,7 @@ protected:
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
 
-    FrameWork::Camera camera;
+    const FrameWork::Camera* currentCamera;
 
 
 public:
@@ -162,9 +163,6 @@ public:
     float timer = 0.0f;//无关帧率的计时器作用于动画
 
     float timerSpeed = 0.25f; //控制速率
-
-    bool paused = false;
-
 
     uint32_t apiVersion = VK_API_VERSION_1_3;
 
@@ -209,7 +207,7 @@ public:
 
     // void renderLoop();
 
-    void prepareFrame();
+    void prepareFrame(double deltaMilliTime);
     void submitFrame();
     void finishRender();
 
@@ -262,16 +260,12 @@ public:
     uint32_t GetFrameHeight() const;
     uint32_t GetCurrentFrame() const;
     VkRenderPass GetRenderPass(const std::string& name) const;
-    double GetFrameTime() const;
     FrameWork::VulkanDevice* GetVulkanDevice() const;
-    FrameWork::Camera GetCamera() const;
     void SetTitle(const std::string& title);
     VkCommandBuffer GetCurrentCommandBuffer() const;
     uint32_t GetCurrentImageIndex() const;
 
-
-    //更新
-    void Update(); //向外抛出渲染器中需要每帧更新的对象——相机
+    void SetCurrentCamera(const FrameWork::Camera* camera);
 
     // 封装对象的池
     template<class T>
@@ -437,7 +431,7 @@ public:
 {                   \
 while (!glfwWindowShouldClose(FrameWork::VulkanWindow::GetInstance().GetWindow())) {            \
 f           \
-if (FrameWork::Locator::GetService<FrameWork::InputManager>()->GetKey(Key_Escape)) { \
+if (FrameWork::InputManager::GetInstance().GetKey(Key_Escape)) { \
 glfwSetWindowShouldClose(FrameWork::VulkanWindow::GetInstance().GetWindow(), GLFW_TRUE);     \
 }                                                   \
 if (vulkanFrameWork::GetInstance().GetVulkanDevice()->logicalDevice != VK_NULL_HANDLE) {                     \

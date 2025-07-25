@@ -33,48 +33,14 @@ std::string vulkanFrameWork::getWindowTitle() const {
     return windowTitle;
 }
 
-
-//主要为渲染场景，其中render的内容需要自己写
-// void vulkanFrameWork::nextFrame() {
-//
-//     frameCounter++;
-//     auto tEnd = std::chrono::high_resolution_clock::now();
-//     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
-//     frameTimer = static_cast<double>(tDiff) / 1000.0f;
-//     //测试
-//
-//     inputManager->update();
-//     camera.update(frameTimer);
-//
-//     render(); //渲染
-//     // Convert to clamped timer value
-//     if (!paused)
-//     {
-//         timer += timerSpeed * frameTimer;
-//         if (timer > 1.0)
-//         {
-//             timer -= 1.0f;
-//         }
-//     }
-//     // 计时，一秒钟，更新一次
-//     float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - lastTimestamp).count());
-//     if (fpsTimer > 1000.0f) {
-//         lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / fpsTimer));
-//
-//         if (!settings.overlay) {
-//             glfwSetWindowTitle(window, getWindowTitle().c_str());
-//         }
-//         frameCounter = 0;
-//         lastTimestamp = tEnd;
-//     }
-//     tPrevEnd = tEnd;
-// }
-//
-
 void vulkanFrameWork::createPipelineCache() {
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
     pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
     VK_CHECK_RESULT(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache));
+}
+
+void vulkanFrameWork::SetCurrentCamera(const FrameWork::Camera* camera) {
+    currentCamera = camera;
 }
 
 //信号量在initVulkan中已经进行了设置
@@ -136,10 +102,6 @@ void vulkanFrameWork::RecreateAllWindowFrameBuffers() {
     }
 }
 
-void vulkanFrameWork::Update() {
-    inputManager->update();
-    camera.update(GetFrameTime());
-}
 
 std::string vulkanFrameWork::getShaderPath() const {
     return VulkanTool::getShaderBasePath() + shaderDir + "/";
@@ -250,9 +212,6 @@ bool vulkanFrameWork::initVulkan() {
     //设置验证层
     this->settings.validation = true;
 
-    //获得外部服务
-    inputManager = FrameWork::Locator::GetService<FrameWork::InputManager>();
-    resourceManager = FrameWork::Locator::GetService<FrameWork::Resource>();
 
     //设置实例
     VkResult result = createInstance();
@@ -370,8 +329,7 @@ bool vulkanFrameWork::initVulkan() {
     setWindow();
     prepare();
 
-    lastTimestamp = std::chrono::high_resolution_clock::now();
-    tPrevEnd = lastTimestamp;
+    frameCountTimeStamp = 0;
     return true;
 }
 
@@ -1376,7 +1334,7 @@ void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, 
     modelID = getNextIndex<FrameWork::Model>();
     auto model = getByIndex<FrameWork::Model>(modelID);
     FrameWork::ModelData modelData = {};
-    modelData.meshDatas = resourceManager->LoadOBJMesh(fileName);
+    modelData.meshDatas = resourceManager.LoadOBJMesh(fileName);
     model->materials.resize(modelData.meshDatas.size());
     model->meshes.resize(modelData.meshDatas.size());
     for (int i = 0; i < modelData.meshDatas.size(); i++) {
@@ -1440,16 +1398,9 @@ VkRenderPass vulkanFrameWork::GetRenderPass(const std::string &name) const {
     }
 }
 
-double vulkanFrameWork::GetFrameTime() const {
-    return frameTimer;
-}
 
 FrameWork::VulkanDevice* vulkanFrameWork::GetVulkanDevice() const {
     return vulkanDevice;
-}
-
-FrameWork::Camera vulkanFrameWork::GetCamera() const {
-    return camera;
 }
 
 void vulkanFrameWork::SetTitle(const std::string &title) {
@@ -1638,7 +1589,7 @@ VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &f
     shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStageInfo.stage = stage;
     shaderStageInfo.pName = "main";
-    shaderStageInfo.module = resourceManager->getShaderModulFromFile(device, fileName, stage);
+    shaderStageInfo.module = resourceManager.getShaderModulFromFile(device, fileName, stage);
     assert(shaderStageInfo.module != VK_NULL_HANDLE);
     shaderModules.emplace_back(shaderStageInfo.module);
     return shaderStageInfo;
@@ -1686,36 +1637,23 @@ void vulkanFrameWork::windowResize() {
 }
 
 
-void vulkanFrameWork::prepareFrame() {
+void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
     vkWaitForFences(device, 1, &waitFences[currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &waitFences[currentFrame]);
 
     frameCounter++;
-    auto tEnd = std::chrono::high_resolution_clock::now();
-    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tPrevEnd).count();
-    frameTimer = static_cast<double>(tDiff) / 1000.0f;
-    //     // Convert to clamped timer value
-    if (!paused)
-    {
-        timer += timerSpeed * frameTimer;
-        if (timer > 1.0)
-        {
-            timer -= 1.0f;
-        }
-    }
+    frameTimer = deltaMilliTime /1000.0f;
+
     //     // 计时，一秒钟，更新一次
-    float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - lastTimestamp).count());
-    if (fpsTimer > 1000.0f) {
-        lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / fpsTimer));
+    frameCountTimeStamp += deltaMilliTime;
+    if (frameCountTimeStamp > 1000.0f) {
+        lastFPS = static_cast<uint32_t>(static_cast<float>(frameCounter) * (1000.0f / frameCountTimeStamp));
 
-        if (!settings.overlay) {
-            glfwSetWindowTitle(window, getWindowTitle().c_str());
-        }
+        glfwSetWindowTitle(window, getWindowTitle().c_str());
+
         frameCounter = 0;
-        lastTimestamp = tEnd;
+        frameCountTimeStamp = 0;
     }
-    tPrevEnd = tEnd;
-
     VkResult result = swapChain.acquireNextImage(semaphores.presentComplete[currentFrame], imageIndex);
     // 如果交换链与表面不再兼容（OUT_OF_DATE），则重新创建交换链
     // SRS - 如果不再是最优状态（VK_SUBOPTIMAL_KHR），等到 submitFrame() 中再处理，

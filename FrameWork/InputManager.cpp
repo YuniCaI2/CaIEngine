@@ -3,6 +3,7 @@
 //
 
 #include "InputManager.h"
+#include "VulkanWindow.h"
 
 
 void FrameWork::InputManager::KeyCallbackInternal(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -33,8 +34,8 @@ void FrameWork::InputManager::ScrollCallbackInternal(GLFWwindow *window, double 
     }
 }
 
-FrameWork::InputManager::InputManager(GLFWwindow *window) {
-    this->window = window;
+FrameWork::InputManager::InputManager() {
+    this->window = FrameWork::VulkanWindow::GetInstance().GetWindow();
 
     //设置窗口的回调
     glfwSetWindowUserPointer(window, this);
@@ -231,4 +232,9 @@ void FrameWork::InputManager::addCursorPosCallback(CursorPosCallback&& callback)
 void FrameWork::InputManager::addScrollCallback(ScrollCallback&& callback) {
     if (callback != nullptr)
         userScrollCallbacks.push_back(callback);
+}
+
+FrameWork::InputManager& FrameWork::InputManager::GetInstance() {
+    static InputManager instance;
+    return instance;
 }

@@ -28,7 +28,7 @@ FrameWork::VulkanWindow::VulkanWindow() {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     //这边是为了禁用鼠标显示
     glfwSetWindowUserPointer(window, this);
     //还有尺寸调整的回调

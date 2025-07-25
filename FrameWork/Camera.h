@@ -5,7 +5,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "InputManager.h"
-#include "Locator.h"
 
 // 定义摄像机移动的几种可能选项。用作抽象层以避免依赖特定窗口系统的输入方法
 enum Camera_Movement {
@@ -27,6 +26,7 @@ const float ZOOM        =  65.0f;   // 视场角度（FOV）
 namespace FrameWork {
     class Camera
     {
+        FrameWork::InputManager& inputManager = InputManager::GetInstance();
     public:
         // 摄像机属性
         glm::vec3 Position;     // 摄像机位置
@@ -61,7 +61,7 @@ namespace FrameWork {
 
             //注册回调
 
-            Locator::GetService<InputManager>()->addCursorPosCallback(
+            inputManager.addCursorPosCallback(
             [this](double xpos, double ypos) {
                 //设置相机的指针回调
                 float xPos = static_cast<float>(xpos);
@@ -151,16 +151,16 @@ namespace FrameWork {
     private:
         //将键盘的输入封装在相机中
         void processInput(double deltaTime) {
-            if (Locator::GetService<InputManager>()->GetKey(Key_W) == GLFW_PRESS) {
+            if (inputManager.GetKey(Key_W) == GLFW_PRESS) {
                 ProcessKeyboard(FORWARD, deltaTime);
             }
-            if (Locator::GetService<InputManager>()->GetKey(Key_S) == GLFW_PRESS) {
+            if (inputManager.GetKey(Key_S) == GLFW_PRESS) {
                 ProcessKeyboard(BACKWARD, deltaTime);
             }
-            if (Locator::GetService<InputManager>()->GetKey(Key_A) == GLFW_PRESS) {
+            if (inputManager.GetKey(Key_A) == GLFW_PRESS) {
                 ProcessKeyboard(LEFT, deltaTime);
             }
-            if (Locator::GetService<InputManager>()->GetKey(Key_D) == GLFW_PRESS) {
+            if (inputManager.GetKey(Key_D) == GLFW_PRESS) {
                 ProcessKeyboard(RIGHT, deltaTime);
             }
         }
