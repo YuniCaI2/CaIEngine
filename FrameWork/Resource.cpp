@@ -14,18 +14,18 @@
 #include <stb_image.h>
 
 
-void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, std::string directory) {
+void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, std::string directory, TextureTypeFlags textureFlags) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(processMesh(mesh, scene, directory));
+        meshes.push_back(processMesh(mesh, scene, directory, textureFlags));
     }
     //接下来重复子节点
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene, meshes, directory);
+        processNode(node->mChildren[i], scene, meshes, directory, textureFlags);
     }
 }
 
-FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, const aiScene *scene, std::string directory) {
+FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, const aiScene *scene, std::string directory, TextureTypeFlags textureFlags) {
     MeshData meshData;
 
     //Vertex
@@ -68,10 +68,79 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, const aiScene
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
     //这里先只加载漫反射贴图--因为我手头的模型除了PBR就是漫反射贴图
-    auto diffuseMap = LoadTextureFullDatas(material, aiTextureType_DIFFUSE, directory);
-    meshData.texData.insert(meshData.texData.end(), diffuseMap.begin(), diffuseMap.end());
+    if ((textureFlags & DiffuseColor) == DiffuseColor) {
+        auto textureMap = LoadTextureFullDatas(material, aiTextureType_DIFFUSE, directory);
+        meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
+    }
+    if ((textureFlags & Normal) == Normal) {
+        auto textureMap = LoadTextureFullDatas(material, aiTextureType_NORMALS, directory);
+        meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
+    }
+    if ((textureFlags & MetallicRoughness) == MetallicRoughness) {
+        auto textureMap = LoadTextureFullDatas(material, aiTextureType_METALNESS, directory);
+        if (meshData.texData.empty()) {
+            textureMap = LoadTextureFullDatas(material, aiTextureType_DIFFUSE_ROUGHNESS, directory);
+            if (meshData.texData.empty()) {
+                textureMap = LoadTextureFullDatas(material, aiTextureType_UNKNOWN, directory);
+            }
+        }
+        meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
+    }
+    if ((textureFlags & Emissive) == Emissive) {
+        auto textureMap = LoadTextureFullDatas(material, aiTextureType_EMISSIVE, directory);
+        meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
+    }
+    if ((textureFlags & Occlusion) == Occlusion) {
+        auto textureMap = LoadTextureFullDatas(material, aiTextureType_AMBIENT_OCCLUSION, directory);
+        meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
+    }
 
     return meshData;
+}
+
+FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureTypeFlagBits type) {
+    int width = 100, height = 100, numChannels = 4;
+    uint32_t desireChannels = 4;
+    TextureFullData texData;
+    texData.width = width;
+    texData.height = height;
+    texData.numChannels = desireChannels;
+    texData.path = "None";
+    texData.type = type;
+    unsigned char* pixels = new unsigned char[width * height * numChannels];
+    if (type == TextureTypeFlagBits::DiffuseColor) {
+        for (uint32_t i = 0; i < width * height * numChannels; i++) {
+            pixels[i] = 255;//全部置为1
+        }
+    }
+    if (type == TextureTypeFlagBits::MetallicRoughness) {
+        for (uint32_t i = 0; i < width * height; i++) {
+            pixels[i * numChannels + 0] = 0;
+            pixels[i * numChannels + 1] = 0.5 * 255;
+            pixels[i * numChannels + 2] = 0;
+            pixels[i * numChannels + 3] = 1 * 255;
+        }
+    }
+    if (type == TextureTypeFlagBits::Emissive) {
+        for (uint32_t i = 0; i < width * height * numChannels; i++) {
+            pixels[i * numChannels] = 0;
+        }
+    }
+    if (type == TextureTypeFlagBits::Occlusion) {
+        for (uint32_t i = 0; i < width * height * numChannels; i++) {
+            pixels[i] = 255;
+        }
+    }
+    if (type == TextureTypeFlagBits::Normal) {
+        for (uint32_t i = 0; i < width * height; i++) {
+            pixels[i * 4] = 255 * 0.5;
+            pixels[i * 4 + 1] = 255 * 0.5;
+            pixels[i * 4 + 2] = 255;
+            pixels[i * 4 + 3] = 255;
+        }
+    }
+    texData.data = pixels;
+    return texData;
 }
 
 FrameWork::Resource::Resource() {
@@ -105,23 +174,19 @@ VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, cons
 }
 
 //这里默认这里的Obj不支持PBR贴图，等待后续扩展
-std::vector<FrameWork::MeshData> FrameWork::Resource::LoadOBJMesh(const std::string &fileName) {
+std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType, TextureTypeFlags textureFlags) {
     Assimp::Importer importer;
-    //使用惰性求值,处理fileName可能的两种输入情况
     std::vector<std::string_view> fsplits;
-    for (const auto& range : std::views::split(fileName, '.')) {
-        fsplits.emplace_back(range);
-    }
     std::string path;
     std::string directory;
-    for (const auto& range : fsplits) {
-        if (range == ".obj") {
-            path = generalModelPath + fileName.substr(0,fileName.size() - 4) + "/" + fileName;
-            directory = generalModelPath + fileName.substr(0,fileName.size() - 4) + "/";
-        }
-    }
-    if (path.empty()) {
+    if (modelType == ModelType::OBJ) {
         path = generalModelPath + fileName + "/" + fileName + ".obj";
+        directory = generalModelPath + fileName + "/";
+    } else if (modelType == ModelType::FBX) {
+        path = generalModelPath + fileName + "/" + fileName + ".fbx";
+        directory = generalModelPath + fileName + "/";
+    } else if (modelType == ModelType::GLTF) {
+        path = generalModelPath + fileName + "/" + fileName + ".glTF";
         directory = generalModelPath + fileName + "/";
     }
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals |aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
@@ -129,49 +194,74 @@ std::vector<FrameWork::MeshData> FrameWork::Resource::LoadOBJMesh(const std::str
         throw std::runtime_error("Failed to load model from file " + fileName);
     }
     std::vector<MeshData> meshes;//返回值
-    processNode(scene->mRootNode, scene, meshes, directory);
+    processNode(scene->mRootNode, scene, meshes, directory, textureFlags);
     return meshes;
 }
 
 std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(aiMaterial *mat, aiTextureType type,
     std::string directory) {
     std::vector<TextureFullData> textures;
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
+    int n = 0;
+    n =  mat->GetTextureCount(type);
+    for (unsigned int i = 0; i < n; i++) {
         aiString str;
         mat->GetTexture(type, i, &str);
         TextureFullData texData;
         if (type == aiTextureType_DIFFUSE) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureType::DiffuseColor);
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::DiffuseColor);
         }
-        else if (type == aiTextureType_SPECULAR) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureType::SpecColor);
-        }else {
+        else if (type == aiTextureType_NORMALS) {
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Normal);
+        }
+        else if (type == aiTextureType_UNKNOWN) {
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
+        }
+        else if (type == aiTextureType_METALNESS) {
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
+        }
+        else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
+        }
+        else if (type == aiTextureType_EMISSIVE) {
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Emissive);
+        }
+        else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Occlusion);
+        }
+        else {
             std::cerr << "this type process has not complete !" << std::endl;
         }
         textures.push_back(texData);
     }
+    if (n <= 0) {
+        if (type == aiTextureType_DIFFUSE) {
+            textures.push_back(CreateDefaultTexture(DiffuseColor));
+        }
+        else if (type == aiTextureType_NORMALS) {
+            textures.push_back(CreateDefaultTexture(Normal));
+        }
+        else if (type == aiTextureType_UNKNOWN) {
+            textures.push_back(CreateDefaultTexture(MetallicRoughness));
+        }
+        else if (type == aiTextureType_EMISSIVE) {
+            textures.push_back(CreateDefaultTexture(Emissive));
+        }
+        else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+            textures.push_back(CreateDefaultTexture(Occlusion));
+        }
+        else {
+            std::cerr << "this type process has not complete !" << std::endl;
+        }
+    }
     return textures;
 }
 
-FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath, TextureType type) {
+FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath, TextureTypeFlagBits type) {
     if (textureMap.find(filePath) != textureMap.end()) {
         return textureMap[filePath];
     }
-    int width, height, numChannels;
-    uint32_t desireChannels = 0;
-    switch (type) {
-        case TextureType::DiffuseColor:
-            desireChannels = 4;
-            break;
-        case TextureType::SpecColor:
-            desireChannels = 4;
-            break;
-        case TextureType::Normal:
-            desireChannels = 4;
-            break;
-        default:
-            desireChannels = 0;
-    }
+    int width = 100, height = 100, numChannels;
+    uint32_t desireChannels = 4;
     unsigned char* data = stbi_load(filePath.c_str(), &width, &height, &numChannels, desireChannels);
     TextureFullData texData;
     texData.width = width;
@@ -183,6 +273,29 @@ FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::s
     if (!data) {
         std::cerr << "Failed to load texture from file " << filePath << std::endl;
         unsigned char* pixels = new unsigned char[width * height * numChannels];
+        if (type == TextureTypeFlagBits::DiffuseColor) {
+            for (uint32_t i = 0; i < width * height * numChannels; i++) {
+                pixels[i] = 1;//全部置为1
+            }
+        }
+        if (type == TextureTypeFlagBits::MetallicRoughness) {
+            for (uint32_t i = 0; i < width * height; i++) {
+                pixels[i * numChannels + 0] = 0;
+                pixels[i * numChannels + 1] = 0.5;
+                pixels[i * numChannels + 2] = 0;
+                pixels[i * numChannels + 3] = 1;
+            }
+        }
+        if (type == TextureTypeFlagBits::Emissive) {
+            for (uint32_t i = 0; i < width * height * numChannels; i++) {
+                pixels[i * numChannels + 0] = 0;
+            }
+        }
+        if (type == TextureTypeFlagBits::Occlusion) {
+            for (uint32_t i = 0; i < width * height * numChannels; i++) {
+                pixels[i * numChannels + 0] = 1;
+            }
+        }
         for (uint32_t i = 0; i < width * height * numChannels; i++) {
             pixels[i] = 1;//全部置为1
         }

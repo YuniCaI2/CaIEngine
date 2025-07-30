@@ -36,14 +36,6 @@ public:
         camera.Position = glm::vec3(0.0f, 0.0f, 3.0f);
     }
     ~TriangleRenderer() {
-        // 清理资源
-        if (vulkanRenderAPI.GetVulkanDevice()->logicalDevice) {
-            // vkDestroyPipeline(device, graphicsPipeline, nullptr);
-            // vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-
-            // vertexBuffer.destroy();
-            // indexBuffer.destroy();
-        }
     }
     void buildCommandBuffers() {
         VkCommandBufferBeginInfo cmdBufInfo = {};
@@ -147,7 +139,7 @@ public:
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         vulkanRenderAPI.SetPipelineMultiSampleState(pipelineInfoId, multisampling);
         vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
-        vulkanRenderAPI.CreateVulkanPipeline(pipelineID, "forwardPipeline", pipelineInfoId, "forward", 0, {dynamicDescriptorSetLayout, textureDescriptorSetLayout});
+        vulkanRenderAPI.CreateVulkanPipeline(pipelineID, "forwardPipeline", pipelineInfoId, "forward", 0, {dynamicDescriptorSetLayout, textureDescriptorSetLayout}, 2);
         graphicsPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipeline;
         pipelineLayout = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipelineLayout;
     }
@@ -165,7 +157,7 @@ public:
             .TexturesDatas = {}//留给LoadModel填写
         };
         //Material包含在模型中
-        vulkanRenderAPI.LoadModel(modelID, "cocona", materialInfo);
+        vulkanRenderAPI.LoadModel(modelID, "cocona", ModelType::OBJ,materialInfo, DiffuseColor | Normal);
 
         // createDescriptorSet();
         uint32_t colorAttachIdx = -1, depthAttachIdx = -1;

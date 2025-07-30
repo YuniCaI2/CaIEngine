@@ -73,7 +73,7 @@ namespace FrameWork {
 
     struct TextureFullData {
         std::optional<uint32_t> textureID; //兼容纹理创建
-        TextureType type;
+        TextureTypeFlagBits type;
         int width;
         int height;
         int numChannels;
@@ -119,7 +119,7 @@ namespace FrameWork {
         VkImageView imageView{VK_NULL_HANDLE};
         VkSampler sampler{VK_NULL_HANDLE}; //optional
 
-        TextureType textureType;//这个先没使用
+        TextureTypeFlagBits textureType;//这个先没使用
 
         bool inUse = false;
     };

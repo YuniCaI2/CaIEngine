@@ -27,7 +27,6 @@
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
 #include "Resource.h"
-#include "VulkanWindow.h"
 #define MAX_FRAME 2
 
 
@@ -129,9 +128,6 @@ protected:
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
 
-    const FrameWork::Camera* currentCamera;
-
-
 public:
     uint32_t currentFrame = 0;
     uint32_t MaxFrame = MAX_FRAME;
@@ -187,17 +183,10 @@ public:
     //设置Vulkan的基础框架
     virtual VkResult createInstance();
     virtual void render();
-
     virtual void setupDepthStencil();
-
-    virtual void setupFrameBuffer();
-
     virtual void setupRenderPass();
-
     virtual void getEnabledFeatures();
-
     virtual void getEnabledExtensions();
-
     virtual void prepare();
 
     //加载SPIR-V文件
@@ -236,7 +225,7 @@ public:
     void SetPipelineDepthStencilState(uint32_t& pipelineInfoIdx, VkPipelineDepthStencilStateCreateInfo info);
     void AddPipelineColorBlendState(uint32_t& pipelineInfoIdx, bool hasColor, BlendOp blendOp,
         VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-    void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);//最后一项是为了创建的pipelineLayout
+    void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout, uint32_t texNum);//最后一项是为了创建的pipelineLayout
 
     //初始化呈现
     void InitPresent(const std::string& presentShaderName, uint32_t colorAttachmentID);
@@ -250,7 +239,7 @@ public:
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer>& uniformBuffer, const std::vector<void*>& data, const std::vector<uint32_t>& sizes, uint32_t offset);
     VkSampler CreateSampler(uint32_t mipmapLevels);
     void SetUpStaticMesh(unsigned int& meshID, std::vector<FrameWork::Vertex>& vertices, std::vector<uint32_t>& indices, bool skinned);
-    void LoadModel(uint32_t& modelID, const std::string& fileName, FrameWork::MaterialCreateInfo materialInfo);
+    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags);
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
 
@@ -264,8 +253,6 @@ public:
     void SetTitle(const std::string& title);
     VkCommandBuffer GetCurrentCommandBuffer() const;
     uint32_t GetCurrentImageIndex() const;
-
-    void SetCurrentCamera(const FrameWork::Camera* camera);
 
     // 封装对象的池
     template<class T>

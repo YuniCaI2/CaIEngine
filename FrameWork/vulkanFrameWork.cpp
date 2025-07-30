@@ -10,10 +10,6 @@
 #include <vcruntime_startup.h>
 
 #include <array>
-#include <ostream>
-#include <ostream>
-#include <ostream>
-#include <queue>
 #include <vector>
 
 #include "VulkanDebug.h"
@@ -37,10 +33,6 @@ void vulkanFrameWork::createPipelineCache() {
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
     pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
     VK_CHECK_RESULT(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache));
-}
-
-void vulkanFrameWork::SetCurrentCamera(const FrameWork::Camera* camera) {
-    currentCamera = camera;
 }
 
 //信号量在initVulkan中已经进行了设置
@@ -524,10 +516,10 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FrameWork::TextureFullD
         std::cerr << "Texture Channels are 3 that GPU is Not Supported" << std::endl;
     }
     if (data.numChannels == 4) {
-        if (data.type == TextureType::DiffuseColor || data.type == TextureType::SpecColor) {
+        if (data.type == DiffuseColor) {
             format = VK_FORMAT_R8G8B8A8_SRGB;
         }else {
-            format = VK_FORMAT_B8G8R8A8_UNORM;
+            format = VK_FORMAT_R8G8B8A8_UNORM;
         }
     }
     if (data.numChannels == 1) {
@@ -560,6 +552,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FrameWork::TextureFullD
 
     CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
     texture->sampler = CreateSampler(mipmapLevels);
+    texture->textureType = data.type;
 
     texture->inUse = true;
     //使用
@@ -842,18 +835,22 @@ void vulkanFrameWork::AddPipelineColorBlendState(uint32_t& pipelineInfoIdx, bool
 }
 
 void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string &name, uint32_t& pipelineInfoIdx,
-    const std::string &renderPassName, uint32_t subpassIndex, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+    const std::string &renderPassName, uint32_t subpassIndex, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t texNum) {
     pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
     auto vulkanPipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineIdx);
     vulkanPipeline->inUse = true;
     auto vulkanPipelineInfo = getByIndex<FrameWork::VulkanPipelineInfo>(pipelineInfoIdx);
     vulkanPipelineInfo->inUse = true;
     vulkanPipeline->descriptorSetLayouts = descriptorSetLayouts;
+    auto temp = descriptorSetLayouts;
+    for (uint32_t i = 0; i < texNum - 1; i++) {
+        temp.push_back(temp.back());
+    }
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     .pNext = nullptr,
-    .setLayoutCount = (uint32_t)descriptorSetLayouts.size(),
-    .pSetLayouts = descriptorSetLayouts.data(),
+    .setLayoutCount = (uint32_t)temp.size(),
+    .pSetLayouts = temp.data(),
     .pushConstantRangeCount = 0,
     .pPushConstantRanges = nullptr,
     };
@@ -1063,7 +1060,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     SetPipelineDepthStencilState(presentPipelineInfoIdx, depthStencilState);
     AddPipelineColorBlendState(presentPipelineInfoIdx, true, BlendOp::Opaque);
     CreateVulkanPipeline(presentPipelineIndex, "presentPipeline", presentPipelineInfoIdx,
-        "presentRenderPass", 0, {presentDescriptorLayout});
+        "presentRenderPass", 0, {presentDescriptorLayout}, 1);
 
     //管线创建------------------------------------------------------------------------------------------------------------
 
@@ -1229,9 +1226,9 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
             material->textures[i] = getNextIndex<FrameWork::Texture>();
             auto texture = getByIndex<FrameWork::Texture>(material->textures[i]);
             CreateTexture(material->textures[i], materialInfo.TexturesDatas[i]);
-            texturesDescriptorSets[i].second = materialInfo.TexturesDescriptorLayouts[i];
+            texturesDescriptorSets[i].second = materialInfo.TexturesDescriptorLayouts[0];
             try {
-                vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[i],
+                vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[0],
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, texturesDescriptorSets[i].first);
             }catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
@@ -1330,11 +1327,11 @@ void vulkanFrameWork::SetUpStaticMesh(unsigned int &meshID, std::vector<FrameWor
     meshBuffer->inUse = true;
 }
 
-void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, FrameWork::MaterialCreateInfo materialInfo) {
+void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags) {
     modelID = getNextIndex<FrameWork::Model>();
     auto model = getByIndex<FrameWork::Model>(modelID);
     FrameWork::ModelData modelData = {};
-    modelData.meshDatas = resourceManager.LoadOBJMesh(fileName);
+    modelData.meshDatas = resourceManager.LoadMesh(fileName, modelType, textureTypeFlags);
     model->materials.resize(modelData.meshDatas.size());
     model->meshes.resize(modelData.meshDatas.size());
     for (int i = 0; i < modelData.meshDatas.size(); i++) {
@@ -1459,31 +1456,6 @@ void vulkanFrameWork::setupDepthStencil() {
     VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &depthStencil.view));
 }
 
-
-void vulkanFrameWork::setupFrameBuffer() {
-    // Create frame buffers for every swap chain image
-    // frameBuffers.resize(swapChain.images.size());
-    // for (uint32_t i = 0; i < frameBuffers.size(); i++)
-    // {
-    //     //两个附件一个是交换链一个是设置深度
-    //     const VkImageView attachments[2] = {
-    //         swapChain.imageViews[i],
-    //         // Depth/Stencil attachment is the same for all frame buffers
-    //         depthStencil.view
-    //     };
-    //     VkFramebufferCreateInfo frameBufferCreateInfo{};
-    //     frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    //     frameBufferCreateInfo.renderPass = renderPass;
-    //     frameBufferCreateInfo.attachmentCount = 2;
-    //     frameBufferCreateInfo.pAttachments = attachments;
-    //     frameBufferCreateInfo.width = windowWidth;
-    //     frameBufferCreateInfo.height = windowHeight;
-    //     frameBufferCreateInfo.layers = 1;
-    //     VK_CHECK_RESULT(vkCreateFramebuffer(device, &frameBufferCreateInfo, nullptr, &frameBuffers[i]));
-    // }
-}
-
-//虚函数
 void vulkanFrameWork::setupRenderPass() {
 
     VkRenderPass renderPass;

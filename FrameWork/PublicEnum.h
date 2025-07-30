@@ -95,18 +95,22 @@ enum class BlendOp {
     Multiply
 };
 
-enum class TextureType {
-    DiffuseColor,
-    SpecColor,
-    Metallic,
-    Normal,
-    Emissive,
-    Ambient,
-    Roughness,
+enum TextureTypeFlagBits : uint32_t{
+    DiffuseColor = 1 << 0,
+    Normal = 1 << 1,
+    MetallicRoughness = 1 << 2,
+    Emissive = 1 << 3,
+    Occlusion = 1 << 4,
+    Ambient = 1 << 5,
+    None = 1 << 6
 };
+//导入顺序也同上，当然不存在空缺
+using TextureTypeFlags = uint32_t;
 
 enum class ModelType {
-    OBJ
+    OBJ,
+    GLTF,
+    FBX
 };
 
 #endif //PUBLICENUM_H
