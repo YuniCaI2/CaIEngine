@@ -8,10 +8,11 @@ layout (location = 3) in mat3 inTBN;          // 接收TBN矩阵 (本着色器�
 
 
 layout (set = 1, binding = 0) uniform sampler2D colorSampler;
+layout (set = 2, binding = 0) uniform sampler2D normalSampler;
 
 layout (location = 0) out vec4 outColor;
 
 void main()
 {
-  outColor = texture(colorSampler, inTexCoord);
+  outColor = texture(normalSampler, inTexCoord);
 }
