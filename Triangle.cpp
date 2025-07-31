@@ -139,7 +139,7 @@ public:
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         vulkanRenderAPI.SetPipelineMultiSampleState(pipelineInfoId, multisampling);
         vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
-        vulkanRenderAPI.CreateVulkanPipeline(pipelineID, "forwardPipeline", pipelineInfoId, "forward", 0, {dynamicDescriptorSetLayout, textureDescriptorSetLayout}, 2);
+        vulkanRenderAPI.CreateVulkanPipeline(pipelineID, "forwardPipeline", pipelineInfoId, "forward", 0, {dynamicDescriptorSetLayout, textureDescriptorSetLayout}, 1);
         graphicsPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipeline;
         pipelineLayout = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipelineLayout;
     }
@@ -157,7 +157,7 @@ public:
             .TexturesDatas = {}//留给LoadModel填写
         };
         //Material包含在模型中
-        vulkanRenderAPI.LoadModel(modelID, "cocona", ModelType::OBJ,materialInfo, DiffuseColor | Normal);
+        vulkanRenderAPI.LoadModel(modelID, "hikari", ModelType::GLB,materialInfo, DiffuseColor);
 
         // createDescriptorSet();
         uint32_t colorAttachIdx = -1, depthAttachIdx = -1;

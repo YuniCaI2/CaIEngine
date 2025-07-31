@@ -14,18 +14,18 @@
 #include <stb_image.h>
 
 
-void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, std::string directory, TextureTypeFlags textureFlags) {
+void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes,  ModelType modelType, std::string directory, TextureTypeFlags textureFlags) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(processMesh(mesh, scene, directory, textureFlags));
+        meshes.push_back(processMesh(mesh, modelType, scene, directory, textureFlags));
     }
     //接下来重复子节点
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene, meshes, directory, textureFlags);
+        processNode(node->mChildren[i], scene, meshes, modelType, directory, textureFlags);
     }
 }
 
-FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, const aiScene *scene, std::string directory, TextureTypeFlags textureFlags) {
+FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene,  std::string directory, TextureTypeFlags textureFlags) {
     MeshData meshData;
 
     //Vertex
@@ -51,7 +51,7 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, const aiScene
             //异常
             vertex.texCoord.x = 0;
             vertex.texCoord.y = 0;
-            throw std::runtime_error("Warning : Don't have texCoord");
+            std::cerr << "Warning : Don't have texCoord" << std::endl;
         }
         meshData.vertices.push_back(vertex);
     }
@@ -69,29 +69,33 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, const aiScene
 
     //这里先只加载漫反射贴图--因为我手头的模型除了PBR就是漫反射贴图
     if ((textureFlags & DiffuseColor) == DiffuseColor) {
-        auto textureMap = LoadTextureFullDatas(material, aiTextureType_DIFFUSE, directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_DIFFUSE,  directory);
+        meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
+    }
+    if ((textureFlags & BaseColor) == BaseColor) {
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_BASE_COLOR,  directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & Normal) == Normal) {
-        auto textureMap = LoadTextureFullDatas(material, aiTextureType_NORMALS, directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_NORMALS,  directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & MetallicRoughness) == MetallicRoughness) {
-        auto textureMap = LoadTextureFullDatas(material, aiTextureType_METALNESS, directory);
-        if (meshData.texData.empty()) {
-            textureMap = LoadTextureFullDatas(material, aiTextureType_DIFFUSE_ROUGHNESS, directory);
-            if (meshData.texData.empty()) {
-                textureMap = LoadTextureFullDatas(material, aiTextureType_UNKNOWN, directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_METALNESS,  directory);
+        if (textureMap.empty()) {
+            textureMap = LoadTextureFullDatas(material, scene, aiTextureType_DIFFUSE_ROUGHNESS,  directory);
+            if (textureMap.empty()) {
+                textureMap = LoadTextureFullDatas(material, scene, aiTextureType_UNKNOWN,  directory);
             }
         }
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & Emissive) == Emissive) {
-        auto textureMap = LoadTextureFullDatas(material, aiTextureType_EMISSIVE, directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_EMISSIVE, directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & Occlusion) == Occlusion) {
-        auto textureMap = LoadTextureFullDatas(material, aiTextureType_AMBIENT_OCCLUSION, directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_AMBIENT_OCCLUSION, directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
 
@@ -137,6 +141,12 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
             pixels[i * 4 + 1] = 255 * 0.5;
             pixels[i * 4 + 2] = 255;
             pixels[i * 4 + 3] = 255;
+        }
+    }
+    if (type == TextureTypeFlagBits::BaseColor) {
+        for (uint32_t i = 0; i < width * height * numChannels; i++) {
+            pixels[i] = 1;
+
         }
     }
     texData.data = pixels;
@@ -188,17 +198,20 @@ std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string
     } else if (modelType == ModelType::GLTF) {
         path = generalModelPath + fileName + "/" + fileName + ".glTF";
         directory = generalModelPath + fileName + "/";
+    }else if (modelType == ModelType::GLB) {
+        path = generalModelPath + fileName + "/" + fileName + ".glb";
+        directory = generalModelPath + fileName + "/";
     }
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals |aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         throw std::runtime_error("Failed to load model from file " + fileName);
     }
     std::vector<MeshData> meshes;//返回值
-    processNode(scene->mRootNode, scene, meshes, directory, textureFlags);
+    processNode(scene->mRootNode, scene, meshes, modelType, directory, textureFlags);
     return meshes;
 }
 
-std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(aiMaterial *mat, aiTextureType type,
+std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(aiMaterial *mat, const aiScene* scene,aiTextureType type,
     std::string directory) {
     std::vector<TextureFullData> textures;
     int n = 0;
@@ -206,33 +219,86 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
     for (unsigned int i = 0; i < n; i++) {
         aiString str;
         mat->GetTexture(type, i, &str);
-        TextureFullData texData;
-        if (type == aiTextureType_DIFFUSE) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::DiffuseColor);
+        if (auto it = textureMap.find(directory + str.C_Str()); it != textureMap.end()) {
+            textures.push_back(it->second);
+        }else {
+            auto texture = scene->GetEmbeddedTexture(str.C_Str());
+            if (texture != nullptr) {
+                TextureFullData texData;
+                texData.data = (unsigned char*)texture->pcData;
+                texData.width = texture->mWidth;
+                texData.height = texture->mHeight;
+                if (type == aiTextureType_DIFFUSE) {
+                    texData.type = DiffuseColor;
+                }
+                else if (type == aiTextureType_NORMALS) {
+                    texData.type = Normal;
+                }
+                else if (type == aiTextureType_UNKNOWN) {
+                    texData.type = MetallicRoughness;
+                }
+                else if (type == aiTextureType_METALNESS) {
+                    texData.type = MetallicRoughness;
+                }
+                else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
+                    texData.type = MetallicRoughness;
+                }
+                else if (type == aiTextureType_EMISSIVE) {
+                    texData.type = Emissive;
+                }
+                else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+                    texData.type = Occlusion;
+                }else if (type == aiTextureType_BASE_COLOR) {
+                    texData.type = BaseColor;
+                }
+                else {
+                    std::cerr << "this type process has not complete !" << std::endl;
+                }
+                if (texData.width == 0 || texData.height == 0) {
+                    texData.data = stbi_load_from_memory(texData.data, texData.width,
+                        &texData.width, &texData.height, &texData.numChannels, 4);
+                }
+                texData.path = directory + str.C_Str();
+                texData.numChannels = 4;
+                textures.push_back(texData);
+                textureMap[directory + str.C_Str()] = texData;
+
+            }else {
+                TextureFullData texData;
+                if (type == aiTextureType_DIFFUSE) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::DiffuseColor);
+                }
+                else if (type == aiTextureType_NORMALS) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Normal);
+                }
+                else if (type == aiTextureType_UNKNOWN) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
+                }
+                else if (type == aiTextureType_METALNESS) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
+                }
+                else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
+                }
+                else if (type == aiTextureType_EMISSIVE) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Emissive);
+                }
+                else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Occlusion);
+                }
+                else if (type == aiTextureType_BASE_COLOR) {
+                    texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::BaseColor);
+                }
+                else {
+                    std::cerr << "this type process has not complete !" << std::endl;
+                }
+                textures.push_back(texData);
+                textureMap[directory + str.C_Str()] = texData;
+            }
+
         }
-        else if (type == aiTextureType_NORMALS) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Normal);
-        }
-        else if (type == aiTextureType_UNKNOWN) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
-        }
-        else if (type == aiTextureType_METALNESS) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
-        }
-        else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
-        }
-        else if (type == aiTextureType_EMISSIVE) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Emissive);
-        }
-        else if (type == aiTextureType_AMBIENT_OCCLUSION) {
-            texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Occlusion);
-        }
-        else {
-            std::cerr << "this type process has not complete !" << std::endl;
-        }
-        textures.push_back(texData);
     }
+
     if (n <= 0) {
         if (type == aiTextureType_DIFFUSE) {
             textures.push_back(CreateDefaultTexture(DiffuseColor));
@@ -249,6 +315,9 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
         else if (type == aiTextureType_AMBIENT_OCCLUSION) {
             textures.push_back(CreateDefaultTexture(Occlusion));
         }
+        else if (type == aiTextureType_BASE_COLOR) {
+            textures.push_back(CreateDefaultTexture(BaseColor));
+        }
         else {
             std::cerr << "this type process has not complete !" << std::endl;
         }
@@ -257,9 +326,6 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
 }
 
 FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath, TextureTypeFlagBits type) {
-    if (textureMap.find(filePath) != textureMap.end()) {
-        return textureMap[filePath];
-    }
     int width = 100, height = 100, numChannels;
     uint32_t desireChannels = 4;
     unsigned char* data = stbi_load(filePath.c_str(), &width, &height, &numChannels, desireChannels);
@@ -301,8 +367,6 @@ FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::s
         }
         texData.data = pixels;
     }
-    textureMap[filePath] = texData;
-
     return texData;
 }
 

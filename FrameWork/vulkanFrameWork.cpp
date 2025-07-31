@@ -516,7 +516,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FrameWork::TextureFullD
         std::cerr << "Texture Channels are 3 that GPU is Not Supported" << std::endl;
     }
     if (data.numChannels == 4) {
-        if (data.type == DiffuseColor) {
+        if (data.type == DiffuseColor || data.type == BaseColor) {
             format = VK_FORMAT_R8G8B8A8_SRGB;
         }else {
             format = VK_FORMAT_R8G8B8A8_UNORM;

@@ -102,7 +102,8 @@ enum TextureTypeFlagBits : uint32_t{
     Emissive = 1 << 3,
     Occlusion = 1 << 4,
     Ambient = 1 << 5,
-    None = 1 << 6
+    BaseColor = 1 << 6,
+    None = 1 << 7,
 };
 //导入顺序也同上，当然不存在空缺
 using TextureTypeFlags = uint32_t;
@@ -110,7 +111,8 @@ using TextureTypeFlags = uint32_t;
 enum class ModelType {
     OBJ,
     GLTF,
-    FBX
+    FBX,
+    GLB,
 };
 
 #endif //PUBLICENUM_H

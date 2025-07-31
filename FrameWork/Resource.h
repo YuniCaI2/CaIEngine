@@ -25,15 +25,15 @@ namespace FrameWork {
 
         std::unordered_map<std::string, TextureFullData> textureMap;
 
-        void processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, std::string, TextureTypeFlags textureFlags);
-        FrameWork::MeshData processMesh(aiMesh *mesh, const aiScene *scene, std::string, TextureTypeFlags textureFlags);
+        void processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, ModelType modelType, std::string, TextureTypeFlags textureFlags);
+        FrameWork::MeshData processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene, std::string, TextureTypeFlags textureFlags);
         TextureFullData CreateDefaultTexture(TextureTypeFlagBits textureFlagBits);
     public:
 
 
         VkShaderModule getShaderModulFromFile(VkDevice device,const std::string& fileName, VkShaderStageFlags stage) const;
         std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags);
-        std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, aiTextureType type, std::string directory);
+        std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, const aiScene* scene,aiTextureType type, std::string directory);
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
 
