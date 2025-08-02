@@ -24,6 +24,7 @@ public:
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
     uint32_t queueNodeIndex{UINT32_MAX};
+    uint32_t minImageCount{UINT32_MAX};
 
     void initSurface(GLFWwindow* window);
     void setContext(VkInstance instance, VkPhysicalDevice physicalDevice,VkDevice device);

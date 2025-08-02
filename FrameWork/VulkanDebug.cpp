@@ -8,6 +8,12 @@
 // 定义静态成员变量
 VkDebugUtilsMessengerEXT FrameWork::VulkanDebug::debugUtilsMessenger = VK_NULL_HANDLE;
 
+// 函数指针定义
+PFN_vkCreateDebugUtilsMessengerEXT FrameWork::VulkanDebug::vkCreateDebugUtilsMessengerEXT = nullptr;
+PFN_vkDestroyDebugUtilsMessengerEXT FrameWork::VulkanDebug::vkDestroyDebugUtilsMessengerEXT = nullptr;
+PFN_vkCmdBeginDebugUtilsLabelEXT FrameWork::debugUtils::vkCmdBeginDebugUtilsLabelEXT = nullptr;
+PFN_vkCmdEndDebugUtilsLabelEXT FrameWork::debugUtils::vkCmdEndDebugUtilsLabelEXT = nullptr;
+
 VKAPI_ATTR VkBool32  VKAPI_CALL FrameWork::VulkanDebug::debugUtilsMessageCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData) {
@@ -19,13 +25,9 @@ VKAPI_ATTR VkBool32  VKAPI_CALL FrameWork::VulkanDebug::debugUtilsMessageCallbac
 }
 
 void FrameWork::VulkanDebug::setDebugging(VkInstance instance) {
-    // 初始化 volk
-    if (volkInitialize() != VK_SUCCESS) {
-        throw std::runtime_error("Failed to initialize volk");
-    }
-
-    // 加载实例函数
-    volkLoadInstance(instance);
+    // 获取扩展函数指针
+    vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 
     // 验证扩展函数可用性
     if (vkCreateDebugUtilsMessengerEXT == nullptr) {
@@ -43,7 +45,7 @@ void FrameWork::VulkanDebug::setDebugging(VkInstance instance) {
 }
 
 void FrameWork::VulkanDebug::freeDebugCallBack(VkInstance instance) {
-    if (debugUtilsMessenger != VK_NULL_HANDLE) {
+    if (debugUtilsMessenger != VK_NULL_HANDLE && vkDestroyDebugUtilsMessengerEXT != nullptr) {
         vkDestroyDebugUtilsMessengerEXT(instance, debugUtilsMessenger, nullptr);
         debugUtilsMessenger = VK_NULL_HANDLE;
     }
@@ -58,22 +60,24 @@ void FrameWork::VulkanDebug::setupDebuggingMessengerCreateInfo(VkDebugUtilsMesse
 }
 
 void FrameWork::debugUtils::setup(VkInstance instance) {
-    if (volkInitialize() != VK_SUCCESS) {
-        throw std::runtime_error("Failed to initialize volk");
-    }
-    // 加载实例函数
-    volkLoadInstance(instance);
+    // 获取调试标签相关的函数指针
+    vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+    vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
 }
 
 //这里的是你为了展示性能,上传的gpu的内容进行测试
 void FrameWork::debugUtils::cmdBeginLabel(VkCommandBuffer cmdBuffer, std::string caption, glm::vec4 color) {
-    VkDebugUtilsLabelEXT label{};
-    label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-    label.pLabelName = caption.c_str();
-    memcpy(label.color, &color, sizeof(float) * 4);
-    vkCmdBeginDebugUtilsLabelEXT(cmdBuffer, &label);
+    if (vkCmdBeginDebugUtilsLabelEXT != nullptr) {
+        VkDebugUtilsLabelEXT label{};
+        label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        label.pLabelName = caption.c_str();
+        memcpy(label.color, &color, sizeof(float) * 4);
+        vkCmdBeginDebugUtilsLabelEXT(cmdBuffer, &label);
+    }
 }
 
 void FrameWork::debugUtils::cmdEndLabel(VkCommandBuffer cmdBuffer) {
-    vkCmdEndDebugUtilsLabelEXT(cmdBuffer);
+    if (vkCmdEndDebugUtilsLabelEXT != nullptr) {
+        vkCmdEndDebugUtilsLabelEXT(cmdBuffer);
+    }
 }

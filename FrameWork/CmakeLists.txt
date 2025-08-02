@@ -6,6 +6,7 @@ project(FrameWork)
 
 find_package(Vulkan REQUIRED)
 find_package(assimp REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 add_subdirectory(thirdPart)
 
 file(GLOB frameWorkPath
@@ -16,28 +17,14 @@ file(GLOB frameWorkPath
 add_library(FrameWork ${frameWorkPath}
         )
 
-if (WIN32)
-   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
-elseif (ANDROID)
-   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_ANDROID_KHR)
-elseif (APPLE)
-   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
-elseif (UNIX)
-   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XCB_KHR)
-endif()
 
-
-
-target_link_libraries(FrameWork PUBLIC volk)
 target_link_libraries(FrameWork PUBLIC glfw)
 target_link_libraries(FrameWork PUBLIC Vulkan::Vulkan)
-target_link_libraries(FrameWork PUBLIC imgui)
+target_link_libraries(FrameWork PUBLIC imgui::imgui)
 target_link_libraries(FrameWork PUBLIC
         assimp::assimp
 )
-target_include_directories(FrameWork PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/VulkanMemoryAllocator/include
-)
+
 target_include_directories(FrameWork PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/glm
 )

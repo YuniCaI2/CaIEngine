@@ -333,8 +333,6 @@ bool vulkanFrameWork::setWindow() {
 
 VkResult vulkanFrameWork::createInstance() {
 
-    volkInitialize();
-
     std::vector<const char *> instanceExtensions = {}; //新版本只需要在邏輯設備中設置就行了好像
 
     uint32_t glfwExtensionCount = 0;
@@ -466,9 +464,7 @@ VkResult vulkanFrameWork::createInstance() {
         }
         return result;
     }    
-    if (result == VK_SUCCESS) {
-        volkLoadInstance(instance);
-    }
+
     //设置可捕获信息的验证层，并且对其进行初始化
     if (std::find(supportedInstanceExtensions.begin(), supportedInstanceExtensions.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) !=
         supportedInstanceExtensions.end()) {
@@ -1166,8 +1162,9 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
     std::vector<std::pair<VkDescriptorSet, VkDescriptorSetLayout>> uniformDescriptorSets(materialInfo.UniformData.size());
     std::vector<std::pair<VkDescriptorSet, VkDescriptorSetLayout>> texturesDescriptorSets(materialInfo.TexturesDatas.size());
     auto alignment = vulkanDevice->properties.limits.minUniformBufferOffsetAlignment;
+
     for (int i = 0 ; i < material->uniformBuffer.size(); i++) {
-        uint32_t dynamicSize = materialInfo.UniformData[i].second & ~ (alignment - 1);
+        uint32_t dynamicSize = (materialInfo.UniformData[i].second + alignment - 1) & ~ (alignment - 1);
         material->uniformBufferSizes[i] = dynamicSize * MAX_FRAME;
         vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             ,&material->uniformBuffer[i], dynamicSize * MAX_FRAME
@@ -1412,6 +1409,26 @@ uint32_t vulkanFrameWork::GetCurrentImageIndex() const {
     return imageIndex;
 }
 
+const VulkanSwapChain & vulkanFrameWork::GetVulkanSwapChain() const {
+    return swapChain;
+}
+
+VkInstance& vulkanFrameWork::GetVulkanInstance() {
+    return instance;
+}
+
+VkQueue vulkanFrameWork::GetVulkanGraphicsQueue() const {
+    return graphicsQueue;
+}
+
+VkPhysicalDevice vulkanFrameWork::GetVulkanPhysicalDevice() const {
+    return physicalDevice;
+}
+
+void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {
+    windowResizedCallback = callback;
+}
+
 
 void vulkanFrameWork::setupDepthStencil() {
     VkImageCreateInfo imageCreateInfo{};
@@ -1603,6 +1620,9 @@ void vulkanFrameWork::windowResize() {
      * 所以Destroy一个Material 会吧Texture的所有内容删除——vulkanImage 和 vulkanImageView 等等
      * 所以先删除再创建，防止重新创建好的附件的imageView被删除了
      */
+    if (windowResizedCallback != nullptr) {
+        windowResizedCallback();
+    }
 
     vkDeviceWaitIdle(device);
 

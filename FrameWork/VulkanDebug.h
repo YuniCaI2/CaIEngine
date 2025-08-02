@@ -4,17 +4,20 @@
 
 #ifndef VULKANDEBUG_H
 #define VULKANDEBUG_H
+
+#include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <string>
-#include <chrono>
-#define VK_NO_PROTOTYPES
-#include <volk.h>
 
 namespace FrameWork {
     class VulkanDebug {
     public:
         static VkDebugUtilsMessengerEXT debugUtilsMessenger;
-        //Default debug callback
+
+        // 函数指针声明
+        static PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
+        static PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessageCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -22,21 +25,19 @@ namespace FrameWork {
             void *pUserData);
 
         static void setDebugging(VkInstance instance);
-
         static void freeDebugCallBack(VkInstance instance);
-
-        static void setupDebuggingMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debug);
+        static void setupDebuggingMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &debug);
     };
 
+    namespace debugUtils {
+        // 函数指针声明
+        extern PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT;
+        extern PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT;
 
-    class debugUtils {
-    public:
-        static void setup(VkInstance instance);
-        static void cmdBeginLabel(VkCommandBuffer cmdBuffer, std::string caption, glm::vec4 color);
-        static void cmdEndLabel(VkCommandBuffer cmdBuffer);
-    };
+        void setup(VkInstance instance);
+        void cmdBeginLabel(VkCommandBuffer cmdBuffer, std::string caption, glm::vec4 color);
+        void cmdEndLabel(VkCommandBuffer cmdBuffer);
+    }
 }
-
-
 
 #endif //VULKANDEBUG_H

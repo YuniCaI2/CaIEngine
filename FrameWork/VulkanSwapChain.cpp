@@ -160,6 +160,7 @@ void VulkanSwapChain::create(uint32_t width, uint32_t height, bool vsync, bool f
     if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
         imageCount = surfaceCapabilities.maxImageCount;
     }
+    minImageCount = surfaceCapabilities.minImageCount;
 
     //找到表面的变换
     VkSurfaceTransformFlagBitsKHR preTransform;

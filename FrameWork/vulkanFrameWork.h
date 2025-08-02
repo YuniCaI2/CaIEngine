@@ -11,18 +11,9 @@
 #include <functional>
 #include <chrono>
 
-
-
-// --- Vulkan 配置和头文件 ---
-// 1. 定义 VK_NO_PROTOTYPES 来阻止 Vulkan SDK 定义函数符号。
-#define VK_NO_PROTOTYPES
-
-// 2. 定义 GLFW_INCLUDE_VULKAN 让 GLFW 为我们包含 <vulkan/vulkan.h>。
-
 #include "pubh.h"
 
 #include "VulkanSwapChain.h"    // 确保这些头文件也不会以冲突的方式包含 vulkan.h。
-#include "VulkanUIOverlay.h"    // 它们应该依赖此处的设置或 volk。
 #include "Camera.h"
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
@@ -55,7 +46,8 @@ private:
     //动态的描述符池
     FrameWork::VulkanDescriptorPool vulkanDescriptorPool;
 
-
+    using WindowResizedCallback = std::function<void()>;
+    WindowResizedCallback windowResizedCallback{nullptr};
 
 protected:
     //得到一个绝对路径
@@ -253,6 +245,12 @@ public:
     void SetTitle(const std::string& title);
     VkCommandBuffer GetCurrentCommandBuffer() const;
     uint32_t GetCurrentImageIndex() const;
+    const VulkanSwapChain& GetVulkanSwapChain() const;
+    VkInstance& GetVulkanInstance();
+    VkQueue GetVulkanGraphicsQueue() const;
+    VkPhysicalDevice GetVulkanPhysicalDevice() const;
+
+    void SetWindowResizedCallBack(const WindowResizedCallback& callback);
 
     // 封装对象的池
     template<class T>
@@ -412,6 +410,7 @@ public:
 };
 
 //代替繁琐调用
+
 #define vulkanRenderAPI vulkanFrameWork::GetInstance()
 
 #define WINDOW_LOOP(f)          \

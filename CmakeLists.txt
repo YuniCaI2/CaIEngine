@@ -5,7 +5,7 @@ project(CaIEngine)
 
 add_subdirectory(FrameWork)
 
-add_executable(${PROJECT_NAME} Triangle.cpp)
+add_executable(${PROJECT_NAME} Renderer.cpp)
 
 target_link_libraries(${PROJECT_NAME} FrameWork)
 
