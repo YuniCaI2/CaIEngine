@@ -8,6 +8,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "PublicEnum.h"
+#include<optional>
 #include <vector>
 
 
@@ -91,12 +92,79 @@ namespace FrameWork {
 
     };
 
+    struct RayCast {
+        glm::vec3 origin;
+        glm::vec3 direction;
+        int t;
+    };
+
+    struct AABB {
+        glm::vec3 min{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),std::numeric_limits<float>::max()};
+        glm::vec3 max{std::numeric_limits<float>::min(), std::numeric_limits<float>::min(),std::numeric_limits<float>::min()};
+
+        static AABB Union(const AABB& a, const AABB& b) {
+            AABB result;
+            result.min = glm::min(result.min, a.min);
+            result.max = glm::max(result.max, a.max);
+            return result;
+        }
+
+        glm::vec3 GetCenter() const {
+            return (min + max) * 0.5f;
+        }
+
+        glm::vec3 Diagonal() const {
+            return max - min;
+        }
+
+        bool Inside(const glm::vec3& point) const {
+            for (int i = 0; i < 3; i++) {
+                if (min[i] > point[i] || point[i] > max[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        enum class Extent {
+            X,Y,Z
+        };
+
+        Extent maxExtent() const { //获取最长边方便BVH区分使用
+            auto d = Diagonal();
+            if (d.x > d.y && d.x > d.z) {
+                return Extent::X;
+            }else if (d.y > d.x && d.y > d.z) {
+                return Extent::Y;
+            }else {
+                return Extent::Z;
+            }
+        }
+
+        bool InterSectingExtent(const RayCast& rayCast) const {
+            glm::vec3 inDir = 1.0f / rayCast.direction;
+
+            glm::vec3 tIn = (min - rayCast.origin) * inDir;
+            glm::vec3 tOut = (max - rayCast.origin) * inDir;
+
+            glm::vec3 tMin = glm::min(tIn, tOut);
+            glm::vec3 tMax = glm::max(tIn, tOut);
+
+            auto tNear = std::max({tMin.x, tMin.y, tMin.z});
+            auto tFar = std::min({tMax.x, tMax.y, tMax.z});
+
+            return tNear <= tFar && tFar >= 0;
+        }
+
+
+    };
 
     struct Mesh {
         FrameWork::Buffer VertexBuffer;
         FrameWork::Buffer IndexBuffer;
         uint32_t vertexCount{0};
         uint32_t indexCount{0};
+
 
         //每个网格有对应的渲染优先级来对应不同的渲染程度
         RenderQueue renderQueue{RenderQueue::Opaque};
@@ -109,6 +177,9 @@ namespace FrameWork {
         //材质和网格是一一对应的
         std::vector<uint32_t> materials;
         std::vector<uint32_t> meshes;
+        using TriangleBoundingBoxPtr = std::unique_ptr<std::vector<AABB>>;
+        AABB aabb;
+        TriangleBoundingBoxPtr triangleBoundingBoxs;
 
         bool inUse = false;
     };
@@ -178,6 +249,7 @@ namespace FrameWork {
             return attributeDescriptions;
         }
     };
+
     struct MeshData {
         std::vector<uint32_t> indices;
         std::vector<Vertex> vertices;

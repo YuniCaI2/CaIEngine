@@ -5,8 +5,8 @@
 
 #include "FrameWorkGUI.h"
 #include "Timer.h"
+#include "VulkanDebug.h"
 #include "VulkanWindow.h"
-#define _VALIDATION 1
 
 class Renderer {
 private:
@@ -18,9 +18,8 @@ private:
 
     uint32_t meshID = -1;
     uint32_t pipelineID = -1;
-    uint32_t materialID = -1;
     uint32_t frameBufferID = -1;
-    uint32_t modelID = -1;
+    std::vector<uint32_t> modelID;
     VkDescriptorSetLayout dynamicDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout textureDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
@@ -32,6 +31,8 @@ private:
     FrameWork::Timer timer;
     FrameWork::FrameWorkGUI GUI{};
 
+    FrameWork::AABBDeBugging aabbDeBugging{};
+
 public:
     Renderer() {
         vulkanRenderAPI.SetTitle("Triangle Renderer");
@@ -40,6 +41,7 @@ public:
 
     ~Renderer() {
         GUI.ReleaseGUIResources();
+        aabbDeBugging.Destroy();
     }
 
     void buildCommandBuffers() {
@@ -75,38 +77,46 @@ public:
         scissor.offset.y = 0;
         vkCmdSetScissor(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &scissor);
         vkCmdBindPipeline(vulkanRenderAPI.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-        vulkanRenderAPI.DrawModel(modelID, vulkanRenderAPI.GetCurrentCommandBuffer(), pipelineLayout);
+        for (int i = 0; i < modelID.size(); i++) {
+            vulkanRenderAPI.DrawModel(modelID[i], vulkanRenderAPI.GetCurrentCommandBuffer(), pipelineLayout);
+        }
         vkCmdEndRenderPass(vulkanRenderAPI.GetCurrentCommandBuffer());
+        aabbDeBugging.Draw(vulkanRenderAPI.GetCurrentCommandBuffer());
         vulkanRenderAPI.PresentFrame(vulkanRenderAPI.GetCurrentCommandBuffer(), vulkanRenderAPI.GetCurrentImageIndex());
         GUI.RenderGUI(vulkanRenderAPI.GetCurrentCommandBuffer());
         VK_CHECK_RESULT(vkEndCommandBuffer(vulkanRenderAPI.GetCurrentCommandBuffer()));
     }
 
     void updateUniformBuffer() {
-        ubo.model = glm::mat4(1.0f);
         ubo.view = camera.GetViewMatrix();
         ubo.projection = glm::perspective(glm::radians(camera.Zoom),
                                           (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
                                           0.1f, 100.0f);
+        ubo.model = glm::mat4(1.0f);
         ubo.projection[1][1] *= -1;
-        for (auto &m: (vulkanRenderAPI.getByIndex<FrameWork::Model>(modelID)->materials)) {
-            auto material = vulkanRenderAPI.getByIndex<FrameWork::Material>(m);
-            for (uint32_t i = 0; i < material->uniformBuffer.size(); i++) {
-                auto u = material->uniformBuffer[i];
-                vulkanRenderAPI.UpdateUniformBuffer({u}, {&ubo}, {sizeof(decltype(ubo))},
-                                                    vulkanRenderAPI.currentFrame * material->uniformBufferSizes[i] /
-                                                    vulkanRenderAPI.MaxFrame);
-                //注意这里的UniformBuffer指的就是整个UniformBuffer的大小
+        aabbDeBugging.Update(ubo.view, ubo.projection);
+        for (unsigned int n : modelID) {
+            auto model = vulkanRenderAPI.getByIndex<FrameWork::Model>(n);
+            ubo.model = glm::translate(ubo.model, model->position);
+            for (auto &m: model->materials) {
+                auto material = vulkanRenderAPI.getByIndex<FrameWork::Material>(m);
+                for (uint32_t i = 0; i < material->uniformBuffer.size(); i++) {
+                    auto u = material->uniformBuffer[i];
+                    vulkanRenderAPI.UpdateUniformBuffer({u}, {&ubo}, {sizeof(decltype(ubo))},
+                                                        vulkanRenderAPI.currentFrame * material->uniformBufferSizes[i] /
+                                                        vulkanRenderAPI.MaxFrame);
+                    //注意这里的UniformBuffer指的就是整个UniformBuffer的大小
+                }
             }
         }
     }
 
     void createDescriptorSetLayout() {
         dynamicDescriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT);
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,  VK_SHADER_STAGE_VERTEX_BIT);
         textureDescriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            1, VK_SHADER_STAGE_FRAGMENT_BIT);
+             VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     void createGraphicsPipeline() {
@@ -156,7 +166,7 @@ public:
         vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
         vulkanRenderAPI.CreateVulkanPipeline(pipelineID, "forwardPipeline", pipelineInfoId, "forward", 0,
                                              {dynamicDescriptorSetLayout, textureDescriptorSetLayout},
-                                             6); //可以设置MAX_TexNum
+                                             1, 6); //可以设置MAX_TexNum
         graphicsPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipeline;
         pipelineLayout = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipelineLayout;
     }
@@ -165,6 +175,22 @@ public:
         createDescriptorSetLayout();
         VkRenderPass renderPass = vulkanRenderAPI.GetRenderPass("forward");
         createGraphicsPipeline();
+
+        uint32_t colorAttachIdx = -1, depthAttachIdx = -1;
+        vulkanRenderAPI.CreateAttachment(colorAttachIdx, vulkanRenderAPI.GetFrameWidth(),
+                                         vulkanRenderAPI.GetFrameHeight(), AttachmentType::Color, VK_SAMPLE_COUNT_1_BIT,
+                                         true);
+        vulkanRenderAPI.CreateAttachment(depthAttachIdx, vulkanRenderAPI.GetFrameWidth(),
+                                         vulkanRenderAPI.GetFrameHeight(), AttachmentType::Depth, VK_SAMPLE_COUNT_1_BIT,
+                                         false);
+        std::vector<uint32_t> attachments = {colorAttachIdx, depthAttachIdx};
+        vulkanRenderAPI.CreateFrameBuffer(frameBufferID, attachments, vulkanRenderAPI.GetFrameWidth(),
+                                          vulkanRenderAPI.GetFrameHeight(), renderPass);
+        vulkanRenderAPI.InitPresent("uniformPresent", colorAttachIdx);
+        aabbDeBugging.Init("aabbDebug", colorAttachIdx, depthAttachIdx);
+
+
+        //加载模型
         ubo.model = glm::mat4(1.0f);
         ubo.view = camera.GetViewMatrix();
         ubo.projection = glm::perspective(glm::radians(camera.Zoom),
@@ -178,23 +204,17 @@ public:
         };
 
         //Material包含在模型中
-        vulkanRenderAPI.LoadModel(modelID, "cocona", ModelType::OBJ, materialInfo, DiffuseColor);
-
+        uint32_t modelID_ = -1;
+        vulkanRenderAPI.LoadModel(modelID_, "cocona", ModelType::OBJ, materialInfo, DiffuseColor);
+        aabbDeBugging.GenerateAABB(modelID_);
+        modelID.push_back(modelID_);
+        vulkanRenderAPI.LoadModel(modelID_, "hikari", ModelType::GLB, materialInfo, DiffuseColor, {5, 0, 0});
+        aabbDeBugging.GenerateAABB(modelID_);
+        modelID.push_back(modelID_);
         // createDescriptorSet();
-        uint32_t colorAttachIdx = -1, depthAttachIdx = -1;
-        vulkanRenderAPI.CreateAttachment(colorAttachIdx, vulkanRenderAPI.GetFrameWidth(),
-                                         vulkanRenderAPI.GetFrameHeight(), AttachmentType::Color, VK_SAMPLE_COUNT_1_BIT,
-                                         true);
-        vulkanRenderAPI.CreateAttachment(depthAttachIdx, vulkanRenderAPI.GetFrameWidth(),
-                                         vulkanRenderAPI.GetFrameHeight(), AttachmentType::Depth, VK_SAMPLE_COUNT_1_BIT,
-                                         false);
-        std::vector<uint32_t> attachments = {colorAttachIdx, depthAttachIdx};
-        vulkanRenderAPI.CreateFrameBuffer(frameBufferID, attachments, vulkanRenderAPI.GetFrameWidth(),
-                                          vulkanRenderAPI.GetFrameHeight(), renderPass);
-        vulkanRenderAPI.InitPresent("uniformPresent", colorAttachIdx);
 
-         GUI.InitFrameWorkGUI();
-         SetGUI();
+        GUI.InitFrameWorkGUI();
+        SetGUI();
     }
 
     void render() {
@@ -220,8 +240,7 @@ public:
 };
 
 int main() {
-    vulkanRenderAPI.initVulkan();
-    {
+    vulkanRenderAPI.initVulkan(); {
         Renderer app;
         app.prepare();
         auto &inputManager = FrameWork::InputManager::GetInstance();

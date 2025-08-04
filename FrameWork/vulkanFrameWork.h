@@ -197,7 +197,7 @@ public:
     void CreateTexture(uint32_t& textureId, FrameWork::TextureFullData& textureData);
     void CreateImageView(FrameWork::VulkanImage& image, VkImageView& imageView, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
     void CreateAttachment(uint32_t& attachmentId, uint32_t width, uint32_t height, AttachmentType attachmentType, VkSampleCountFlagBits numSample, bool isSampled); //最后一个参数的含义是是否会作为纹理被着色器采样
-    void CreateFrameBuffer(uint32_t& frameBufferId, std::vector<uint32_t>& attachments, uint32_t width, uint32_t height, VkRenderPass renderPass);
+    void CreateFrameBuffer(uint32_t& frameBufferId, const std::vector<uint32_t>& attachments, uint32_t width, uint32_t height, VkRenderPass renderPass);
     void CreatePresentFrameBuffer(uint32_t& frameBufferId, uint32_t attachment, VkRenderPass renderPass);
     void RegisterRenderPass(VkRenderPass renderPass, const std::string& name);
     void UnRegisterRenderPass(const std::string& name);
@@ -217,7 +217,8 @@ public:
     void SetPipelineDepthStencilState(uint32_t& pipelineInfoIdx, VkPipelineDepthStencilStateCreateInfo info);
     void AddPipelineColorBlendState(uint32_t& pipelineInfoIdx, bool hasColor, BlendOp blendOp,
         VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-    void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout, uint32_t texNum);//最后一项是为了创建的pipelineLayout
+    //这里注意默认UniformObject时一个大结构体，也方便管理使用偏移更新不失性能，且注意DescriptorSetLayout只需要提供两个种类，具体数量通过后面两个参数控制
+    void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout, uint32_t uniform, uint32_t texNum);//最后一项是为了创建的pipelineLayout
 
     //初始化呈现
     void InitPresent(const std::string& presentShaderName, uint32_t colorAttachmentID);
@@ -225,15 +226,21 @@ public:
 
     //描述符
     VkDescriptorSetLayout CreateDescriptorSetLayout(
-        VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags
+        VkDescriptorType descriptorType, VkShaderStageFlags stageFlags
         );
     void CreateMaterial(uint32_t& materialIdx, FrameWork::MaterialCreateInfo& materialInfo);
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer>& uniformBuffer, const std::vector<void*>& data, const std::vector<uint32_t>& sizes, uint32_t offset);
     VkSampler CreateSampler(uint32_t mipmapLevels);
     void SetUpStaticMesh(unsigned int& meshID, std::vector<FrameWork::Vertex>& vertices, std::vector<uint32_t>& indices, bool skinned);
-    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags);
+    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 0});
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+    void DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer);
+    void BindMaterial(uint32_t materialID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
+    //计算着色器
+    void CreateVulkanComputePipeline(uint32_t& pipelineInfoIdx, const std::string& fileName, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts); //注意这和上面的管线不同
+    void CreateGPUStorgeBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer& buffer, void* data);
+    void CreateHostVisibleStorageBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer& buffer, void* data);
 
     //参数变量向外接口
     static vulkanFrameWork& GetInstance(); //单例接口
@@ -249,6 +256,7 @@ public:
     VkInstance& GetVulkanInstance();
     VkQueue GetVulkanGraphicsQueue() const;
     VkPhysicalDevice GetVulkanPhysicalDevice() const;
+    VkFormat GetDepthFormat() const;
 
     void SetWindowResizedCallBack(const WindowResizedCallback& callback);
 
@@ -301,6 +309,11 @@ public:
     template<class T>
     auto inline getByIndex(uint32_t index) -> T* {
         return getVectorRef<T>()[index];
+    }
+
+    template<typename T>
+    auto getSize()-> uint32_t {
+        return getVectorRef<T>().size();
     }
 
     template<class T>
@@ -398,8 +411,8 @@ public:
         }else if (std::is_same_v<T, FrameWork::Model>) {
             auto model = models[index];
             model->inUse = false;
-            for (auto& ma : model->materials) {
-                destroyByIndex<FrameWork::Material>(ma);
+            for (auto& m : model->materials) {
+                destroyByIndex<FrameWork::Material>(m);
             }
             for (auto& mesh : model->meshes) {
                 destroyByIndex<FrameWork::Mesh>(mesh);

@@ -16,7 +16,7 @@
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
 #define VOLK_IMPLEMENTATION
-
+#define _VALIDATION
 
 
 std::string vulkanFrameWork::getWindowTitle() const {
@@ -202,7 +202,9 @@ vulkanFrameWork::~vulkanFrameWork() {
 bool vulkanFrameWork::initVulkan() {
     // Instead of checking for the command line switch, validation can be forced via a define
     //设置验证层
+#ifdef _VALIDATION
     this->settings.validation = true;
+#endif
 
 
     //设置实例
@@ -274,6 +276,7 @@ bool vulkanFrameWork::initVulkan() {
     //设置各项异性
     if (deviceFeatures.samplerAnisotropy) {
         enabledFeatures.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
+        enabledFeatures.fillModeNonSolid = deviceFeatures.fillModeNonSolid;
     }
 
     vulkanDevice = new FrameWork::VulkanDevice(physicalDevice, instance);
@@ -624,7 +627,7 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
     }
 }
 
-void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, std::vector<uint32_t> &attachments, uint32_t width, uint32_t height, VkRenderPass renderPass) {
+void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, const std::vector<uint32_t> &attachments, uint32_t width, uint32_t height, VkRenderPass renderPass) {
     //只允许传入颜色附件和深度附件
     for (auto& attachment : attachments) {
         auto attachmentObj = getByIndex<FrameWork::VulkanAttachment>(attachment);
@@ -831,22 +834,28 @@ void vulkanFrameWork::AddPipelineColorBlendState(uint32_t& pipelineInfoIdx, bool
 }
 
 void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string &name, uint32_t& pipelineInfoIdx,
-    const std::string &renderPassName, uint32_t subpassIndex, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t texNum) {
+    const std::string &renderPassName, uint32_t subpassIndex, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t uniformNum,uint32_t texNum) {
     pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
     auto vulkanPipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineIdx);
     vulkanPipeline->inUse = true;
     auto vulkanPipelineInfo = getByIndex<FrameWork::VulkanPipelineInfo>(pipelineInfoIdx);
     vulkanPipelineInfo->inUse = true;
     vulkanPipeline->descriptorSetLayouts = descriptorSetLayouts;
-    auto temp = descriptorSetLayouts;
-    for (uint32_t i = 0; i < texNum - 1; i++) {
-        temp.push_back(temp.back());
+    std::vector<VkDescriptorSetLayout> temp;
+    if (descriptorSetLayouts.size() > 2) {
+        std::cerr << "this pipeline only support two descriptorSetLayout this uniform and tex !!" << std::endl;
+    }
+    for (int i = 0; i < uniformNum; i++) {
+        temp.push_back(descriptorSetLayouts[0]);
+    }
+    for (uint32_t i = 0; i < texNum; i++) {
+        temp.push_back(descriptorSetLayouts.back());
     }
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     .pNext = nullptr,
-    .setLayoutCount = (uint32_t)temp.size(),
-    .pSetLayouts = temp.data(),
+    .setLayoutCount = (uint32_t)(temp.size() > 0 ? temp.size() : 0),
+    .pSetLayouts = (temp.size() > 0 ? temp.data() : nullptr),
     .pushConstantRangeCount = 0,
     .pPushConstantRanges = nullptr,
     };
@@ -990,7 +999,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &presentRenderPass));
     RegisterRenderPass(presentRenderPass, "presentRenderPass");
 
-    auto presentDescriptorLayout = CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
+    auto presentDescriptorLayout = CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     uint32_t attachment = -1;
     CreateAttachment(attachment, windowWidth, windowHeight, AttachmentType::Present, VK_SAMPLE_COUNT_1_BIT, false);
@@ -1056,7 +1065,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     SetPipelineDepthStencilState(presentPipelineInfoIdx, depthStencilState);
     AddPipelineColorBlendState(presentPipelineInfoIdx, true, BlendOp::Opaque);
     CreateVulkanPipeline(presentPipelineIndex, "presentPipeline", presentPipelineInfoIdx,
-        "presentRenderPass", 0, {presentDescriptorLayout}, 1);
+        "presentRenderPass", 0, {presentDescriptorLayout}, 0, 1);
 
     //管线创建------------------------------------------------------------------------------------------------------------
 
@@ -1066,7 +1075,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
         textureDatas[i].textureID = colorAttachment->attachmentsArray[i];
         //将纹理信息进行传递
     }
-    std::vector descriptorSetLayouts(textureDatas.size(), presentDescriptorLayout);
+    std::vector descriptorSetLayouts(1, presentDescriptorLayout);
     FrameWork::MaterialCreateInfo materialInfo = {
         .UniformDescriptorLayouts = {},
         .TexturesDescriptorLayouts = descriptorSetLayouts,
@@ -1128,12 +1137,12 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
 }
 
 VkDescriptorSetLayout vulkanFrameWork::CreateDescriptorSetLayout(
-        VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags
+        VkDescriptorType descriptorType, VkShaderStageFlags stageFlags
     ) {
     VkDescriptorSetLayoutBinding binding = {
         .binding = 0,
         .descriptorType = descriptorType,
-        .descriptorCount = descriptorCount,
+        .descriptorCount = 1,
         .stageFlags = stageFlags,
         .pImmutableSamplers = nullptr,
     };
@@ -1163,8 +1172,12 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
     std::vector<std::pair<VkDescriptorSet, VkDescriptorSetLayout>> texturesDescriptorSets(materialInfo.TexturesDatas.size());
     auto alignment = vulkanDevice->properties.limits.minUniformBufferOffsetAlignment;
 
+    if (materialInfo.UniformDescriptorLayouts.size() > 1 || materialInfo.TexturesDescriptorLayouts.size() > 1) {
+        std::cerr << "Warning : The MaterialInfo can't support more than one texture or uniform descriptorSetLayout" << std::endl;
+    }
+
     for (int i = 0 ; i < material->uniformBuffer.size(); i++) {
-        uint32_t dynamicSize = (materialInfo.UniformData[i].second + alignment - 1) & ~ (alignment - 1);
+        uint32_t dynamicSize = (materialInfo.UniformData[i].second + alignment - 1) & ~ (alignment - 1);//实现对齐
         material->uniformBufferSizes[i] = dynamicSize * MAX_FRAME;
         vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             ,&material->uniformBuffer[i], dynamicSize * MAX_FRAME
@@ -1174,13 +1187,13 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
             memcpy(static_cast<char*>(material->uniformBuffer[i].mapped) + dynamicSize * k, materialInfo.UniformData[i].first, dynamicSize);
         }
         try {
-            vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.UniformDescriptorLayouts[i],
+            vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.UniformDescriptorLayouts[0],
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, uniformDescriptorSets[i].first);
         }catch (std::exception &e) {
            std::cout << e.what() << std::endl;
             exit(1);
         }
-        uniformDescriptorSets[i].second = materialInfo.UniformDescriptorLayouts[i];
+        uniformDescriptorSets[i].second = materialInfo.UniformDescriptorLayouts[0];
         VkDescriptorBufferInfo uniformBufferInfo = {
             .buffer = material->uniformBuffer[i].buffer,
             .offset = 0,
@@ -1208,7 +1221,7 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
             material->textures[i] = materialInfo.TexturesDatas[i].textureID.value();
             auto texture = getByIndex<FrameWork::Texture>(material->textures[i]);
             try {
-                vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[i],
+                vulkanDescriptorPool.AllocateDescriptorSet(materialInfo.TexturesDescriptorLayouts[0],
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, texturesDescriptorSets[i].first);
             }catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
@@ -1324,13 +1337,43 @@ void vulkanFrameWork::SetUpStaticMesh(unsigned int &meshID, std::vector<FrameWor
     meshBuffer->inUse = true;
 }
 
-void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags) {
+void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags, glm::vec3 position) {
     modelID = getNextIndex<FrameWork::Model>();
     auto model = getByIndex<FrameWork::Model>(modelID);
     FrameWork::ModelData modelData = {};
     modelData.meshDatas = resourceManager.LoadMesh(fileName, modelType, textureTypeFlags);
     model->materials.resize(modelData.meshDatas.size());
     model->meshes.resize(modelData.meshDatas.size());
+    model->inUse = true;
+    model->position = position;
+
+    //构建包围盒子
+    std::vector<FrameWork::AABB> triangleBoundingBoxes;
+    bool firstTriangle = true;
+    for (auto& m : modelData.meshDatas) {
+        for (int i = 0; i < m.indices.size(); i += 3) {
+            glm::vec3 v1 = m.vertices[m.indices[i]].position;
+            glm::vec3 v2 = m.vertices[m.indices[i + 1]].position;
+            glm::vec3 v3 = m.vertices[m.indices[i + 2]].position;
+
+            FrameWork::AABB triangleAABB;
+            triangleAABB.max = glm::max(glm::max(v1, v2), v3);
+            triangleAABB.min = glm::min(glm::min(v1, v2), v3);
+
+            if (firstTriangle) {
+                model->aabb = triangleAABB;
+                firstTriangle = false;
+            } else {
+                model->aabb.max = glm::max(model->aabb.max, triangleAABB.max);
+                model->aabb.min = glm::min(model->aabb.min, triangleAABB.min);
+            }
+
+            triangleBoundingBoxes.push_back(std::move(triangleAABB));
+        }
+    }
+    model->triangleBoundingBoxs = std::make_unique<std::vector<FrameWork::AABB>>(std::move(triangleBoundingBoxes));
+    //构建包围盒
+
     for (int i = 0; i < modelData.meshDatas.size(); i++) {
         //创建顶点信息
         SetUpStaticMesh(model->meshes[i], modelData.meshDatas[i].vertices, modelData.meshDatas[i].indices, false);
@@ -1348,14 +1391,17 @@ void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer,
         std::vector vertexBuffer = {
             mesh->VertexBuffer.buffer,
         };
-        std::vector descriptorOffset = {
-            vulkanRenderAPI.currentFrame * vulkanRenderAPI.getByIndex<FrameWork::Material>(model->materials[i])->uniformBufferSizes[0]
-            / vulkanRenderAPI.MaxFrame
-        };
-        //Uniform
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
-            material->uniformDescriptorSets.size(),
-            material->uniformDescriptorSets.data(), descriptorOffset.size(), descriptorOffset.data());
+        //Uniform 对于模型这样偏移——其他类别可以不用飞行帧维度偏移
+        for (int u = 0; u < material->uniformBuffer.size(); u++) {
+            std::vector descriptorOffset = {
+                vulkanRenderAPI.currentFrame * material->uniformBufferSizes[u]
+                / vulkanRenderAPI.MaxFrame
+            };
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, u,
+                1,
+                &material->uniformDescriptorSets[u], 1, descriptorOffset.data());
+        }
         //Tex
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, material->uniformDescriptorSets.size(),
             material->textureDescriptorSets.size(), material->textureDescriptorSets.data(), 0, nullptr);
@@ -1364,6 +1410,75 @@ void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer,
         vkCmdBindIndexBuffer(commandBuffer, mesh->IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer, mesh->indexCount, 1, 0, 0, 0);
     }
+}
+
+void vulkanFrameWork::DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer) {
+    auto mesh = getByIndex<FrameWork::Mesh>(meshID);
+    VkDeviceSize offset[] = {0};
+    std::vector vertexBuffer = {
+        mesh->VertexBuffer.buffer,
+    };
+    vkCmdBindVertexBuffers(commandBuffer, 0, (uint32_t)vertexBuffer.size(), vertexBuffer.data(), offset);
+    vkCmdBindIndexBuffer(commandBuffer, mesh->IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdDrawIndexed(commandBuffer, mesh->indexCount, 1, 0, 0, 0);
+}
+
+void vulkanFrameWork::BindMaterial(uint32_t materialID, VkCommandBuffer commandBuffer,
+    VkPipelineLayout pipelineLayout) {
+    auto material = getByIndex<FrameWork::Material>(materialID);
+    //Uniform
+    for (int u = 0; u < material->uniformBuffer.size(); u++) {
+        std::vector descriptorOffset = {
+            vulkanRenderAPI.currentFrame * material->uniformBufferSizes[u]
+            / vulkanRenderAPI.MaxFrame
+        };
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, u,
+            1,
+            &material->uniformDescriptorSets[u], 1, descriptorOffset.data());
+    }
+    //Tex
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, material->uniformDescriptorSets.size(),
+        material->textureDescriptorSets.size(), material->textureDescriptorSets.data(), 0, nullptr);
+}
+
+void vulkanFrameWork::CreateVulkanComputePipeline(uint32_t &pipelineInfoIdx, const std::string &fileName,
+    const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
+    pipelineInfoIdx = getNextIndex<FrameWork::VulkanPipeline>();
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineInfoIdx);
+    pipeline->inUse = true;
+    pipeline->descriptorSetLayouts = descriptorSetLayouts;
+    auto ShaderStageInfo = loadShader(fileName, VK_SHADER_STAGE_COMPUTE_BIT);
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipeline->pipelineLayout));
+
+    VkComputePipelineCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    createInfo.layout = pipeline->pipelineLayout;
+    createInfo.stage = ShaderStageInfo;
+    VK_CHECK_RESULT(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline->pipeline));
+}
+
+void vulkanFrameWork::CreateGPUStorgeBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer, void *data) {
+    FrameWork::Buffer stagingBuffer;
+    vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &stagingBuffer, size, data);
+    vulkanDevice->createBuffer(usageFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        &buffer, size, nullptr);
+    vulkanDevice->copyBuffer(&stagingBuffer, &buffer, graphicsQueue);
+
+    //删除中转内存
+    stagingBuffer.destroy();
+}
+
+void vulkanFrameWork::CreateHostVisibleStorageBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer,
+    void *data) {
+    vulkanDevice->createBuffer(usageFlags | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &buffer, size, data);
 }
 
 vulkanFrameWork& vulkanFrameWork::GetInstance() {
@@ -1423,6 +1538,10 @@ VkQueue vulkanFrameWork::GetVulkanGraphicsQueue() const {
 
 VkPhysicalDevice vulkanFrameWork::GetVulkanPhysicalDevice() const {
     return physicalDevice;
+}
+
+VkFormat vulkanFrameWork::GetDepthFormat() const {
+    return depthFormat;
 }
 
 void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {
@@ -1517,7 +1636,7 @@ void vulkanFrameWork::setupRenderPass() {
 	subpassDescription.pResolveAttachments = nullptr;
 
 	// Subpass dependencies for layout transitions
-	std::array<VkSubpassDependency, 3> dependencies{};
+	std::array<VkSubpassDependency, 2> dependencies{};
     //Access Mask 会指向附件类型
 
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -1536,13 +1655,7 @@ void vulkanFrameWork::setupRenderPass() {
 	dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 	dependencies[1].dependencyFlags = 0;
 
-    dependencies[2].srcSubpass = 0;
-    dependencies[2].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[2].srcAccessMask =  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    dependencies[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    dependencies[2].dependencyFlags = 0;
+
 
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

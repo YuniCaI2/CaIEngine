@@ -2,7 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/FrameWork/thirdPart/imgui" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/FrameWork/thirdPart/volk" vcs="Git" />
   </component>
 </project>
