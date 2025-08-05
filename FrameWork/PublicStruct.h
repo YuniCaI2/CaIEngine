@@ -55,7 +55,6 @@ namespace FrameWork {
         VkPipeline pipeline {VK_NULL_HANDLE};
         VkPipelineLayout pipelineLayout {VK_NULL_HANDLE};
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        uint32_t pipelineInfoIdx = -1;
 
         bool inUse = false;
     };

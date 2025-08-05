@@ -958,7 +958,6 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::str
         .basePipelineIndex = -1
     };
 
-    vulkanPipeline->pipelineInfoIdx = pipelineInfoIdx;
     VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vulkanPipeline->pipeline));
 }
 

@@ -63,10 +63,10 @@ void FrameWork::VulkanDebug::setupDebuggingMessengerCreateInfo(VkDebugUtilsMesse
     debug.pfnUserCallback = debugUtilsMessageCallback;
 }
 
-void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t colorAttachment, uint32_t depthAttachmentID) {
+void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t colorAttachment) {
     //RenderPass Init
 
-    std::array<VkAttachmentDescription, 2> attachments = {};
+    std::array<VkAttachmentDescription, 1> attachments = {};
     // Color attachment
     attachments[0].format = vulkanRenderAPI.GetVulkanSwapChain().colorFormat;
     attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -77,36 +77,36 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     attachments[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     // Depth attachment
-    attachments[1].format = vulkanRenderAPI.GetDepthFormat();
-    attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // attachments[1].format = vulkanRenderAPI.GetDepthFormat();
+    // attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    // attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    // attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    // attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    // attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    // attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference colorReference = {};
     colorReference.attachment = 0;
     colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference depthReference = {};
-    depthReference.attachment = 1;
-    depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // VkAttachmentReference depthReference = {};
+    // depthReference.attachment = 1;
+    // depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 
     VkSubpassDescription subpassDescription = {};
     subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpassDescription.colorAttachmentCount = 1;
     subpassDescription.pColorAttachments = &colorReference;
-    subpassDescription.pDepthStencilAttachment = &depthReference;
+    subpassDescription.pDepthStencilAttachment = nullptr;
     subpassDescription.inputAttachmentCount = 0;
     subpassDescription.pInputAttachments = nullptr;
     subpassDescription.preserveAttachmentCount = 0;
     subpassDescription.pPreserveAttachments = nullptr;
     subpassDescription.pResolveAttachments = nullptr;
 
-    std::array<VkSubpassDependency, 2> dependencies{};
+    std::array<VkSubpassDependency, 1> dependencies{};
     //Access Mask 会指向附件类型
 
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -117,13 +117,13 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
     dependencies[0].dependencyFlags = 0;
 
-    dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[1].dstSubpass = 0;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dependencyFlags = 0;
+    // dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+    // dependencies[1].dstSubpass = 0;
+    // dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    // dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    // dependencies[1].dependencyFlags = 0;
 
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -139,7 +139,7 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
 
     //framebuffer
     vulkanRenderAPI.CreateFrameBuffer(frameBufferID,
-        {colorAttachment, depthAttachmentID},
+        {colorAttachment},
         vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(), debugRenderPass);
     frameBuffers = vulkanRenderAPI.getByIndex<VulkanFBO>(frameBufferID)->framebuffers;
 
@@ -178,8 +178,8 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     vulkanRenderAPI.SetPipelineRasterizationState(pipelineInfoId, rasterizer);
     VkPipelineDepthStencilStateCreateInfo depthStencil = {};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthTestEnable = VK_FALSE;
+    depthStencil.depthWriteEnable = VK_FALSE;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;

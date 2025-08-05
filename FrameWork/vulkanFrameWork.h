@@ -392,7 +392,6 @@ public:
         }else if (std::is_same_v<T, FrameWork::VulkanPipeline>) {
             auto vulkanPipeline = vulkanPipelines[index];
             vulkanPipeline->inUse = false;
-            destroyByIndex<FrameWork::VulkanPipelineInfo>(vulkanPipeline->pipelineInfoIdx);
             if (vulkanPipeline->pipeline != VK_NULL_HANDLE) {
                 vkDestroyPipeline(device, vulkanPipeline->pipeline, nullptr);
             }

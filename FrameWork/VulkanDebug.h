@@ -45,7 +45,7 @@ namespace FrameWork {
 
     class AABBDeBugging {
     public:
-        void Init(const std::string& shaderName, uint32_t colorAttachmentID, uint32_t depthAttachmentID);//确定ubo的格式
+        void Init(const std::string& shaderName, uint32_t colorAttachmentID);//确定ubo的格式
         void GenerateAABB(uint32_t modelID);
         void Draw(VkCommandBuffer cmdBuffer);
         void Update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);

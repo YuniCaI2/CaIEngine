@@ -22,6 +22,11 @@ private:
     std::vector<uint32_t> modelID;
     VkDescriptorSetLayout dynamicDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout textureDescriptorSetLayout = VK_NULL_HANDLE;
+
+    //MSAA Resource
+    uint32_t msaaPipelineID = -1;
+    uint32_t msaaFrameBufferID = -1;
+
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
@@ -33,6 +38,7 @@ private:
 
     FrameWork::AABBDeBugging aabbDeBugging{};
     bool displayAABB = false;
+    bool useMSAA = false;
 
 public:
     Renderer() {
@@ -47,7 +53,20 @@ public:
 
     void buildCommandBuffers() {
         auto cmdBuffer = vulkanRenderAPI.BeginCommandBuffer();
-        vulkanRenderAPI.BeginRenderPass("forward", frameBufferID, vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight());
+        if (useMSAA) {
+            auto VulkanPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(msaaPipelineID);
+            graphicsPipeline = VulkanPipeline->pipeline;
+            pipelineLayout = VulkanPipeline->pipelineLayout;
+            vulkanRenderAPI.BeginRenderPass("forwardMSAA", msaaFrameBufferID,
+                vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight());
+
+        }else {
+            auto VulkanPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID);
+            graphicsPipeline = VulkanPipeline->pipeline;
+            pipelineLayout = VulkanPipeline->pipelineLayout;
+            vulkanRenderAPI.BeginRenderPass("forward", frameBufferID,
+                vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight());
+        }
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         for (int i = 0; i < modelID.size(); i++) {
             vulkanRenderAPI.DrawModel(modelID[i], cmdBuffer, pipelineLayout);
@@ -110,6 +129,7 @@ public:
         VkRect2D scissor = {};
         scissor.offset = {0, 0};
         scissor.extent = {vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight()};
+        
         uint32_t pipelineInfoId = -1;
         vulkanRenderAPI.InitPipelineInfo(pipelineInfoId);
         vulkanRenderAPI.LoadPipelineShader(pipelineInfoId, "triangle", VK_SHADER_STAGE_VERTEX_BIT);
@@ -118,6 +138,7 @@ public:
         vulkanRenderAPI.AddPipelineVertexBindingDescription(pipelineInfoId, bindingDescription);
         vulkanRenderAPI.SetPipelineViewPort(pipelineInfoId, viewport);
         vulkanRenderAPI.SetPipelineScissor(pipelineInfoId, scissor);
+        
         VkPipelineRasterizationStateCreateInfo rasterizer = {};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizer.depthClampEnable = VK_FALSE;
@@ -128,6 +149,7 @@ public:
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
         vulkanRenderAPI.SetPipelineRasterizationState(pipelineInfoId, rasterizer);
+        
         VkPipelineDepthStencilStateCreateInfo depthStencil = {};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencil.depthTestEnable = VK_TRUE;
@@ -136,17 +158,45 @@ public:
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.stencilTestEnable = VK_FALSE;
         vulkanRenderAPI.SetPipelineDepthStencilState(pipelineInfoId, depthStencil);
+        
         VkPipelineMultisampleStateCreateInfo multisampling = {};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         vulkanRenderAPI.SetPipelineMultiSampleState(pipelineInfoId, multisampling);
         vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
+        
         vulkanRenderAPI.CreateVulkanPipeline(pipelineID, "forwardPipeline", pipelineInfoId, "forward", 0,
                                              {dynamicDescriptorSetLayout, textureDescriptorSetLayout},
-                                             1, 6); //可以设置MAX_TexNum
+                                             1, 6);
         graphicsPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipeline;
         pipelineLayout = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipelineLayout;
+
+        // 为MSAA创建完全独立的管线信息（如果需要的话）
+        if (vulkanRenderAPI.GetSampleCount() > VK_SAMPLE_COUNT_1_BIT) {
+            uint32_t msaaPipelineInfoId = -1;  // 新的独立ID
+            vulkanRenderAPI.InitPipelineInfo(msaaPipelineInfoId);
+            vulkanRenderAPI.LoadPipelineShader(msaaPipelineInfoId, "triangle", VK_SHADER_STAGE_VERTEX_BIT);
+            vulkanRenderAPI.LoadPipelineShader(msaaPipelineInfoId, "triangle", VK_SHADER_STAGE_FRAGMENT_BIT);
+            vulkanRenderAPI.AddPipelineVertexAttributeDescription(msaaPipelineInfoId, attributeDescriptions);
+            vulkanRenderAPI.AddPipelineVertexBindingDescription(msaaPipelineInfoId, bindingDescription);
+            vulkanRenderAPI.SetPipelineViewPort(msaaPipelineInfoId, viewport);
+            vulkanRenderAPI.SetPipelineScissor(msaaPipelineInfoId, scissor);
+            vulkanRenderAPI.SetPipelineRasterizationState(msaaPipelineInfoId, rasterizer);
+            vulkanRenderAPI.SetPipelineDepthStencilState(msaaPipelineInfoId, depthStencil);
+            
+            // MSAA特定的多重采样状态
+            VkPipelineMultisampleStateCreateInfo msaaMultisampling = {};
+            msaaMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+            msaaMultisampling.sampleShadingEnable = VK_FALSE;
+            msaaMultisampling.rasterizationSamples = vulkanRenderAPI.GetSampleCount();
+            vulkanRenderAPI.SetPipelineMultiSampleState(msaaPipelineInfoId, msaaMultisampling);
+            vulkanRenderAPI.AddPipelineColorBlendState(msaaPipelineInfoId, true, BlendOp::Opaque);
+            
+            vulkanRenderAPI.CreateVulkanPipeline(msaaPipelineID, "forwardMSAAPipeline", msaaPipelineInfoId, "forwardMSAA", 0,
+                                                 {dynamicDescriptorSetLayout, textureDescriptorSetLayout},
+                                                 1, 6);
+        }
     }
 
     void prepare() {
@@ -162,12 +212,21 @@ public:
                                          vulkanRenderAPI.GetFrameHeight(), AttachmentType::Depth, VK_SAMPLE_COUNT_1_BIT,
                                          false);
         std::vector<uint32_t> attachments = {colorAttachIdx, depthAttachIdx};
-
-
         vulkanRenderAPI.CreateFrameBuffer(frameBufferID, attachments, vulkanRenderAPI.GetFrameWidth(),
                                           vulkanRenderAPI.GetFrameHeight(), renderPass);
+
+        uint32_t msaaColorAttachIdx = -1, msaaDepthAttachIdx = -1;
+        vulkanRenderAPI.CreateAttachment(msaaColorAttachIdx, vulkanRenderAPI.GetFrameWidth(),
+                                 vulkanRenderAPI.GetFrameHeight(), AttachmentType::Color, vulkanRenderAPI.GetSampleCount(),
+                                 false);
+        vulkanRenderAPI.CreateAttachment(msaaDepthAttachIdx, vulkanRenderAPI.GetFrameWidth(),
+                                         vulkanRenderAPI.GetFrameHeight(), AttachmentType::Depth, vulkanRenderAPI.GetSampleCount(),
+                                         false);
+        vulkanRenderAPI.CreateFrameBuffer(msaaFrameBufferID, {msaaColorAttachIdx, msaaDepthAttachIdx, colorAttachIdx}, vulkanRenderAPI.GetFrameWidth(),
+                                          vulkanRenderAPI.GetFrameHeight(), vulkanRenderAPI.GetRenderPass("forwardMSAA"));
+
         vulkanRenderAPI.InitPresent("uniformPresent", colorAttachIdx);
-        aabbDeBugging.Init("aabbDebug", colorAttachIdx, depthAttachIdx);
+        aabbDeBugging.Init("aabbDebug", colorAttachIdx);
 
 
         //加载模型
@@ -206,6 +265,7 @@ public:
         GUI.SetGUIItems(
             [this] {
                 ImGui::Checkbox("AABB", &displayAABB);
+                ImGui::Checkbox("MSAA", &useMSAA);
             }
         );
     }
