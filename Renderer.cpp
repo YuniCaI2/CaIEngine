@@ -174,26 +174,14 @@ public:
 
         // 为MSAA创建完全独立的管线信息（如果需要的话）
         if (vulkanRenderAPI.GetSampleCount() > VK_SAMPLE_COUNT_1_BIT) {
-            uint32_t msaaPipelineInfoId = -1;  // 新的独立ID
-            vulkanRenderAPI.InitPipelineInfo(msaaPipelineInfoId);
-            vulkanRenderAPI.LoadPipelineShader(msaaPipelineInfoId, "triangle", VK_SHADER_STAGE_VERTEX_BIT);
-            vulkanRenderAPI.LoadPipelineShader(msaaPipelineInfoId, "triangle", VK_SHADER_STAGE_FRAGMENT_BIT);
-            vulkanRenderAPI.AddPipelineVertexAttributeDescription(msaaPipelineInfoId, attributeDescriptions);
-            vulkanRenderAPI.AddPipelineVertexBindingDescription(msaaPipelineInfoId, bindingDescription);
-            vulkanRenderAPI.SetPipelineViewPort(msaaPipelineInfoId, viewport);
-            vulkanRenderAPI.SetPipelineScissor(msaaPipelineInfoId, scissor);
-            vulkanRenderAPI.SetPipelineRasterizationState(msaaPipelineInfoId, rasterizer);
-            vulkanRenderAPI.SetPipelineDepthStencilState(msaaPipelineInfoId, depthStencil);
-            
+
             // MSAA特定的多重采样状态
             VkPipelineMultisampleStateCreateInfo msaaMultisampling = {};
             msaaMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             msaaMultisampling.sampleShadingEnable = VK_FALSE;
             msaaMultisampling.rasterizationSamples = vulkanRenderAPI.GetSampleCount();
-            vulkanRenderAPI.SetPipelineMultiSampleState(msaaPipelineInfoId, msaaMultisampling);
-            vulkanRenderAPI.AddPipelineColorBlendState(msaaPipelineInfoId, true, BlendOp::Opaque);
-            
-            vulkanRenderAPI.CreateVulkanPipeline(msaaPipelineID, "forwardMSAAPipeline", msaaPipelineInfoId, "forwardMSAA", 0,
+            vulkanRenderAPI.SetPipelineMultiSampleState(pipelineInfoId, msaaMultisampling);
+            vulkanRenderAPI.CreateVulkanPipeline(msaaPipelineID, "forwardMSAAPipeline", pipelineInfoId, "forwardMSAA", 0,
                                                  {dynamicDescriptorSetLayout, textureDescriptorSetLayout},
                                                  1, 6);
         }

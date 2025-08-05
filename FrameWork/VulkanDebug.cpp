@@ -203,8 +203,8 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     vulkanRenderAPI.CreateVulkanPipeline(debugPipelineID, "DeBugPipeline", pipelineInfoId, "debugRenderPass", 0,
         {uniformDescriptorSetLayout}, 1, 0
         );
-    debugPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineInfoId)->pipeline;
-    debugPipelineLayout = vulkanRenderAPI.getByIndex<VulkanPipeline>(pipelineInfoId)->pipelineLayout;
+    debugPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(debugPipelineID)->pipeline;
+    debugPipelineLayout = vulkanRenderAPI.getByIndex<VulkanPipeline>(debugPipelineID)->pipelineLayout;
 }
 
 void FrameWork::AABBDeBugging::GenerateAABB(uint32_t modelID) {

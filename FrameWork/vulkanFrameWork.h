@@ -170,6 +170,8 @@ public:
 
 
     virtual ~vulkanFrameWork();
+    vulkanFrameWork(const vulkanFrameWork&) = delete;
+    vulkanFrameWork& operator=(const vulkanFrameWork&) = delete;
     //设置Vulkan的实例，设置准许的扩展和链接可用的物理设备
     bool initVulkan();
 
