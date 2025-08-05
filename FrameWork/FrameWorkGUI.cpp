@@ -30,6 +30,10 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
+                        ImGuiCond_FirstUseEver,
+                        ImVec2(0.0f, 0.0f)); // pivot点设为(0.5, 0.5)表示中心点
+    ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_FirstUseEver);
 
     // 设置样式
     ImGui::StyleColorsDark();
@@ -233,7 +237,7 @@ void FrameWork::FrameWorkGUI::RenderGUI(VkCommandBuffer commandBuffer) const {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    if (ImGui::Begin("GUIWindow")) {
+    if (ImGui::Begin("Setting")) {
         ItemFunc();
     }
     ImGui::End();

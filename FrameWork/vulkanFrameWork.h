@@ -49,6 +49,8 @@ private:
     using WindowResizedCallback = std::function<void()>;
     WindowResizedCallback windowResizedCallback{nullptr};
 
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
 protected:
     //得到一个绝对路径
     std::string getShaderPath() const;
@@ -114,6 +116,7 @@ protected:
     std::vector<FrameWork::VulkanPipeline*> vulkanPipelines;
     std::vector<FrameWork::VulkanPipelineInfo*> vulkanPipelineInfos;
     std::unordered_map<std::string, VkRenderPass> renderPasses;//记录renderpass
+    std::unordered_map<std::string, VkDescriptorSetLayout> descriptorSetLayouts;
     std::vector<FrameWork::Material*> materials;
     std::vector<FrameWork::Model*> models;
 
@@ -200,6 +203,7 @@ public:
     void CreateFrameBuffer(uint32_t& frameBufferId, const std::vector<uint32_t>& attachments, uint32_t width, uint32_t height, VkRenderPass renderPass);
     void CreatePresentFrameBuffer(uint32_t& frameBufferId, uint32_t attachment, VkRenderPass renderPass);
     void RegisterRenderPass(VkRenderPass renderPass, const std::string& name);
+    void RegisterDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, const std::string& name);
     void UnRegisterRenderPass(const std::string& name);
 
     //创建pipelineInfo
@@ -219,6 +223,14 @@ public:
         VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
     //这里注意默认UniformObject时一个大结构体，也方便管理使用偏移更新不失性能，且注意DescriptorSetLayout只需要提供两个种类，具体数量通过后面两个参数控制
     void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout, uint32_t uniform, uint32_t texNum);//最后一项是为了创建的pipelineLayout
+
+    //简单封装
+    VkCommandBuffer BeginCommandBuffer() const;
+    void BeginRenderPass(const std::string& renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const;
+    void BeginRenderPass(VkRenderPass renderPass, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const;
+    void EndRenderPass() const;
+    void EndCommandBuffer() const;
+
 
     //初始化呈现
     void InitPresent(const std::string& presentShaderName, uint32_t colorAttachmentID);
@@ -257,6 +269,7 @@ public:
     VkQueue GetVulkanGraphicsQueue() const;
     VkPhysicalDevice GetVulkanPhysicalDevice() const;
     VkFormat GetDepthFormat() const;
+    VkSampleCountFlagBits GetSampleCount() const;
 
     void SetWindowResizedCallBack(const WindowResizedCallback& callback);
 
@@ -385,9 +398,6 @@ public:
             }
             if (vulkanPipeline->pipelineLayout != VK_NULL_HANDLE) {
                 vkDestroyPipelineLayout(device, vulkanPipeline->pipelineLayout, nullptr);
-            }
-            for (auto& descriptorSetLayout : vulkanPipeline->descriptorSetLayouts) {
-                vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
             }
         }else if (std::is_same_v<T, FrameWork::Material>) {
             auto material = materials[index];

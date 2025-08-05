@@ -18,7 +18,6 @@
 #define VOLK_IMPLEMENTATION
 #define _VALIDATION
 
-
 std::string vulkanFrameWork::getWindowTitle() const {
     std::string windowTitle = {title + "-" + deviceProperties.deviceName};
     if (!settings.overlay) {
@@ -159,6 +158,11 @@ vulkanFrameWork::~vulkanFrameWork() {
            vkDestroyRenderPass(device, r, nullptr);
        }
     }
+    for (auto& [_, d] : descriptorSetLayouts) {
+        if (d != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(device, d, nullptr);
+        }
+    }
     // Clean up Vulkan resources
     swapChain.cleanup();
     vulkanDescriptorPool.DestroyDescriptorPool();
@@ -167,11 +171,7 @@ vulkanFrameWork::~vulkanFrameWork() {
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     }
 
-    // for (auto& frameBuffer : frameBuffers)
-    // {
-    //     vkDestroyFramebuffer(device, frameBuffer, nullptr);
-    // }
-    //
+
     for (auto& shaderModule : shaderModules)
     {
         vkDestroyShaderModule(device, shaderModule, nullptr);
@@ -278,6 +278,11 @@ bool vulkanFrameWork::initVulkan() {
         enabledFeatures.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
         enabledFeatures.fillModeNonSolid = deviceFeatures.fillModeNonSolid;
     }
+    if (settings.validation) {
+        enabledDeviceExtensions.push_back("VK_KHR_video_decode_queue");
+        enabledDeviceExtensions.push_back("VK_KHR_video_encode_queue");
+        enabledDeviceExtensions.push_back("VK_KHR_video_queue");
+    }
 
     vulkanDevice = new FrameWork::VulkanDevice(physicalDevice, instance);
 
@@ -285,6 +290,21 @@ bool vulkanFrameWork::initVulkan() {
     getEnabledExtensions();
 
     result = vulkanDevice->createLogicalDevice(enabledFeatures, enabledDeviceExtensions, deviceCreatepNextChain);
+
+    auto counts = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
+    auto getMaxSampleCount = [](VkSampleCountFlags counts) {
+        if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+        if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+        if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+        if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+        if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+        if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+        return VK_SAMPLE_COUNT_1_BIT;
+    };
+
+    msaaSamples = getMaxSampleCount(counts);
+
     commandPool = vulkanDevice->commandPool;
     if (result != VK_SUCCESS) {
         std::cerr << "Failed to create logical device" << std::endl;
@@ -699,6 +719,10 @@ void vulkanFrameWork::RegisterRenderPass(VkRenderPass renderPass, const std::str
     renderPasses[name] = renderPass; //使用哈希
 }
 
+void vulkanFrameWork::RegisterDescriptorSetLayout(VkDescriptorSetLayout&descriptorSetLayout, const std::string &name) {
+    descriptorSetLayouts[name] = descriptorSetLayout;
+}
+
 void vulkanFrameWork::UnRegisterRenderPass(const std::string &name) {
     if (renderPasses.find(name) != renderPasses.end()) {
         renderPasses.erase(name);
@@ -938,6 +962,83 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::str
     VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vulkanPipeline->pipeline));
 }
 
+void vulkanFrameWork::BeginRenderPass(const std::string &renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const {
+    VkClearValue clearValues[2];
+    clearValues[0].color = vulkanRenderAPI.defaultClearColor;
+    clearValues[1].depthStencil = {1.0f, 0};
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = vulkanRenderAPI.GetRenderPass(renderPassName);
+    renderPassBeginInfo.renderArea.offset.x = 0;
+    renderPassBeginInfo.renderArea.offset.y = 0;
+    renderPassBeginInfo.renderArea.extent.width = renderWidth;
+    renderPassBeginInfo.renderArea.extent.height = renderHeight;
+    renderPassBeginInfo.clearValueCount = 2;
+    renderPassBeginInfo.pClearValues = clearValues;
+    renderPassBeginInfo.framebuffer = vulkanRenderAPI.getByIndex<FrameWork::VulkanFBO>(frameBufferID)->framebuffers[
+        vulkanRenderAPI.GetCurrentFrame()];
+    vkCmdBeginRenderPass(GetCurrentCommandBuffer(), &renderPassBeginInfo,
+                         VK_SUBPASS_CONTENTS_INLINE);
+    VkViewport viewport = {};
+    viewport.width = (float) renderWidth;
+    viewport.height = (float) renderHeight;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(GetCurrentCommandBuffer(), 0, 1, &viewport);
+    VkRect2D scissor = {};
+    scissor.extent.width = renderWidth;
+    scissor.extent.height = renderHeight;
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    vkCmdSetScissor(GetCurrentCommandBuffer(), 0, 1, &scissor);
+}
+
+void vulkanFrameWork::BeginRenderPass(VkRenderPass renderPass, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const {
+    VkClearValue clearValues[2];
+    clearValues[0].color = vulkanRenderAPI.defaultClearColor;
+    clearValues[1].depthStencil = {1.0f, 0};
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.renderArea.offset.x = 0;
+    renderPassBeginInfo.renderArea.offset.y = 0;
+    renderPassBeginInfo.renderArea.extent.width = renderWidth;
+    renderPassBeginInfo.renderArea.extent.height = renderHeight;
+    renderPassBeginInfo.clearValueCount = 2;
+    renderPassBeginInfo.pClearValues = clearValues;
+    renderPassBeginInfo.framebuffer = vulkanRenderAPI.getByIndex<FrameWork::VulkanFBO>(frameBufferID)->framebuffers[
+        vulkanRenderAPI.GetCurrentFrame()];
+    vkCmdBeginRenderPass(GetCurrentCommandBuffer(), &renderPassBeginInfo,
+                         VK_SUBPASS_CONTENTS_INLINE);
+    VkViewport viewport = {};
+    viewport.width = (float) renderWidth;
+    viewport.height = (float) renderHeight;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(GetCurrentCommandBuffer(), 0, 1, &viewport);
+    VkRect2D scissor = {};
+    scissor.extent.width = renderWidth;
+    scissor.extent.height = renderHeight;
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    vkCmdSetScissor(GetCurrentCommandBuffer(), 0, 1, &scissor);
+}
+
+void vulkanFrameWork::EndRenderPass() const {
+    vkCmdEndRenderPass(GetCurrentCommandBuffer());
+}
+
+void vulkanFrameWork::EndCommandBuffer() const {
+    VK_CHECK_RESULT(vkEndCommandBuffer(GetCurrentCommandBuffer()));
+}
+
+VkCommandBuffer vulkanFrameWork::BeginCommandBuffer() const {
+    auto cmdBuffer = GetCurrentCommandBuffer();
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+    return cmdBuffer;
+}
 
 void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t colorAttachmentID) {
     VkAttachmentDescription colorAttachmentDescription = {
@@ -1000,6 +1101,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     RegisterRenderPass(presentRenderPass, "presentRenderPass");
 
     auto presentDescriptorLayout = CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    // RegisterDescriptorSetLayout(presentDescriptorLayout, "presentDescriptorLayout");
 
     uint32_t attachment = -1;
     CreateAttachment(attachment, windowWidth, windowHeight, AttachmentType::Present, VK_SAMPLE_COUNT_1_BIT, false);
@@ -1544,6 +1646,10 @@ VkFormat vulkanFrameWork::GetDepthFormat() const {
     return depthFormat;
 }
 
+VkSampleCountFlagBits vulkanFrameWork::GetSampleCount() const {
+    return msaaSamples;
+}
+
 void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {
     windowResizedCallback = callback;
 }
@@ -1595,80 +1701,174 @@ void vulkanFrameWork::setupDepthStencil() {
 void vulkanFrameWork::setupRenderPass() {
 
     VkRenderPass renderPass;
-    std::array<VkAttachmentDescription, 2> attachments = {};
-	// Color attachment
-	attachments[0].format = swapChain.colorFormat;
-	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	// Depth attachment
-	attachments[1].format = depthFormat;
-	attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-	attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    {
+        std::array<VkAttachmentDescription, 2> attachments = {};
+        // Color attachment
+        attachments[0].format = swapChain.colorFormat;
+        attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        // Depth attachment
+        attachments[1].format = depthFormat;
+        attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 
-	VkAttachmentReference colorReference = {};
-	colorReference.attachment = 0;
-	colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        VkAttachmentReference colorReference = {};
+        colorReference.attachment = 0;
+        colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	VkAttachmentReference depthReference = {};
-	depthReference.attachment = 1;
-	depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        VkAttachmentReference depthReference = {};
+        depthReference.attachment = 1;
+        depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	VkSubpassDescription subpassDescription = {};
-	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorReference;
-	subpassDescription.pDepthStencilAttachment = &depthReference;
-	subpassDescription.inputAttachmentCount = 0;
-	subpassDescription.pInputAttachments = nullptr;
-	subpassDescription.preserveAttachmentCount = 0;
-	subpassDescription.pPreserveAttachments = nullptr;
-	subpassDescription.pResolveAttachments = nullptr;
+        VkSubpassDescription subpassDescription = {};
+        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpassDescription.colorAttachmentCount = 1;
+        subpassDescription.pColorAttachments = &colorReference;
+        subpassDescription.pDepthStencilAttachment = &depthReference;
+        subpassDescription.inputAttachmentCount = 0;
+        subpassDescription.pInputAttachments = nullptr;
+        subpassDescription.preserveAttachmentCount = 0;
+        subpassDescription.pPreserveAttachments = nullptr;
+        subpassDescription.pResolveAttachments = nullptr;
 
-	// Subpass dependencies for layout transitions
-	std::array<VkSubpassDependency, 2> dependencies{};
-    //Access Mask 会指向附件类型
+        // Subpass dependencies for layout transitions
+        std::array<VkSubpassDependency, 2> dependencies{};
+        //Access Mask 会指向附件类型
 
-	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependencies[0].dstSubpass = 0;
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-	dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-	dependencies[0].dependencyFlags = 0;
+        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[0].dstSubpass = 0;
+        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        dependencies[0].dependencyFlags = 0;
 
-	dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependencies[1].dstSubpass = 0;
-	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependencies[1].srcAccessMask = 0;
-	dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-	dependencies[1].dependencyFlags = 0;
+        dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[1].dstSubpass = 0;
+        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].srcAccessMask = 0;
+        dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        dependencies[1].dependencyFlags = 0;
 
 
 
-	VkRenderPassCreateInfo renderPassInfo = {};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-	renderPassInfo.pAttachments = attachments.data();
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpassDescription;
-	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-	renderPassInfo.pDependencies = dependencies.data();
+        VkRenderPassCreateInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        renderPassInfo.pAttachments = attachments.data();
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subpassDescription;
+        renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+        renderPassInfo.pDependencies = dependencies.data();
 
-	VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
+        VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 
-    renderPasses["forward"] = renderPass;
+        renderPasses["forward"] = renderPass;
+    }
+
+    //MSAA
+    {
+        std::array<VkAttachmentDescription, 3> attachments = {};
+        // Color attachment
+        attachments[0].format = swapChain.colorFormat;
+        attachments[0].samples = msaaSamples;
+        attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        // Depth attachment
+        attachments[1].format = depthFormat;
+        attachments[1].samples = msaaSamples;
+        attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        attachments[2].format = swapChain.colorFormat;
+        attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[2].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkAttachmentReference colorReference = {};
+        colorReference.attachment = 0;
+        colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference depthReference = {};
+        depthReference.attachment = 1;
+        depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference resolveReference = {};
+        resolveReference.attachment = 2;
+        resolveReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+
+
+        VkSubpassDescription subpassDescription = {};
+        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpassDescription.colorAttachmentCount = 1;
+        subpassDescription.pColorAttachments = &colorReference;
+        subpassDescription.pDepthStencilAttachment = &depthReference;
+        subpassDescription.inputAttachmentCount = 0;
+        subpassDescription.pInputAttachments = nullptr;
+        subpassDescription.preserveAttachmentCount = 0;
+        subpassDescription.pPreserveAttachments = nullptr;
+        subpassDescription.pResolveAttachments = &resolveReference;
+
+        // Subpass dependencies for layout transitions
+        std::array<VkSubpassDependency, 2> dependencies{};
+        //Access Mask 会指向附件类型
+
+        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[0].dstSubpass = 0;
+        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        dependencies[0].dependencyFlags = 0;
+
+        dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[1].dstSubpass = 0;
+        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].srcAccessMask = 0;
+        dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        dependencies[1].dependencyFlags = 0;
+
+
+
+        VkRenderPassCreateInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        renderPassInfo.pAttachments = attachments.data();
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subpassDescription;
+        renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+        renderPassInfo.pDependencies = dependencies.data();
+
+        VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
+        renderPasses["forwardMSAA"] = renderPass;
+    }
+
 }
 //虚函数
 void vulkanFrameWork::getEnabledFeatures() {

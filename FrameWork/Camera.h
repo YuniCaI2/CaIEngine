@@ -66,17 +66,23 @@ namespace FrameWork {
                 //设置相机的指针回调
                 float xPos = static_cast<float>(xpos);
                 float yPos = static_cast<float>(ypos);
-                if (firstMouse) {
+                //中键用来移动视角
+                if (inputManager.GetMouseButton(MouseButton::Mid) == GLFW_PRESS) {
+                    if (firstMouse) {
+
+                        lastX = xPos;
+                        lastY = yPos;
+                        firstMouse = false;
+                    }
+                    auto xOffset = xPos - lastX;
+                    auto yOffset = lastY - ypos;
+
                     lastX = xPos;
                     lastY = yPos;
-                    firstMouse = false;
+                    ProcessMouseMovement(xOffset, yOffset);
+                }else {
+                    firstMouse = true;
                 }
-                auto xOffset = xPos - lastX;
-                auto yOffset = lastY - ypos;
-
-                lastX = xPos;
-                lastY = yPos;
-                ProcessMouseMovement(xOffset, yOffset);
             });
         }
 

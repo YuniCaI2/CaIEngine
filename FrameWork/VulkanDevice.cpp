@@ -165,7 +165,7 @@ VkResult FrameWork::VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures e
     }
 
     //创建逻辑设备
-    std::vector<const char *> deviceExtensions(enabledExtensions);
+    std::vector<const char *> deviceExtensions(std::move(enabledExtensions));
     if (useSwapChain) {
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         deviceExtensions.push_back(VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME);
