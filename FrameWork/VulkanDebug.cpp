@@ -197,7 +197,7 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
         .primitiveRestartEnable = VK_FALSE
     };
     uniformDescriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,  VK_SHADER_STAGE_VERTEX_BIT);
-    // vulkanRenderAPI.RegisterDescriptorSetLayout(uniformDescriptorSetLayout, "debugDescriptorSetLayout");
+    vulkanRenderAPI.RegisterDescriptorSetLayout(uniformDescriptorSetLayout, "debugDescriptorSetLayout");
     vulkanRenderAPI.SetPipelineInputAssembly(pipelineInfoId, inputAssembly);
     vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
     vulkanRenderAPI.CreateVulkanPipeline(debugPipelineID, "DeBugPipeline", pipelineInfoId, "debugRenderPass", 0,

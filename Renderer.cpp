@@ -32,6 +32,7 @@ private:
     FrameWork::FrameWorkGUI GUI{};
 
     FrameWork::AABBDeBugging aabbDeBugging{};
+    bool displayAABB = false;
 
 public:
     Renderer() {
@@ -45,46 +46,21 @@ public:
     }
 
     void buildCommandBuffers() {
-        VkCommandBufferBeginInfo cmdBufInfo = {};
-        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        VkClearValue clearValues[2];
-        clearValues[0].color = vulkanRenderAPI.defaultClearColor;
-        clearValues[1].depthStencil = {1.0f, 0};
-        VkRenderPassBeginInfo renderPassBeginInfo = {};
-        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = vulkanRenderAPI.GetRenderPass("forward");
-        renderPassBeginInfo.renderArea.offset.x = 0;
-        renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width = vulkanRenderAPI.GetFrameWidth();
-        renderPassBeginInfo.renderArea.extent.height = vulkanRenderAPI.GetFrameHeight();
-        renderPassBeginInfo.clearValueCount = 2;
-        renderPassBeginInfo.pClearValues = clearValues;
-        renderPassBeginInfo.framebuffer = vulkanRenderAPI.getByIndex<FrameWork::VulkanFBO>(frameBufferID)->framebuffers[
-            vulkanRenderAPI.GetCurrentFrame()];
-        VK_CHECK_RESULT(vkBeginCommandBuffer(vulkanRenderAPI.GetCurrentCommandBuffer(), &cmdBufInfo));
-        vkCmdBeginRenderPass(vulkanRenderAPI.GetCurrentCommandBuffer(), &renderPassBeginInfo,
-                             VK_SUBPASS_CONTENTS_INLINE);
-        VkViewport viewport = {};
-        viewport.width = (float) vulkanRenderAPI.windowWidth;
-        viewport.height = (float) vulkanRenderAPI.windowHeight;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &viewport);
-        VkRect2D scissor = {};
-        scissor.extent.width = vulkanRenderAPI.windowWidth;
-        scissor.extent.height = vulkanRenderAPI.windowHeight;
-        scissor.offset.x = 0;
-        scissor.offset.y = 0;
-        vkCmdSetScissor(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &scissor);
-        vkCmdBindPipeline(vulkanRenderAPI.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        auto cmdBuffer = vulkanRenderAPI.BeginCommandBuffer();
+        vulkanRenderAPI.BeginRenderPass("forward", frameBufferID, vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight());
+        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         for (int i = 0; i < modelID.size(); i++) {
-            vulkanRenderAPI.DrawModel(modelID[i], vulkanRenderAPI.GetCurrentCommandBuffer(), pipelineLayout);
+            vulkanRenderAPI.DrawModel(modelID[i], cmdBuffer, pipelineLayout);
         }
-        vkCmdEndRenderPass(vulkanRenderAPI.GetCurrentCommandBuffer());
-        aabbDeBugging.Draw(vulkanRenderAPI.GetCurrentCommandBuffer());
-        vulkanRenderAPI.PresentFrame(vulkanRenderAPI.GetCurrentCommandBuffer(), vulkanRenderAPI.GetCurrentImageIndex());
-        GUI.RenderGUI(vulkanRenderAPI.GetCurrentCommandBuffer());
-        VK_CHECK_RESULT(vkEndCommandBuffer(vulkanRenderAPI.GetCurrentCommandBuffer()));
+        vulkanRenderAPI.EndRenderPass();
+        //---------------------------------------------------------------------------------
+        if (displayAABB) {
+            aabbDeBugging.Draw(cmdBuffer);
+        }
+        vulkanRenderAPI.PresentFrame(cmdBuffer, vulkanRenderAPI.GetCurrentImageIndex());
+        GUI.RenderGUI(cmdBuffer);
+
+        vulkanRenderAPI.EndCommandBuffer();
     }
 
     void updateUniformBuffer() {
@@ -117,6 +93,8 @@ public:
         textureDescriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
              VK_SHADER_STAGE_FRAGMENT_BIT);
+        vulkanRenderAPI.RegisterDescriptorSetLayout(dynamicDescriptorSetLayout, "dynamicDescriptorSetLayout");
+        vulkanRenderAPI.RegisterDescriptorSetLayout(textureDescriptorSetLayout, "textureDescriptorSetLayout");
     }
 
     void createGraphicsPipeline() {
@@ -184,6 +162,8 @@ public:
                                          vulkanRenderAPI.GetFrameHeight(), AttachmentType::Depth, VK_SAMPLE_COUNT_1_BIT,
                                          false);
         std::vector<uint32_t> attachments = {colorAttachIdx, depthAttachIdx};
+
+
         vulkanRenderAPI.CreateFrameBuffer(frameBufferID, attachments, vulkanRenderAPI.GetFrameWidth(),
                                           vulkanRenderAPI.GetFrameHeight(), renderPass);
         vulkanRenderAPI.InitPresent("uniformPresent", colorAttachIdx);
@@ -208,10 +188,6 @@ public:
         vulkanRenderAPI.LoadModel(modelID_, "cocona", ModelType::OBJ, materialInfo, DiffuseColor);
         aabbDeBugging.GenerateAABB(modelID_);
         modelID.push_back(modelID_);
-        vulkanRenderAPI.LoadModel(modelID_, "hikari", ModelType::GLB, materialInfo, DiffuseColor, {5, 0, 0});
-        aabbDeBugging.GenerateAABB(modelID_);
-        modelID.push_back(modelID_);
-        // createDescriptorSet();
 
         GUI.InitFrameWorkGUI();
         SetGUI();
@@ -229,11 +205,7 @@ public:
     void SetGUI() {
         GUI.SetGUIItems(
             [this] {
-                ImGui::Text("Hello, World!");
-                // 按钮
-                if (ImGui::Button("Click me!")) {
-                    // 按钮被点击时的处理
-                }
+                ImGui::Checkbox("AABB", &displayAABB);
             }
         );
     }

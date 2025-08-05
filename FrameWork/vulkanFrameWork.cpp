@@ -1101,7 +1101,7 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     RegisterRenderPass(presentRenderPass, "presentRenderPass");
 
     auto presentDescriptorLayout = CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    // RegisterDescriptorSetLayout(presentDescriptorLayout, "presentDescriptorLayout");
+    RegisterDescriptorSetLayout(presentDescriptorLayout, "presentDescriptorLayout");
 
     uint32_t attachment = -1;
     CreateAttachment(attachment, windowWidth, windowHeight, AttachmentType::Present, VK_SAMPLE_COUNT_1_BIT, false);
