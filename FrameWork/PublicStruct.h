@@ -59,6 +59,7 @@ namespace FrameWork {
         bool inUse = false;
     };
 
+
     struct Material {
         //此处规定texture的DescriptorSet在Uniform后部
         std::vector<std::pair<VkDescriptorSet,VkDescriptorSetLayout>> descriptorPairs{};
@@ -70,6 +71,25 @@ namespace FrameWork {
 
         bool inUse = false;
     };
+
+    //套壳保证和texture对于slot的接口一致性
+    struct StorageBuffer {
+        Buffer buffer{};
+        uint32_t itemNum{};
+
+        bool inUse = false;
+    };
+
+    struct VulkanShader {
+        uint32_t pipelineID = -1;
+        uint32_t MaterialID = -1;
+        std::vector<uint32_t> uniformBufferIDs;
+        std::vector<StorageBuffer> storageBufferIDs;
+        VkRenderPass renderPass {VK_NULL_HANDLE};
+
+        bool inUse = false;
+    };
+
 
     struct TextureFullData {
         std::optional<uint32_t> textureID; //兼容纹理创建
@@ -140,7 +160,7 @@ namespace FrameWork {
             }
         }
 
-        bool InterSectingExtent(const RayCast& rayCast) const {
+        int InterSectingExtent(const RayCast& rayCast) const {
             glm::vec3 inDir = 1.0f / rayCast.direction;
 
             glm::vec3 tIn = (min - rayCast.origin) * inDir;
@@ -152,7 +172,15 @@ namespace FrameWork {
             auto tNear = std::max({tMin.x, tMin.y, tMin.z});
             auto tFar = std::min({tMax.x, tMax.y, tMax.z});
 
-            return tNear <= tFar && tFar >= 0;
+            if (tNear <= tFar && tFar > 0) {
+                if (tNear < 0) {
+                    return tFar;
+                }else {
+                    return tNear;
+                }
+            }else {
+                return -1;
+            }
         }
 
 

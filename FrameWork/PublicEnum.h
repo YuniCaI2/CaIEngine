@@ -74,8 +74,10 @@ enum class ShaderType {
 };
 
 enum class DescriptorType {
+    UniformDynamic,
+    Texture,
     Uniform,
-    Texture
+    Storage
 };
 
 enum class RenderQueue {
@@ -114,6 +116,7 @@ enum class ModelType {
     FBX,
     GLB,
 };
+
 
 #endif //PUBLICENUM_H
 

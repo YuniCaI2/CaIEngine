@@ -1299,6 +1299,7 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, FrameWork::MaterialC
             .buffer = material->uniformBuffer[i].buffer,
             .offset = 0,
             .range = materialInfo.UniformData[i].second
+            //这里的range是单次的访问大小而不是整个Buffer的大小
         };
 
         VkWriteDescriptorSet descriptorWrite = {

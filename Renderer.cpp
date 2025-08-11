@@ -14,6 +14,20 @@ private:
         glm::mat4 projection;
         glm::mat4 model;
         glm::mat4 view;
+
+        void Update() {
+            view = renderer->camera.GetViewMatrix();
+            projection = glm::perspective(glm::radians(renderer->camera.Zoom),
+                                              (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
+                                              0.1f, 100.0f);
+            model = glm::mat4(1.0f);
+            projection[1][1] *= -1;
+        }
+
+        inline static Renderer* renderer{};
+        static void SetRenderer(Renderer* renderer_) {
+            renderer = renderer_;
+        }
     };
 
     uint32_t meshID = -1;
@@ -32,6 +46,8 @@ private:
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
     UniformBufferObject ubo{};
 
+    FrameWork::Slot slotTest{};
+
     FrameWork::Camera camera{};
     FrameWork::Timer timer;
     FrameWork::FrameWorkGUI GUI{};
@@ -41,6 +57,7 @@ private:
     bool useMSAA = false;
 
 public:
+    friend struct UniformBufferObject;
     Renderer() {
         vulkanRenderAPI.SetTitle("Triangle Renderer");
         camera.Position = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -48,6 +65,7 @@ public:
 
     ~Renderer() {
         GUI.ReleaseGUIResources();
+        FrameWork::Slot::DestroyDescriptorSetLayout();
         aabbDeBugging.Destroy();
     }
 
@@ -188,6 +206,7 @@ public:
     }
 
     void prepare() {
+        UniformBufferObject::SetRenderer(this);
         createDescriptorSetLayout();
         VkRenderPass renderPass = vulkanRenderAPI.GetRenderPass("forward");
         createGraphicsPipeline();
@@ -213,7 +232,9 @@ public:
         vulkanRenderAPI.CreateFrameBuffer(msaaFrameBufferID, {msaaColorAttachIdx, msaaDepthAttachIdx, colorAttachIdx}, vulkanRenderAPI.GetFrameWidth(),
                                           vulkanRenderAPI.GetFrameHeight(), vulkanRenderAPI.GetRenderPass("forwardMSAA"));
 
+        //呈现
         vulkanRenderAPI.InitPresent("uniformPresent", colorAttachIdx);
+        //DeBug
         aabbDeBugging.Init("aabbDebug", colorAttachIdx);
 
 

@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "InputManager.h"
+#include "PublicStruct.h"
 
 // 定义摄像机移动的几种可能选项。用作抽象层以避免依赖特定窗口系统的输入方法
 enum Camera_Movement {
@@ -186,6 +187,25 @@ namespace FrameWork {
             Right = glm::normalize(glm::cross(Front, WorldUp));
             Up    = glm::normalize(glm::cross(Right, Front));
         }
+
     };
+    class Intersection {
+    public:
+        void RegisterModel(uint32_t model);
+        uint32_t GetIntersectingModel() const;
+        void Update(const RayCast& rayCast);
+    private:
+        std::vector<uint32_t> modelIDs;
+        uint32_t intersectingModelAABBID = -1;
+        uint32_t intersectingModel = -1;
+        Buffer InputAABB{};
+        Buffer outputResult{};
+
+        //Func
+        uint32_t GetIntersectingModelAABB(const RayCast& rayCast) const;
+        void RecreateInputBuffer();
+
+    };
+
 }
 #endif

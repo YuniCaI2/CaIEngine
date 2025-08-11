@@ -245,6 +245,12 @@ void FrameWork::AABBDeBugging::GenerateAABB(uint32_t modelID) {
         uint32_t materialID = -1;
         vulkanRenderAPI.CreateMaterial(materialID, materialInfo);
         materialIds.emplace(modelID, materialID);
+
+        Slot slot;
+        slot.SetUniformObject<UniformBufferObject>(VK_SHADER_STAGE_VERTEX_BIT,viewMatrix,
+            projectionMatrix, vulkanRenderAPI.getByIndex<Model>(modelID)->position);
+        slot.inUse = true;
+        slots.emplace(modelID , std::move(slot));
 }
 
 void FrameWork::AABBDeBugging::Draw(VkCommandBuffer cmdBuffer) {
@@ -282,14 +288,7 @@ void FrameWork::AABBDeBugging::Draw(VkCommandBuffer cmdBuffer) {
             //这样没有删除可以保证线程安全但是占用内存
             continue;
         }
-        auto material = vulkanRenderAPI.getByIndex<Material>(materialIds[modelID]);
-        std::vector descriptorOffset = {
-            vulkanRenderAPI.currentFrame * material->uniformBufferSizes[0]
-            / vulkanRenderAPI.MaxFrame
-        };
-        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, debugPipelineLayout, 0,
-            1,
-            &material->uniformDescriptorSets[0], 1, descriptorOffset.data());
+        slots[modelID].Bind(cmdBuffer, debugPipelineLayout);
         vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.buffer, &offset);
         vkCmdBindIndexBuffer(cmdBuffer, indexBuffers[modelID].buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(cmdBuffer, indicesCounts[modelID], 1, 0, 0, 0);
@@ -299,24 +298,12 @@ void FrameWork::AABBDeBugging::Draw(VkCommandBuffer cmdBuffer) {
 
 void FrameWork::AABBDeBugging::Update(const glm::mat4 &viewMatrix,
     const glm::mat4 &projectionMatrix) {
-    ubo.view = viewMatrix;
-    ubo.proj = projectionMatrix;
 
-    for (auto& m : materialIds) {
-        ubo.model = glm::mat4(1.0f);
-        auto model = vulkanRenderAPI.getByIndex<Model>(m.first);
-        if (model->inUse == false) {
-            //TODO： 保证多飞行帧线程安全
-            //因为无法保证安全现在只是不更新和渲染
-            continue;
-        }
-        ubo.model = glm::translate(ubo.model, model->position);
-        auto material = vulkanRenderAPI.getByIndex<Material>(m.second);
-        vulkanRenderAPI.UpdateUniformBuffer({material->uniformBuffer[0]},{&ubo}, {sizeof(decltype(ubo))},
-                                                        vulkanRenderAPI.currentFrame * material->uniformBufferSizes[0] /
-                                                        vulkanRenderAPI.MaxFrame);
+    this->viewMatrix = viewMatrix;
+    this->projectionMatrix = projectionMatrix;
+    for (auto& [_, slot] : slots) {
+        slot.Update();
     }
-
 }
 
 void FrameWork::AABBDeBugging::Destroy() {

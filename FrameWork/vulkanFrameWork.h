@@ -18,6 +18,7 @@
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
 #include "Resource.h"
+#include "Slot.h"
 #define MAX_FRAME 2
 
 
@@ -119,11 +120,14 @@ protected:
     std::unordered_map<std::string, VkDescriptorSetLayout> descriptorSetLayouts;
     std::vector<FrameWork::Material*> materials;
     std::vector<FrameWork::Model*> models;
+    std::vector<FrameWork::StorageBuffer*> storageBuffers;
 
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
 
 public:
+    friend class FrameWork::Slot;
+
     uint32_t currentFrame = 0;
     uint32_t MaxFrame = MAX_FRAME;
     uint32_t windowWidth{1280};
@@ -273,6 +277,7 @@ public:
     VkFormat GetDepthFormat() const;
     VkSampleCountFlagBits GetSampleCount() const;
 
+
     void SetWindowResizedCallBack(const WindowResizedCallback& callback);
 
     // 封装对象的池
@@ -301,6 +306,9 @@ public:
         }
         else if constexpr (std::is_same_v<T, FrameWork::Model>) {
             return reinterpret_cast<std::vector<T*>&>(models);
+        }
+        else if constexpr (std::is_same_v<T, FrameWork::StorageBuffer>) {
+            return reinterpret_cast<std::vector<T*>&>(storageBuffers);
         }
         else {
             std::cerr << "Unknown type in getNextIndex!" << std::endl;
@@ -428,6 +436,11 @@ public:
             for (auto& mesh : model->meshes) {
                 destroyByIndex<FrameWork::Mesh>(mesh);
             }
+        }else if (std::is_same_v<T, FrameWork::StorageBuffer>) {
+            auto storageBuffer = storageBuffers[index];
+            storageBuffer->inUse = false;
+            storageBuffer->buffer.destroy();
+            storageBuffer->itemNum = 0;
         }
     }
 

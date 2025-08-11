@@ -397,6 +397,19 @@ namespace VulkanTool {
             );
         endSingleTimeCommands(device, queue, device.commandPool, cmd);
     }
+
+    //类型Id获取器
+    template<typename Category>
+    struct IndexGetter {
+        template<typename T>
+        static uint32_t Get() {
+            static uint32_t id = index_++;
+            return id;
+        }
+    private:
+        inline static uint32_t index_ = 0;
+    };
+
 }
 
 #endif //VULKANTOOL_H

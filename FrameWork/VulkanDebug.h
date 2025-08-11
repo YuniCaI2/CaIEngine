@@ -12,6 +12,7 @@
 #include<unordered_map>
 
 #include "PublicStruct.h"
+#include "Slot.h"
 
 namespace FrameWork {
     class VulkanDebug {
@@ -50,6 +51,8 @@ namespace FrameWork {
         void Draw(VkCommandBuffer cmdBuffer);
         void Update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
         void Destroy();
+
+
     private:
         uint32_t debugPipelineID = -1;
         uint32_t frameBufferID = -1;
@@ -58,6 +61,10 @@ namespace FrameWork {
         VkPipelineLayout debugPipelineLayout {VK_NULL_HANDLE};
         VkRenderPass debugRenderPass{VK_NULL_HANDLE};
         VkDescriptorSetLayout uniformDescriptorSetLayout{VK_NULL_HANDLE};
+        std::unordered_map<uint32_t , Slot> slots;
+        glm::mat4 viewMatrix{};
+        glm::mat4 projectionMatrix{};
+        glm::mat4 modelMatrix{};
 
         //以model为单位
         std::unordered_map<uint32_t, Buffer> vertexBuffers{};
@@ -99,6 +106,13 @@ namespace FrameWork {
             glm::mat4 model;
             glm::mat4 view;
             glm::mat4 proj;
+
+            void Update(const glm::mat4& viewMatrix, const glm::mat4& projection, const glm::vec3& position) {
+                view = viewMatrix;
+                proj = projection;
+                this->model = glm::translate(glm::mat4(1.0f), position);
+            }
+
         };
 
         UniformBufferObject ubo{};
