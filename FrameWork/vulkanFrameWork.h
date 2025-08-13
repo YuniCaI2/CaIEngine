@@ -94,6 +94,8 @@ protected:
     uint32_t presentPipelineIndex{0};
     uint32_t presentMaterialIndex{0};
     FrameWork::MaterialCreateInfo presentMaterialCreateInfo{}; //用来记录重建信息
+    uint32_t presentColorAttachmentID = -1;
+    std::vector<uint32_t> presentSlotIDs;
 
     //同步信号量
     struct Semaphores {
@@ -121,6 +123,7 @@ protected:
     std::vector<FrameWork::Material*> materials;
     std::vector<FrameWork::Model*> models;
     std::vector<FrameWork::StorageBuffer*> storageBuffers;
+    std::vector<FrameWork::Slot*> slots_ ;
 
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
@@ -206,8 +209,11 @@ public:
     void CreateTexture(uint32_t& textureId, FrameWork::TextureFullData& textureData);
     void CreateImageView(FrameWork::VulkanImage& image, VkImageView& imageView, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
     void CreateAttachment(uint32_t& attachmentId, uint32_t width, uint32_t height, AttachmentType attachmentType, VkSampleCountFlagBits numSample, bool isSampled); //最后一个参数的含义是是否会作为纹理被着色器采样
+    void ReCreateAttachment();
     void CreateFrameBuffer(uint32_t& frameBufferId, const std::vector<uint32_t>& attachments, uint32_t width, uint32_t height, VkRenderPass renderPass);
     void CreatePresentFrameBuffer(uint32_t& frameBufferId, uint32_t attachment, VkRenderPass renderPass);
+    void RecreateFrameBuffer(uint32_t& frameBufferId);
+    void RecreatePresentFrameBuffer(uint32_t& frameBufferId);
     void RegisterRenderPass(VkRenderPass renderPass, const std::string& name);
     void RegisterDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, const std::string& name);
     void UnRegisterRenderPass(const std::string& name);
@@ -254,6 +260,7 @@ public:
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
     void DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer);
     void BindMaterial(uint32_t materialID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+    FrameWork::Slot* CreateSlot(uint32_t& slotID);
 
     //计算着色器
     void CreateVulkanComputePipeline(uint32_t& pipelineInfoIdx, const std::string& fileName, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts); //注意这和上面的管线不同
@@ -310,6 +317,9 @@ public:
         else if constexpr (std::is_same_v<T, FrameWork::StorageBuffer>) {
             return reinterpret_cast<std::vector<T*>&>(storageBuffers);
         }
+        else if constexpr (std::is_same_v<T, FrameWork::Slot>) {
+            return reinterpret_cast<std::vector<T*>&>(slots_);
+        }
         else {
             std::cerr << "Unknown type in getNextIndex!" << std::endl;
             exit(-1);
@@ -321,6 +331,7 @@ public:
         auto& vec = getVectorRef<T>();
         auto len = vec.size();
         for (uint32_t i = 0; i < vec.size(); i++) {
+            if (vec[i] == nullptr) return i;
             if (vec[i]->inUse == false) {
                 return i;
             }
@@ -378,23 +389,21 @@ public:
                     tex->inUse = false;
                     //保证在删除texture的时候没有删除它
                 }
-                return;  // 完全不处理Present类型
+                return;  // 完全不处理Present类型，因为swapchain管理它
             }
 
             for (auto& t : attachment->attachmentsArray) {
                 destroyByIndex<FrameWork::Texture>(t);
             }
-            attachment->attachmentsArray.clear();
-            attachment->attachmentsArray.resize(MAX_FRAME);
         }else if (std::is_same_v<T, FrameWork::VulkanFBO>) {
             auto vulkanFBO = vulkanFBOs[index];
             vulkanFBO->inUse = false;
             for (auto& t : vulkanFBO->framebuffers) {
                 vkDestroyFramebuffer(device, t, nullptr);
             }
-            for (auto& i : vulkanFBO->AttachmentsIdx) {
-                destroyByIndex<FrameWork::VulkanAttachment>(i);
-            }
+            // for (auto& i : vulkanFBO->AttachmentsIdx) {
+            //     destroyByIndex<FrameWork::VulkanAttachment>(i);
+            // }
         }else if (std::is_same_v<T, FrameWork::VulkanPipelineInfo>) {
             auto vulkanPipelineInfo = vulkanPipelineInfos[index];
             vulkanPipelineInfo->inUse = false;
@@ -424,9 +433,6 @@ public:
                 //注册未使用的Set
             }
 
-            // vkFreeDescriptorSets(device, vulkanDescriptorPool.GetDescriptorPool(), material->descriptorSets.size(),
-            //     material->descriptorSets.data());
-            //不释放，而是使用的时候进行重写对应的DescriptorSet
         }else if (std::is_same_v<T, FrameWork::Model>) {
             auto model = models[index];
             model->inUse = false;
@@ -441,6 +447,11 @@ public:
             storageBuffer->inUse = false;
             storageBuffer->buffer.destroy();
             storageBuffer->itemNum = 0;
+        }else if (std::is_same_v<T, FrameWork::Slot>) {
+            auto& slot = slots_[index];
+            slot->inUse = false;
+            delete slot;
+            slot = nullptr;
         }
     }
 

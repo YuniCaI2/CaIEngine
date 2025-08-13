@@ -21,6 +21,8 @@ namespace FrameWork {
         bool isPresent = false;
         bool isFollowWindow = true;
         bool inUse = false;
+        uint32_t width {0};
+        uint32_t height {0};
     };
 
     struct VulkanPipelineInfo {
@@ -213,7 +215,7 @@ namespace FrameWork {
 
 
     struct Texture {
-        VulkanImage image;
+        VulkanImage image{};
         VkImageView imageView{VK_NULL_HANDLE};
         VkSampler sampler{VK_NULL_HANDLE}; //optional
 
@@ -230,6 +232,7 @@ namespace FrameWork {
         uint32_t height;
         VkSampleCountFlagBits samples{VK_SAMPLE_COUNT_1_BIT};
         bool isSampled = false;
+        bool isFollowWindow = true;
         bool inUse = false;
     };
 

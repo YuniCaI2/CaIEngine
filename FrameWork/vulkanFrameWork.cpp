@@ -71,24 +71,15 @@ void vulkanFrameWork::destroyCommandBuffers() {
 }
 
 void vulkanFrameWork::RecreateAllWindowFrameBuffers() {
-    //遍历所有帧缓冲得到其对应的大小
+    ReCreateAttachment();
     for (uint32_t i = 0; i < vulkanFBOs.size(); i++) {
         if (vulkanFBOs[i]->inUse && vulkanFBOs[i]->isFollowWindow) {
-            destroyByIndex<FrameWork::VulkanFBO>(i);
-            auto fbo = vulkanFBOs[i];
-            if (getByIndex<FrameWork::VulkanFBO>(i)->isPresent) {
-                CreateAttachment(fbo->AttachmentsIdx[0], GetFrameWidth(),
-                    GetFrameHeight(), AttachmentType::Present, VK_SAMPLE_COUNT_1_BIT, false);
-                CreatePresentFrameBuffer(i, fbo->AttachmentsIdx[0], fbo->renderPass);
-                break;
+            if (vulkanFBOs[i]->isPresent) {
+                RecreatePresentFrameBuffer(i);
+
+            }else {
+                RecreateFrameBuffer(i);
             }
-            for (auto& a : vulkanFBOs[i]->AttachmentsIdx) {
-                auto attachment = getByIndex<FrameWork::VulkanAttachment>(a);
-                attachment->height = GetFrameHeight();
-                attachment->width = GetFrameWidth();
-                CreateAttachment(a, GetFrameWidth(), GetFrameHeight(), attachment->type, attachment->samples, attachment->isSampled);
-            }
-            CreateFrameBuffer(i, vulkanFBOs[i]->AttachmentsIdx, GetFrameWidth(), GetFrameHeight(), vulkanFBOs[i]->renderPass);
         }
     }
 }
@@ -130,6 +121,13 @@ vulkanFrameWork::~vulkanFrameWork() {
             destroyByIndex<FrameWork::VulkanFBO>(i);
             delete vulkanFBOs[i];
             vulkanFBOs[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < attachmentBuffers.size(); i++) {
+        if (attachmentBuffers[i] != nullptr) {
+            destroyByIndex<FrameWork::VulkanAttachment>(i);
+            delete attachmentBuffers[i];
+            attachmentBuffers[i] = nullptr;
         }
     }
     for (int i = 0; i < textures.size(); i++) {
@@ -607,6 +605,8 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
     attachment->height = height;
     attachment->isSampled = isSampled;
     attachment->samples = numSample;
+    if (width == windowWidth && height == windowHeight)
+        {attachment->isFollowWindow = true;}
     if (attachmentType == AttachmentType::Depth) {
         attachment->attachmentsArray.resize(MAX_FRAME);
         attachment->inUse = true;
@@ -647,6 +647,54 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
     }
 }
 
+void vulkanFrameWork::ReCreateAttachment() {
+    for (int attachmentID = 0; attachmentID < attachmentBuffers.size(); attachmentID++) {
+        auto attachment = getByIndex<FrameWork::VulkanAttachment>(attachmentID);
+        // std::cerr << "attachment :" << attachmentID << "         rebuild !" << std::endl;
+        if (attachment->isFollowWindow == false) {
+            continue;
+        }
+        auto attachmentType = attachment->type;
+        if (attachmentType == AttachmentType::Depth) {
+            attachment->attachmentsArray.resize(MAX_FRAME);
+            attachment->inUse = true;
+            for (auto& texId : attachment->attachmentsArray) {
+                destroyByIndex<FrameWork::Texture>(texId);
+                auto tex = getByIndex<FrameWork::Texture>(texId);
+                tex->inUse = true;
+                vulkanDevice->createImage(&tex->image, VkExtent2D(windowWidth, windowHeight), 1, 1, attachment->samples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                    attachment->isSampled ? (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT) : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                CreateImageView(tex->image, tex->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+                tex->sampler = CreateSampler(1); //为了后续使用
+            }
+        }
+        else if (attachmentType == AttachmentType::Color) {
+            attachment->attachmentsArray.resize(MAX_FRAME);
+            attachment->inUse = true;
+            for (auto& texId : attachment->attachmentsArray) {
+                destroyByIndex<FrameWork::Texture>(texId);
+                auto tex = getByIndex<FrameWork::Texture>(texId);
+                tex->inUse = true;
+                vulkanDevice->createImage(&tex->image, VkExtent2D(windowWidth, windowHeight), 1, 1, attachment->samples, swapChain.colorFormat, VK_IMAGE_TILING_OPTIMAL,
+                   attachment->isSampled ? (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT) : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                CreateImageView(tex->image, tex->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+                tex->sampler = CreateSampler(1);
+            }
+        }
+        else if (attachmentType == AttachmentType::Present) {
+            attachment->attachmentsArray.resize(swapChain.imageViews.size());
+            attachment->inUse = true;
+            for (int i = 0; i < swapChain.imageViews.size(); i++) {
+                auto tex = getByIndex<FrameWork::Texture>(attachment->attachmentsArray[i]);
+                tex->inUse = true;
+                tex->sampler = VK_NULL_HANDLE;//不需要
+                tex->imageView = swapChain.imageViews[i];
+                //这里只要获得引用则可，用于构建帧缓冲，生命周期由交换链管理
+            }
+        }
+    }
+}
+
 void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, const std::vector<uint32_t> &attachments, uint32_t width, uint32_t height, VkRenderPass renderPass) {
     //只允许传入颜色附件和深度附件
     for (auto& attachment : attachments) {
@@ -663,6 +711,8 @@ void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, const std::vect
     fbo->framebuffers.resize(MAX_FRAME);
     fbo->AttachmentsIdx = attachments;
     fbo->renderPass = renderPass;
+    fbo->width = width;
+    fbo->height = height;
     if (windowHeight == width && windowWidth == height) {
         fbo->isFollowWindow = true;
     }
@@ -709,6 +759,81 @@ void vulkanFrameWork::CreatePresentFrameBuffer(uint32_t &frameBufferId, uint32_t
         framebufferInfo.layers = 1;
         framebufferInfo.pAttachments = &getByIndex<FrameWork::Texture>(attachmentObj->attachmentsArray[i])->imageView;
         VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferInfo, nullptr,&fbo->framebuffers[i]));
+    }
+}
+
+void vulkanFrameWork::RecreateFrameBuffer(uint32_t &frameBufferId) {
+    auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
+    fbo->inUse = true;
+
+    // 只销毁framebuffer对象
+    for (auto& framebuffer : fbo->framebuffers) {
+        if (framebuffer != VK_NULL_HANDLE) {
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+        }
+    }
+    auto size = fbo->framebuffers.size();
+    fbo->framebuffers.clear();
+    fbo->framebuffers.resize(size);
+    // std::cerr << "frameBuffer :" << frameBufferId << "         rebuild !" << std::endl;
+
+    // 重建framebuffer
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        std::vector<VkImageView> attachments;
+        for (auto& attachment : fbo->AttachmentsIdx) {
+            auto imageView = textures[getByIndex<FrameWork::VulkanAttachment>(attachment)->attachmentsArray[i]]->imageView;
+            if (imageView == VK_NULL_HANDLE) {
+                std::cerr << "the imageView is Null Handle here" << std::endl;
+                exit(-1);
+            }
+            attachments.push_back(imageView);
+        }
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = fbo->renderPass;
+        framebufferInfo.attachmentCount = attachments.size();
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = windowWidth;
+        framebufferInfo.height = windowHeight;
+        framebufferInfo.layers = 1;
+        VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &fbo->framebuffers[i]));
+    }
+}
+
+
+void vulkanFrameWork::RecreatePresentFrameBuffer(uint32_t &frameBufferId) {
+    auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
+    fbo->inUse = true;
+    // std::cerr << "present FrameBuffer :" << frameBufferId << "         rebuild !" << std::endl;
+
+    // 只销毁framebuffer对象，保留其他数据
+    for (auto& framebuffer : fbo->framebuffers) {
+        if (framebuffer != VK_NULL_HANDLE) {
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+        }
+    }
+        auto size = fbo->framebuffers.size();
+    fbo->framebuffers.clear();
+    fbo->framebuffers.resize(size);
+
+    auto attachmentObj = getByIndex<FrameWork::VulkanAttachment>(fbo->AttachmentsIdx[0]);
+    fbo->framebuffers.resize(swapChain.imageViews.size());
+
+    for (uint32_t i = 0; i < swapChain.images.size(); i++) {
+        auto& imageView = getByIndex<FrameWork::Texture>(attachmentObj->attachmentsArray[i])->imageView;
+        if (imageView == VK_NULL_HANDLE) {
+            std::cerr << "the imageView is Null Handle here" << std::endl;
+            exit(-1);
+        }
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = fbo->renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.width = windowWidth;
+        framebufferInfo.height = windowHeight;
+        framebufferInfo.layers = 1;
+        framebufferInfo.pAttachments = &imageView;
+        VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &fbo->framebuffers[i]));
     }
 }
 
@@ -1165,27 +1290,22 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     };
     SetPipelineDepthStencilState(presentPipelineInfoIdx, depthStencilState);
     AddPipelineColorBlendState(presentPipelineInfoIdx, true, BlendOp::Opaque);
-    CreateVulkanPipeline(presentPipelineIndex, "presentPipeline", presentPipelineInfoIdx,
-        "presentRenderPass", 0, {presentDescriptorLayout}, 0, 1);
 
     //管线创建------------------------------------------------------------------------------------------------------------
 
     auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
-    std::vector<FrameWork::TextureFullData> textureDatas(colorAttachment->attachmentsArray.size());
+    presentColorAttachmentID = colorAttachmentID;
+    presentSlotIDs.resize(colorAttachment->attachmentsArray.size());
     for (int i = 0; i < colorAttachment->attachmentsArray.size(); i++) {
-        textureDatas[i].textureID = colorAttachment->attachmentsArray[i];
+        auto presentSlot = CreateSlot(presentSlotIDs[i]);
+        presentSlot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT, colorAttachment->attachmentsArray[i]);
+
         //将纹理信息进行传递
     }
-    std::vector descriptorSetLayouts(1, presentDescriptorLayout);
-    FrameWork::MaterialCreateInfo materialInfo = {
-        .UniformDescriptorLayouts = {},
-        .TexturesDescriptorLayouts = descriptorSetLayouts,
-        .UniformData = {},
-        .TexturesDatas = textureDatas,
-    };
-    presentMaterialCreateInfo = materialInfo;
-    CreateMaterial(presentMaterialIndex, materialInfo);
-    textureDatas.clear();
+    CreateVulkanPipeline(presentPipelineIndex, "presentPipeline", presentPipelineInfoIdx,
+    "presentRenderPass", 0,
+    {slots_[presentSlotIDs.back()]->GetAllDescriptorSetLayout()}, 0, 1);
+
 }
 
 void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1224,13 +1344,8 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
     scissor.offset.y = 0;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipeline);
-    auto material = getByIndex<FrameWork::Material>(presentMaterialIndex);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipelineLayout, 0,
-        1, &material->textureDescriptorSets[GetCurrentFrame()]
-        , 0, nullptr
-        );
-
+    auto presentSlot = slots_[presentSlotIDs[GetCurrentFrame()]];
+    presentSlot->Bind(commandBuffer,  getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipelineLayout, 0);
     //呈现的顶点硬编码在着色器中
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
@@ -1544,8 +1659,14 @@ void vulkanFrameWork::BindMaterial(uint32_t materialID, VkCommandBuffer commandB
         material->textureDescriptorSets.size(), material->textureDescriptorSets.data(), 0, nullptr);
 }
 
+FrameWork::Slot * vulkanFrameWork::CreateSlot(uint32_t &slotID) {
+    slotID = getNextIndex<FrameWork::Slot>();
+    slots_.back()->inUse = true;
+    return slots_[slotID];
+}
+
 void vulkanFrameWork::CreateVulkanComputePipeline(uint32_t &pipelineInfoIdx, const std::string &fileName,
-    const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
+                                                  const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
     pipelineInfoIdx = getNextIndex<FrameWork::VulkanPipeline>();
     auto pipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineInfoIdx);
     pipeline->inUse = true;
@@ -1920,13 +2041,19 @@ void vulkanFrameWork::windowResize() {
     //删除附件、重建附件
     //删除帧缓冲、重建帧缓冲
     //--------------------------对呈现的descriptorSet重建--------------------------------------
-    destroyByIndex<FrameWork::Material>(presentMaterialIndex);
+    // destroyByIndex<FrameWork::Material>(presentMaterialIndex);
+    for (int i = 0; i < presentSlotIDs.size(); i++) {
+        slots_[presentSlotIDs[i]]->DestroyTexture(attachmentBuffers[presentColorAttachmentID]->attachmentsArray[i]);
+    }
     //--------------------------对呈现的descriptorSet重建--------------------------------------
 
     RecreateAllWindowFrameBuffers();
+    for (int i = 0; i < presentSlotIDs.size(); i++) {
+        slots_[presentSlotIDs[i]]->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT ,attachmentBuffers[presentColorAttachmentID]->attachmentsArray[i]);
+    }
 
     //--------------------------对呈现的descriptorSet重建--------------------------------------
-    CreateMaterial(presentMaterialIndex, presentMaterialCreateInfo);
+    // CreateMaterial(presentMaterialIndex, presentMaterialCreateInfo);
     //--------------------------对呈现的descriptorSet重建--------------------------------------
     /*这里这样做的原因是因为这里的我是把descriptorSet封装到我的Material中，所以在显示的时候我并未单独的设计slot单独使用，
      *而是拿封装好的Material来作为一个DescriptorSet Slot

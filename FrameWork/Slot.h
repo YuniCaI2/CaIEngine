@@ -62,13 +62,14 @@ namespace FrameWork {
             textureIDs.insert(textureIDs.end(), textures.begin(), textures.end());
         }
         void SetTexture(VkShaderStageFlags shaderStageFlags,uint32_t textureID);
+        void SwitchTexture(VkShaderStageFlags shaderFlags, uint32_t oldTexID, uint32_t newTexID);
         void DestroyTexture(uint32_t textureID);
-
         std::vector<VkDescriptorSetLayout> GetAllDescriptorSetLayout() const;
 
-        VkDescriptorSet GetTextureDescriptorSet(uint32_t textureID) const;
-
         static void DestroyDescriptorSetLayout();
+        static VkDescriptorSetLayout CreateTextureDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
+        static VkDescriptorSetLayout CreateStorageDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
+        static VkDescriptorSetLayout CreateUniformDescriptorSet(VkShaderStageFlags shaderStageFlags);
 
         Slot() = default;
         Slot& operator=(Slot const& other) = delete;
@@ -79,7 +80,8 @@ namespace FrameWork {
 
 
         void Update();//针对Uniform数据
-        void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+        void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
+        uint32_t GetDescriptorSetsSize() const;
 
 
         bool inUse = false;
@@ -105,8 +107,6 @@ namespace FrameWork {
 
 
 
-        inline static std::unordered_map<uint32_t, VkDescriptorSet> textureDescriptorSets;
-        inline static std::unordered_map<uint32_t, VkDescriptorSet> storageBufferDescriptorSets;
         inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout> globalUniformDescriptorSetLayouts;
         inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout> globalStorageBufferDescriptorSetLayouts;
         inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout> globalTextureDescriptorSetLayouts;
@@ -116,6 +116,7 @@ namespace FrameWork {
         void AddTextureDescriptorSet(uint32_t textureID, VkDescriptorSet descriptorSet);
         void DestroyStorageDescriptorSet(uint32_t storageBufferID);
         void DestroyTextureDescriptorSet(uint32_t textureID);
+
     };
 
 

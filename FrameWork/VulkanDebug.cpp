@@ -288,7 +288,7 @@ void FrameWork::AABBDeBugging::Draw(VkCommandBuffer cmdBuffer) {
             //这样没有删除可以保证线程安全但是占用内存
             continue;
         }
-        slots[modelID].Bind(cmdBuffer, debugPipelineLayout);
+        slots[modelID].Bind(cmdBuffer, debugPipelineLayout, 0);
         vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.buffer, &offset);
         vkCmdBindIndexBuffer(cmdBuffer, indexBuffers[modelID].buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(cmdBuffer, indicesCounts[modelID], 1, 0, 0, 0);

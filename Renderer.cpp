@@ -210,7 +210,7 @@ public:
         createDescriptorSetLayout();
         VkRenderPass renderPass = vulkanRenderAPI.GetRenderPass("forward");
         createGraphicsPipeline();
-
+        auto& renderAPI = vulkanRenderAPI;
         uint32_t colorAttachIdx = -1, depthAttachIdx = -1;
         vulkanRenderAPI.CreateAttachment(colorAttachIdx, vulkanRenderAPI.GetFrameWidth(),
                                          vulkanRenderAPI.GetFrameHeight(), AttachmentType::Color, VK_SAMPLE_COUNT_1_BIT,

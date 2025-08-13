@@ -58,7 +58,7 @@ void FrameWork::Slot::DestroyStorageBuffer(uint32_t storageBufferID) {
         it != storageBufferIDs.end()) {
         std::swap(*it, storageBufferIDs.back());
         storageBufferIDs.pop_back();
-        auto descriptorSet = storageBufferDescriptorSets[storageBufferID];
+        auto descriptorSet = storageDescriptorSetContainer[storageBufferIDIndexMap[storageBufferID]];
         DestroyStorageDescriptorSet(storageBufferID);
         vulkanRenderAPI.vulkanDescriptorPool.
                 RegisterUnusedDescriptorSet(storageBufferDescriptorSetLayouts[storageBufferID], descriptorSet);
@@ -113,6 +113,42 @@ void FrameWork::Slot::SetTexture(VkShaderStageFlags shaderStageFlags, uint32_t t
     textureIDs.push_back(textureID);
 }
 
+void FrameWork::Slot::SwitchTexture(VkShaderStageFlags shaderStageFlags, uint32_t oldTexID, uint32_t newTexID) {
+    //先添加在末尾
+    SetTexture(shaderStageFlags,newTexID);
+    //再删除，此时末尾的位置会代替删除的位置方便popback
+    DestroyTextureDescriptorSet(oldTexID);
+
+}
+
+
+
+VkDescriptorSetLayout FrameWork::Slot::CreateTextureDescriptorSetLayout(VkShaderStageFlags shaderStageFlags) {
+    auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                                shaderStageFlags);
+    globalTextureDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
+    return descriptorSetLayout;
+}
+
+VkDescriptorSetLayout FrameWork::Slot::CreateStorageDescriptorSetLayout(VkShaderStageFlags shaderStageFlags) {
+    auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                                shaderStageFlags);
+    globalStorageBufferDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
+    return descriptorSetLayout;
+}
+
+VkDescriptorSetLayout FrameWork::Slot::CreateUniformDescriptorSet(VkShaderStageFlags shaderStageFlags) {
+    auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                                                                shaderStageFlags);
+    globalUniformDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
+    return descriptorSetLayout;
+}
+
+uint32_t FrameWork::Slot::GetDescriptorSetsSize() const {
+    return uniformDescriptorSetContainer.size() +
+        storageDescriptorSetContainer.size() + textureDescriptorSetContainer.size();
+}
+
 void FrameWork::Slot::DestroyDescriptorSetLayout() {
     for (auto &[_, setLayout]: globalTextureDescriptorSetLayouts) {
         vkDestroyDescriptorSetLayout(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, setLayout, nullptr);
@@ -130,7 +166,7 @@ void FrameWork::Slot::DestroyTexture(uint32_t textureID) {
                             textureIDs.end(), textureID); it != textureIDs.end()) {
         std::swap(*it, textureIDs.back());
         textureIDs.pop_back();
-        auto descriptorSet = textureDescriptorSets[textureID];
+        auto descriptorSet = textureDescriptorSetContainer[textureIDIndexMap[textureID]];
         DestroyTextureDescriptorSet(textureID);
         vulkanRenderAPI.vulkanDescriptorPool.
                 RegisterUnusedDescriptorSet(textureDescriptorSetLayouts[textureID], descriptorSet);
@@ -155,16 +191,6 @@ std::vector<VkDescriptorSetLayout> FrameWork::Slot::GetAllDescriptorSetLayout() 
     return descriptorSetLayouts;
 }
 
-VkDescriptorSet FrameWork::Slot::GetTextureDescriptorSet(uint32_t textureID) const {
-    if (auto it = std::find(textureIDs.begin(),
-                            textureIDs.end(), textureID); it != textureIDs.end()) {
-        return textureDescriptorSets[textureID];
-    } else {
-        std::cerr << "Error : Can't find textureID in TextureDescriptorSets" << std::endl;
-        return VK_NULL_HANDLE;
-    }
-}
-
 FrameWork::Slot::~Slot() {
     for (auto [_, buffer]: uniformBuffers) {
         buffer.destroy();
@@ -183,30 +209,30 @@ void FrameWork::Slot::Update() {
     }
 }
 
-void FrameWork::Slot::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) {
+void FrameWork::Slot::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet) {
     if (storageDescriptorSetContainer.size() != 0) {
         for (int i = 0; i < uniformDescriptorSetContainer.size(); i++) {
             uint32_t descriptorOffset =
                     vulkanRenderAPI.currentFrame * uniformBufferSizes[i]
                     / vulkanRenderAPI.MaxFrame;
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, i, 1,
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, i + firstSet, 1,
                                     &uniformDescriptorSetContainer[i], 1, &descriptorOffset);
         }
         if (storageDescriptorSetContainer.size() != 0)
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                pipelineLayout, uniformDescriptorSetContainer.size(), storageDescriptorSetContainer.size(),
+                                pipelineLayout, uniformDescriptorSetContainer.size() + firstSet, storageDescriptorSetContainer.size(),
                                 storageDescriptorSetContainer.data(), 0, nullptr);
     } else {
         for (int i = 0; i < uniformDescriptorSetContainer.size(); i++) {
             uint32_t descriptorOffset =
                     vulkanRenderAPI.currentFrame * uniformBufferSizes[i]
                     / vulkanRenderAPI.MaxFrame;
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i, 1,
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i + firstSet, 1,
                                     &uniformDescriptorSetContainer[i], 1, &descriptorOffset);
         }
         if (textureDescriptorSetLayouts.size() != 0)
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipelineLayout, uniformDescriptorSetContainer.size(), textureDescriptorSetContainer.size(),
+                                pipelineLayout, uniformDescriptorSetContainer.size() + firstSet, textureDescriptorSetContainer.size(),
                                 textureDescriptorSetContainer.data(), 0, nullptr);
     }
 }
@@ -276,14 +302,12 @@ void FrameWork::Slot::AddStorageDescriptorSet(uint32_t storageBufferID, VkDescri
     auto len = storageDescriptorSetContainer.size();
     storageDescriptorSetContainer.push_back(descriptorSet);
     storageBufferIDIndexMap[storageBufferID] = len;
-    storageBufferDescriptorSets[storageBufferID] = descriptorSet;
 }
 
 void FrameWork::Slot::AddTextureDescriptorSet(uint32_t textureID, VkDescriptorSet descriptorSet) {
     auto len = textureDescriptorSetContainer.size();
     textureDescriptorSetContainer.push_back(descriptorSet);
     textureIDIndexMap[textureID] = len;
-    textureDescriptorSets[textureID] = descriptorSet;
 }
 
 void FrameWork::Slot::DestroyStorageDescriptorSet(uint32_t storageBufferID) {
@@ -298,7 +322,10 @@ void FrameWork::Slot::DestroyStorageDescriptorSet(uint32_t storageBufferID) {
     storageDescriptorSetContainer.pop_back();
     storageBufferIDIndexMap.erase(storageBufferID);
     storageBufferIDIndexMap[lastId] = index;
-    storageBufferDescriptorSets.erase(storageBufferID);
+    if (storageBufferID != lastId) {
+        //防止只有一个元素的时候将其送回
+        storageBufferIDIndexMap[storageBufferID] = index;
+    }
 }
 
 void FrameWork::Slot::DestroyTextureDescriptorSet(uint32_t textureID) {
@@ -312,6 +339,7 @@ void FrameWork::Slot::DestroyTextureDescriptorSet(uint32_t textureID) {
     std::swap(textureDescriptorSetContainer[index], textureDescriptorSetContainer.back());
     textureDescriptorSetContainer.pop_back();
     textureIDIndexMap.erase(textureID);
-    textureIDIndexMap[lastId] = index;
-    textureDescriptorSets.erase(textureID);
+    if (textureID != lastId) {
+        textureIDIndexMap[lastId] = index;
+    }
 }
