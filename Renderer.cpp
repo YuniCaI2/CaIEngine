@@ -30,9 +30,19 @@ private:
         }
     };
 
+    struct GlobalParameter {
+        glm::mat4 view;
+        glm::mat4 projection;
+    };
+
+    struct MaterialParameter {
+        glm::mat4 position;
+    };
+
     uint32_t meshID = -1;
     uint32_t pipelineID = -1;
     uint32_t frameBufferID = -1;
+    uint32_t globalSlotID = -1;
     std::vector<uint32_t> modelID;
     VkDescriptorSetLayout dynamicDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout textureDescriptorSetLayout = VK_NULL_HANDLE;
@@ -244,6 +254,8 @@ public:
         ubo.projection = glm::perspective(glm::radians(camera.Zoom),
                                           (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
                                           0.1f, 100.0f);
+        //加载globalSlot
+
         FrameWork::MaterialCreateInfo materialInfo = {
             .UniformDescriptorLayouts = {dynamicDescriptorSetLayout},
             .TexturesDescriptorLayouts = {textureDescriptorSetLayout},
