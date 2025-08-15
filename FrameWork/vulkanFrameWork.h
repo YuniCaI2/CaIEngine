@@ -48,7 +48,7 @@ private:
     FrameWork::VulkanDescriptorPool vulkanDescriptorPool;
 
     using WindowResizedCallback = std::function<void()>;
-    WindowResizedCallback windowResizedCallback{nullptr};
+    std::vector<WindowResizedCallback> windowResizedCallbacks;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 

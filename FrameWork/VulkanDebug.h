@@ -56,7 +56,6 @@ namespace FrameWork {
     private:
         uint32_t debugPipelineID = -1;
         uint32_t frameBufferID = -1;
-        std::vector<VkFramebuffer> frameBuffers;
         VkPipeline debugPipeline {VK_NULL_HANDLE};
         VkPipelineLayout debugPipelineLayout {VK_NULL_HANDLE};
         VkRenderPass debugRenderPass{VK_NULL_HANDLE};

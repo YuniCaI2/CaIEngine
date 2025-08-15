@@ -141,7 +141,6 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     vulkanRenderAPI.CreateFrameBuffer(frameBufferID,
         {colorAttachment},
         vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(), debugRenderPass);
-    frameBuffers = vulkanRenderAPI.getByIndex<VulkanFBO>(frameBufferID)->framebuffers;
 
     //Pipeline
     auto bindingDescription = LineVertex::getBindingDescription();
@@ -255,6 +254,7 @@ void FrameWork::AABBDeBugging::GenerateAABB(uint32_t modelID) {
 
 void FrameWork::AABBDeBugging::Draw(VkCommandBuffer cmdBuffer) {
     VkClearValue clearValues[2];
+    auto frameBuffers = vulkanRenderAPI.getByIndex<FrameWork::VulkanFBO>(frameBufferID)->framebuffers;
     clearValues[0].color = vulkanRenderAPI.defaultClearColor;
     clearValues[1].depthStencil = {1.0f, 0};
     VkRenderPassBeginInfo renderPassInfo = {};

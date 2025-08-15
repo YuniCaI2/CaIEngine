@@ -766,6 +766,7 @@ void vulkanFrameWork::RecreateFrameBuffer(uint32_t &frameBufferId) {
     auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
     fbo->inUse = true;
 
+
     // 只销毁framebuffer对象
     for (auto& framebuffer : fbo->framebuffers) {
         if (framebuffer != VK_NULL_HANDLE) {
@@ -775,7 +776,7 @@ void vulkanFrameWork::RecreateFrameBuffer(uint32_t &frameBufferId) {
     auto size = fbo->framebuffers.size();
     fbo->framebuffers.clear();
     fbo->framebuffers.resize(size);
-    // std::cerr << "frameBuffer :" << frameBufferId << "         rebuild !" << std::endl;
+    std::cerr << "frameBuffer :" << frameBufferId << "         rebuild !" << std::endl;
 
     // 重建framebuffer
     for (uint32_t i = 0; i < MAX_FRAME; i++) {
@@ -1772,7 +1773,7 @@ VkSampleCountFlagBits vulkanFrameWork::GetSampleCount() const {
 }
 
 void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {
-    windowResizedCallback = callback;
+    windowResizedCallbacks.push_back(callback);
 }
 
 
@@ -2060,8 +2061,10 @@ void vulkanFrameWork::windowResize() {
      * 所以Destroy一个Material 会吧Texture的所有内容删除——vulkanImage 和 vulkanImageView 等等
      * 所以先删除再创建，防止重新创建好的附件的imageView被删除了
      */
-    if (windowResizedCallback != nullptr) {
-        windowResizedCallback();
+    for (auto& windowResizedCallback : windowResizedCallbacks) {
+        if (windowResizedCallback != nullptr) {
+            windowResizedCallback();
+        }
     }
 
     vkDeviceWaitIdle(device);
