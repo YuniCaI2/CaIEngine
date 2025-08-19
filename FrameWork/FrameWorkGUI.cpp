@@ -33,10 +33,23 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
                         ImGuiCond_FirstUseEver,
                         ImVec2(0.0f, 0.0f)); // pivot点设为(0.5, 0.5)表示中心点
-    ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(120, 100), ImGuiCond_FirstUseEver);
 
     // 设置样式
     ImGui::StyleColorsDark();
+
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    style.WindowPadding = ImVec2(15, 15);        // 窗口内边距
+    style.FramePadding = ImVec2(8, 4);           // 控件内边距
+    style.ItemSpacing = ImVec2(12, 8);           // 控件之间的间距
+    style.ItemInnerSpacing = ImVec2(8, 6);       // 控件内部元素间距
+    style.IndentSpacing = 21;                    // 缩进间距
+    style.ScrollbarSize = 16;                    // 滚动条大小
+    style.GrabMinSize = 12;                      // 滑块最小大小
+
+    style.ColumnsMinSpacing = 6;                 // 列最小间距
+    style.TabBarBorderSize = 1;                  // 标签栏边框
 
 
     //生成Vulkan资源
@@ -221,6 +234,8 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
         }
     };
     vulkanRenderAPI.SetWindowResizedCallBack(windowResizeCallback);
+
+
 }
 
 void FrameWork::FrameWorkGUI::SetGUIItems(const std::function<void()> &Func) {

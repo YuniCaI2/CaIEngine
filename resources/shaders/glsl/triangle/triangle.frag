@@ -7,12 +7,12 @@ layout (location = 2) in vec2 inTexCoord;     // 接收纹理坐标 (将要使�
 layout (location = 3) in mat3 inTBN;          // 接收TBN矩阵 (本着色器未使用)
 
 
-layout (set = 1, binding = 0) uniform sampler2D colorSampler;
-layout (set = 2, binding = 0) uniform sampler2D normalSampler;
+layout (set = 2, binding = 0) uniform sampler2D colorSampler;
 
 layout (location = 0) out vec4 outColor;
 
 void main()
 {
   outColor = texture(colorSampler, inTexCoord) * 0.9;
+//  outColor = vec4(1, 1, 1, 1);
 }

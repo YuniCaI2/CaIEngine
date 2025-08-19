@@ -117,6 +117,12 @@ enum class ModelType {
     GLB,
 };
 
+enum class LightType {
+    DOT,
+    SPOT,
+    FACE
+};
+
 
 #endif //PUBLICENUM_H
 

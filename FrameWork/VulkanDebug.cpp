@@ -133,9 +133,12 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     renderPassInfo.pSubpasses = &subpassDescription;
     renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
     renderPassInfo.pDependencies = dependencies.data();
-
-    VK_CHECK_RESULT(vkCreateRenderPass(vulkanRenderAPI.vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &debugRenderPass));
-    vulkanRenderAPI.RegisterRenderPass(debugRenderPass, "debugRenderPass");
+    if (vulkanRenderAPI.GetRenderPass("debugRenderPass") == VK_NULL_HANDLE) {
+        VK_CHECK_RESULT(vkCreateRenderPass(vulkanRenderAPI.vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &debugRenderPass));
+        vulkanRenderAPI.RegisterRenderPass(debugRenderPass, "debugRenderPass");
+    }else {
+        debugRenderPass = vulkanRenderAPI.GetRenderPass("debugRenderPass");
+    }
 
     //framebuffer
     vulkanRenderAPI.CreateFrameBuffer(frameBufferID,
@@ -195,8 +198,7 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
         .topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
         .primitiveRestartEnable = VK_FALSE
     };
-    uniformDescriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,  VK_SHADER_STAGE_VERTEX_BIT);
-    vulkanRenderAPI.RegisterDescriptorSetLayout(uniformDescriptorSetLayout, "debugDescriptorSetLayout");
+    uniformDescriptorSetLayout = FrameWork::Slot::CreateUniformDescriptorSetLayout(VK_SHADER_STAGE_VERTEX_BIT);
     vulkanRenderAPI.SetPipelineInputAssembly(pipelineInfoId, inputAssembly);
     vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
     vulkanRenderAPI.CreateVulkanPipeline(debugPipelineID, "DeBugPipeline", pipelineInfoId, "debugRenderPass", 0,
@@ -238,12 +240,6 @@ void FrameWork::AABBDeBugging::GenerateAABB(uint32_t modelID) {
         lines.clear();
         indices.clear();
 
-        MaterialCreateInfo materialInfo{};
-        materialInfo.UniformDescriptorLayouts = {uniformDescriptorSetLayout};
-        materialInfo.UniformData = {std::make_pair(&ubo, sizeof(UniformBufferObject))};
-        uint32_t materialID = -1;
-        vulkanRenderAPI.CreateMaterial(materialID, materialInfo);
-        materialIds.emplace(modelID, materialID);
 
         Slot slot;
         slot.SetUniformObject<UniformBufferObject>(VK_SHADER_STAGE_VERTEX_BIT,viewMatrix,
@@ -301,6 +297,7 @@ void FrameWork::AABBDeBugging::Update(const glm::mat4 &viewMatrix,
 
     this->viewMatrix = viewMatrix;
     this->projectionMatrix = projectionMatrix;
+    //这里的slot不归framework管理
     for (auto& [_, slot] : slots) {
         slot.Update();
     }

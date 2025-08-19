@@ -69,7 +69,7 @@ namespace FrameWork {
         static void DestroyDescriptorSetLayout();
         static VkDescriptorSetLayout CreateTextureDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
         static VkDescriptorSetLayout CreateStorageDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
-        static VkDescriptorSetLayout CreateUniformDescriptorSet(VkShaderStageFlags shaderStageFlags);
+        static VkDescriptorSetLayout CreateUniformDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
 
         Slot() = default;
         Slot& operator=(Slot const& other) = delete;

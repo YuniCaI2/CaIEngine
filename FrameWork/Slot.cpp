@@ -124,24 +124,29 @@ void FrameWork::Slot::SwitchTexture(VkShaderStageFlags shaderStageFlags, uint32_
 
 
 VkDescriptorSetLayout FrameWork::Slot::CreateTextureDescriptorSetLayout(VkShaderStageFlags shaderStageFlags) {
-    auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                                                shaderStageFlags);
-    globalTextureDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
-    return descriptorSetLayout;
+    if (globalTextureDescriptorSetLayouts.find(shaderStageFlags) == globalTextureDescriptorSetLayouts.end()) {
+        auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                            shaderStageFlags);
+        globalTextureDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
+    }
+    return globalTextureDescriptorSetLayouts[shaderStageFlags];
 }
 
 VkDescriptorSetLayout FrameWork::Slot::CreateStorageDescriptorSetLayout(VkShaderStageFlags shaderStageFlags) {
-    auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                                                shaderStageFlags);
-    globalStorageBufferDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
-    return descriptorSetLayout;
+    if (globalStorageBufferDescriptorSetLayouts.find(shaderStageFlags) == globalStorageBufferDescriptorSetLayouts.end()) {
+        auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, shaderStageFlags);
+        globalStorageBufferDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
+    }
+    return globalStorageBufferDescriptorSetLayouts[shaderStageFlags];
 }
 
-VkDescriptorSetLayout FrameWork::Slot::CreateUniformDescriptorSet(VkShaderStageFlags shaderStageFlags) {
-    auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-                                                                shaderStageFlags);
-    globalUniformDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
-    return descriptorSetLayout;
+VkDescriptorSetLayout FrameWork::Slot::CreateUniformDescriptorSetLayout(VkShaderStageFlags shaderStageFlags) {
+    if (globalUniformDescriptorSetLayouts.find(shaderStageFlags) == globalUniformDescriptorSetLayouts.end()) {
+        auto descriptorSetLayout = vulkanRenderAPI.CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                                                                    shaderStageFlags);
+        globalUniformDescriptorSetLayouts[shaderStageFlags] = descriptorSetLayout;
+    }
+    return globalUniformDescriptorSetLayouts[shaderStageFlags];
 }
 
 uint32_t FrameWork::Slot::GetDescriptorSetsSize() const {

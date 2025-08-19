@@ -10,6 +10,7 @@
 #include "PublicEnum.h"
 #include<optional>
 #include <vector>
+#include "Light.h"
 
 
 namespace FrameWork {
@@ -64,13 +65,7 @@ namespace FrameWork {
 
     struct Material {
         //此处规定texture的DescriptorSet在Uniform后部
-        std::vector<std::pair<VkDescriptorSet,VkDescriptorSetLayout>> descriptorPairs{};
-        std::vector<VkDescriptorSet> uniformDescriptorSets;
-        std::vector<VkDescriptorSet> textureDescriptorSets;
-        std::vector<Buffer> uniformBuffer{};
-        std::vector<uint32_t> uniformBufferSizes{};
         std::vector<uint32_t> textures{};
-
         bool inUse = false;
     };
 
@@ -102,15 +97,6 @@ namespace FrameWork {
         //这里和stb中的对齐
         unsigned char* data{nullptr};
         std::string path;
-    };
-
-    struct MaterialCreateInfo {
-        std::vector<VkDescriptorSetLayout> UniformDescriptorLayouts;
-        std::vector<VkDescriptorSetLayout> TexturesDescriptorLayouts;
-        std::vector<std::pair<void*, uint32_t>> UniformData;
-                            //data, size
-        std::vector<TextureFullData> TexturesDatas;
-
     };
 
     struct RayCast {
@@ -204,6 +190,7 @@ namespace FrameWork {
     struct Model {
         glm::vec3 position;
         //材质和网格是一一对应的
+        std::vector<uint32_t> materialSlots;
         std::vector<uint32_t> materials;
         std::vector<uint32_t> meshes;
         using TriangleBoundingBoxPtr = std::unique_ptr<std::vector<AABB>>;
@@ -212,6 +199,7 @@ namespace FrameWork {
 
         bool inUse = false;
     };
+
 
 
     struct Texture {
@@ -288,8 +276,15 @@ namespace FrameWork {
 
     struct ModelData {
         std::vector<MeshData> meshDatas;
+
+    };
+
+    struct RenderObject {
+        uint32_t meshID{};
+        uint32_t slotID{};
     };
 
 }
+
 
 #endif //PUBLICSTRUCT_H

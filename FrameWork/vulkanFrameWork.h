@@ -92,8 +92,6 @@ protected:
     //呈现
     uint32_t presentFrameBufferIndex{0};
     uint32_t presentPipelineIndex{0};
-    uint32_t presentMaterialIndex{0};
-    FrameWork::MaterialCreateInfo presentMaterialCreateInfo{}; //用来记录重建信息
     uint32_t presentColorAttachmentID = -1;
     std::vector<uint32_t> presentSlotIDs;
 
@@ -206,7 +204,7 @@ public:
 
 
     void CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer& buffer, void* data);//将数据直接设置到GPU内存方便后续创建local 内存
-    void CreateTexture(uint32_t& textureId, FrameWork::TextureFullData& textureData);
+    void CreateTexture(uint32_t& textureId, const FrameWork::TextureFullData& textureData);
     void CreateImageView(FrameWork::VulkanImage& image, VkImageView& imageView, VkImageAspectFlags aspectFlags, VkImageViewType viewType);
     void CreateAttachment(uint32_t& attachmentId, uint32_t width, uint32_t height, AttachmentType attachmentType, VkSampleCountFlagBits numSample, bool isSampled); //最后一个参数的含义是是否会作为纹理被着色器采样
     void ReCreateAttachment();
@@ -247,20 +245,22 @@ public:
     //初始化呈现
     void InitPresent(const std::string& presentShaderName, uint32_t colorAttachmentID);
     void PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void SwitchPresentColorAttachment(uint32_t colorAttachmentIDs);
 
     //描述符
     VkDescriptorSetLayout CreateDescriptorSetLayout(
         VkDescriptorType descriptorType, VkShaderStageFlags stageFlags
         );
-    void CreateMaterial(uint32_t& materialIdx, FrameWork::MaterialCreateInfo& materialInfo);
+    void CreateMaterial(uint32_t& materialIdx, const std::vector<FrameWork::TextureFullData>& texDatas);
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer>& uniformBuffer, const std::vector<void*>& data, const std::vector<uint32_t>& sizes, uint32_t offset);
     VkSampler CreateSampler(uint32_t mipmapLevels);
     void SetUpStaticMesh(unsigned int& meshID, std::vector<FrameWork::Vertex>& vertices, std::vector<uint32_t>& indices, bool skinned);
-    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, FrameWork::MaterialCreateInfo materialInfo, TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 0});
-    void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1});
+    void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
     void DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer);
     void BindMaterial(uint32_t materialID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
     FrameWork::Slot* CreateSlot(uint32_t& slotID);
+    void UpdateAllSlots();
 
     //计算着色器
     void CreateVulkanComputePipeline(uint32_t& pipelineInfoIdx, const std::string& fileName, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts); //注意这和上面的管线不同
@@ -420,19 +420,9 @@ public:
         }else if (std::is_same_v<T, FrameWork::Material>) {
             auto material = materials[index];
             material->inUse = false;
-            for (auto& vertB : material->uniformBuffer) {
-                vertB.destroy();
-            }
-            material->uniformBuffer.clear();
             for (auto& tex: material->textures) {
                 destroyByIndex<FrameWork::Texture>(tex);
             }
-            material->textures.clear();
-            for (auto& set : material->descriptorPairs) {
-                vulkanDescriptorPool.RegisterUnusedDescriptorSet(set.second, set.first);
-                //注册未使用的Set
-            }
-
         }else if (std::is_same_v<T, FrameWork::Model>) {
             auto model = models[index];
             model->inUse = false;
