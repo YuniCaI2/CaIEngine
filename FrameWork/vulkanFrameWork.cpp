@@ -524,6 +524,12 @@ void vulkanFrameWork::CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 
 // 这里之创建常规的纹理，不创建天空盒类型的纹理
 void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::TextureFullData& data) {
+    if (texturePathMap.find(data.path) != texturePathMap.end()) {
+        //纹理资源复用
+        textureId =  texturePathMap[data.path];
+        return;
+    }
+
     FrameWork::Buffer stagingBuffer;
     vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &stagingBuffer, data.width *data.height * data.numChannels , data.data);
@@ -573,6 +579,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
     CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
     texture->sampler = CreateSampler(mipmapLevels);
     texture->textureType = data.type;
+    texturePathMap[data.path] = textureId;
 
     texture->inUse = true;
     //使用
@@ -1461,11 +1468,11 @@ void vulkanFrameWork::SetUpStaticMesh(unsigned int &meshID, std::vector<FrameWor
     meshBuffer->inUse = true;
 }
 
-void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType, TextureTypeFlags textureTypeFlags, glm::vec3 position) {
+void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType, TextureTypeFlags textureTypeFlags, glm::vec3 position, float scale) {
     modelID = getNextIndex<FrameWork::Model>();
     auto model = getByIndex<FrameWork::Model>(modelID);
     FrameWork::ModelData modelData = {};
-    modelData.meshDatas = resourceManager.LoadMesh(fileName, modelType, textureTypeFlags);
+    modelData.meshDatas = resourceManager.LoadMesh(fileName, modelType, textureTypeFlags, scale);
     model->meshes.resize(modelData.meshDatas.size());
     model->materialSlots.resize(modelData.meshDatas.size());
     model->inUse = true;

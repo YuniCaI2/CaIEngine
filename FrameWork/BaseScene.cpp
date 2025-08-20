@@ -203,7 +203,7 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
         );
 
     uint32_t modelID_ = -1;
-    vulkanRenderAPI.LoadModel(modelID_, "cocona", ModelType::OBJ, DiffuseColor);
+    vulkanRenderAPI.LoadModel(modelID_, "japanStreet", ModelType::GLB, Emissive, {0,0, 3}, 0.1f);
     modelID.push_back(modelID_);
     aabbDeBugging.GenerateAABB(modelID_);
     sceneName = "Base Scene";

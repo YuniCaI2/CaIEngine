@@ -52,6 +52,8 @@ private:
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
+    std::unordered_map<std::string, uint32_t> texturePathMap;
+
 protected:
     //得到一个绝对路径
     std::string getShaderPath() const;
@@ -255,7 +257,7 @@ public:
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer>& uniformBuffer, const std::vector<void*>& data, const std::vector<uint32_t>& sizes, uint32_t offset);
     VkSampler CreateSampler(uint32_t mipmapLevels);
     void SetUpStaticMesh(unsigned int& meshID, std::vector<FrameWork::Vertex>& vertices, std::vector<uint32_t>& indices, bool skinned);
-    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1});
+    void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
     void DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer);
     void BindMaterial(uint32_t materialID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);

@@ -127,7 +127,7 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
     }
     if (type == TextureTypeFlagBits::Emissive) {
         for (uint32_t i = 0; i < width * height * numChannels; i++) {
-            pixels[i * numChannels] = 0;
+            pixels[i] = 0;
         }
     }
     if (type == TextureTypeFlagBits::Occlusion) {
@@ -332,7 +332,7 @@ VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, cons
 }
 
 //这里默认这里的Obj不支持PBR贴图，等待后续扩展
-std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType, TextureTypeFlags textureFlags) {
+std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale) {
     Assimp::Importer importer;
     std::vector<std::string_view> fsplits;
     std::string path;
@@ -350,7 +350,8 @@ std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string
         path = generalModelPath + fileName + "/" + fileName + ".glb";
         directory = generalModelPath + fileName + "/";
     }
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals |aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
+    importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals |aiProcess_CalcTangentSpace | aiProcess_FlipUVs |  aiProcess_GlobalScale);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         throw std::runtime_error("Failed to load model from file " + fileName);
     }
@@ -485,35 +486,8 @@ FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::s
     texData.path = filePath;
     texData.type = type;
     if (!data) {
-        std::cerr << "Failed to load texture from file " << filePath << std::endl;
-        unsigned char* pixels = new unsigned char[width * height * numChannels];
-        if (type == TextureTypeFlagBits::DiffuseColor) {
-            for (uint32_t i = 0; i < width * height * numChannels; i++) {
-                pixels[i] = 1;//全部置为1
-            }
-        }
-        if (type == TextureTypeFlagBits::MetallicRoughness) {
-            for (uint32_t i = 0; i < width * height; i++) {
-                pixels[i * numChannels + 0] = 0;
-                pixels[i * numChannels + 1] = 0.5;
-                pixels[i * numChannels + 2] = 0;
-                pixels[i * numChannels + 3] = 1;
-            }
-        }
-        if (type == TextureTypeFlagBits::Emissive) {
-            for (uint32_t i = 0; i < width * height * numChannels; i++) {
-                pixels[i * numChannels + 0] = 0;
-            }
-        }
-        if (type == TextureTypeFlagBits::Occlusion) {
-            for (uint32_t i = 0; i < width * height * numChannels; i++) {
-                pixels[i * numChannels + 0] = 1;
-            }
-        }
-        for (uint32_t i = 0; i < width * height * numChannels; i++) {
-            pixels[i] = 1;//全部置为1
-        }
-        texData.data = pixels;
+        std::cerr << "Failed to load texture from file, may be the directory was wrong " << filePath << std::endl;
+        exit(-1);
     }
     return texData;
 }

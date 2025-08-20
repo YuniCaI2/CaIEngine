@@ -43,7 +43,7 @@ namespace FrameWork {
 
 
         VkShaderModule getShaderModulFromFile(VkDevice device,const std::string& fileName, VkShaderStageFlags stage) const;
-        std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags);
+        std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale = 1.0f);
         std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, const aiScene* scene,aiTextureType type, std::string directory);
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
