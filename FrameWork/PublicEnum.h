@@ -105,7 +105,9 @@ enum TextureTypeFlagBits : uint32_t{
     Occlusion = 1 << 4,
     Ambient = 1 << 5,
     BaseColor = 1 << 6,
-    None = 1 << 7,
+    SFLOAT16 = 1 << 7,
+    SFLOAT32 = 1 << 8,
+    None = 1 << 9,
 };
 //导入顺序也同上，当然不存在空缺
 using TextureTypeFlags = uint32_t;
@@ -122,6 +124,7 @@ enum class LightType {
     SPOT,
     FACE
 };
+
 
 
 #endif //PUBLICENUM_H

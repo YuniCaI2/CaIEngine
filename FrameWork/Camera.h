@@ -155,6 +155,14 @@ namespace FrameWork {
             processInput(deltaTime);
         }
 
+        void reset(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) {
+            Position = position;
+            WorldUp = up;
+            Yaw = yaw;
+            Pitch = pitch;
+            updateCameraVectors();
+        }
+
     private:
         //将键盘的输入封装在相机中
         void processInput(double deltaTime) {

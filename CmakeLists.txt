@@ -3,9 +3,14 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(CaIEngine)
 
+file(GLOB scenePath
+        "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.cpp"
+)
+
 add_subdirectory(FrameWork)
 
-add_executable(${PROJECT_NAME} Renderer.cpp)
+add_executable(${PROJECT_NAME} Renderer.cpp ${scenePath})
 
 target_link_libraries(${PROJECT_NAME} FrameWork)
 

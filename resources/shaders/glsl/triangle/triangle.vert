@@ -35,9 +35,7 @@ void main()
 	gl_Position = globalUbo.projectionMatrix * globalUbo.viewMatrix * worldPos;
 
 	// 3. 将法线、切线从模型空间变换到世界空间
-	//    我们使用 mat3(ubo.modelMatrix) 是因为它只包含旋转和缩放，移除了位移
-	//    注意：如果 modelMatrix 包含非均匀缩放，正确做法是用 transpose(inverse(mat3(ubo.modelMatrix)))
-	outWorldNormal = normalize(mat3(modelUbo.modelMatrix) * inNormal);
+	outWorldNormal = normalize(transpose(inverse(mat3(modelUbo.modelMatrix))) * inNormal);
 	vec3 worldTangent = normalize(mat3(modelUbo.modelMatrix) * inTangent);
 
 	// 4. 计算副切线 (Bitangent) 并构建 TBN 矩阵

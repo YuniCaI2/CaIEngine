@@ -544,7 +544,14 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
     if (data.numChannels == 4) {
         if (data.type == DiffuseColor || data.type == BaseColor) {
             format = VK_FORMAT_R8G8B8A8_SRGB;
-        }else {
+        }
+        else if (data.type == SFLOAT32) {
+            format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        }
+        else if (data.type == SFLOAT16) {
+            format = VK_FORMAT_R16G16B16A16_SFLOAT;
+        }
+        else {
             format = VK_FORMAT_R8G8B8A8_UNORM;
         }
     }
@@ -1596,6 +1603,7 @@ void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, float 
         }
     };
     slot->SetUniformObject<ModelUniform>(VK_SHADER_STAGE_VERTEX_BIT, position);
+    slot->inUse = true;
 
     std::vector<FrameWork::Vertex> vertices(4);
     auto center = position;

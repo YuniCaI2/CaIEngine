@@ -33,6 +33,9 @@ private:
     uint32_t frameBufferID_ = -1;
     uint32_t presentColorAttachment_=  -1;
 
+    //floor
+    uint32_t floorID = -1;
+
     std::function<void()> GUIFunc;
 
 };

@@ -9,6 +9,7 @@
 #include "Timer.h"
 #include "VulkanDebug.h"
 #include "VulkanWindow.h"
+#include "Scene/LTCScene.h"
 
 class Renderer {
 private:
@@ -66,7 +67,9 @@ public:
     void prepare() {
         //创建场景
         auto scene1 = std::make_unique<BaseScene>(camera);
+        auto scene2 = std::make_unique<LTCScene>(&camera);
         scenes.push_back(std::move(scene1));
+        scenes.push_back(std::move(scene2));
         //呈现
         vulkanRenderAPI.InitPresent("uniformPresent", scenes[0]->GetPresentColorAttachment());
         GUI.InitFrameWorkGUI();
@@ -90,6 +93,9 @@ public:
                         bool isSelected = (i == currentSceneIndex);
                         if (ImGui::Selectable(scenes[i]->GetName().c_str(), isSelected)) {
                             currentSceneIndex = i;
+                            vulkanRenderAPI.SwitchPresentColorAttachment(scenes[i]->GetPresentColorAttachment());
+                            camera.reset({0,0,3});
+
                         }
                         if (isSelected) {
                             ImGui::SetItemDefaultFocus();

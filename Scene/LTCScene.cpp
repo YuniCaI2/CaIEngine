@@ -69,10 +69,10 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
     vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
 
     auto dynamicDescriptorSetLayout = FrameWork::Slot::CreateUniformDescriptorSetLayout(VK_SHADER_STAGE_VERTEX_BIT);
-    auto textureDescriptorSetLayout = FrameWork::Slot::CreateUniformDescriptorSetLayout(VK_SHADER_STAGE_FRAGMENT_BIT);
+    auto textureDescriptorSetLayout = FrameWork::Slot::CreateTextureDescriptorSetLayout(VK_SHADER_STAGE_FRAGMENT_BIT);
     vulkanRenderAPI.CreateVulkanPipeline(pipelineID_, "forwardPipeline", pipelineInfoId, "forward", 0,
                                          {dynamicDescriptorSetLayout,textureDescriptorSetLayout},
-                                         1, 2);
+                                         2, 2);
 
 
     //framebuffer
@@ -83,9 +83,30 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
     api.CreateAttachment(presentColorAttachment_, api.windowWidth, api.windowHeight, AttachmentType::Color, VK_SAMPLE_COUNT_1_BIT, true);
     api.CreateFrameBuffer(frameBufferID_, {presentColorAttachment_, depthAttachment}, api.windowWidth, api.windowHeight, api.GetRenderPass("forward"));
 
+    //UI
     GUIFunc = [this] {
         ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 10.0f);
     };
+
+    //Parameter
+    struct GlobalParameter {
+        glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 projection = glm::mat4(1.0f);
+        void Update(const FrameWork::Camera& camera) {
+            view = camera.GetViewMatrix();
+            projection = glm::perspective(glm::radians(camera.Zoom),
+                                              (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
+                                              0.01f, 100.0f);
+            projection[1][1] *= -1;
+        }
+    };
+
+    auto slot = api.CreateSlot(slot_);
+    slot->inUse = true;
+    slot->SetUniformObject<GlobalParameter>(VK_SHADER_STAGE_VERTEX_BIT, *camera);
+
+    //model
+    api.GenFace(floorID, {0.0f, 0.1f, 0.0f}, 30, 30, "../resources/Pic/doro.png");
 
 }
 
@@ -93,7 +114,13 @@ LTCScene::~LTCScene() {
 }
 
 void LTCScene::Render(const VkCommandBuffer &cmdBuffer) {
-
+    auto& api = vulkanRenderAPI;
+    api.BeginRenderPass("forward", frameBufferID_, api.GetFrameWidth(), api.GetFrameHeight());
+    auto vulkanPipeline = api.getByIndex<FrameWork::VulkanPipeline>(pipelineID_);
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->pipeline);
+    api.getByIndex<FrameWork::Slot>(slot_)->Bind(cmdBuffer, vulkanPipeline->pipelineLayout, 0);
+    api.DrawModel(floorID, cmdBuffer, vulkanPipeline->pipelineLayout,  api.getByIndex<FrameWork::Slot>(slot_)->GetDescriptorSetsSize());
+    api.EndRenderPass();
 }
 
 const std::function<void()> & LTCScene::GetRenderFunction() {

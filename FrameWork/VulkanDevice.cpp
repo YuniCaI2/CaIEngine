@@ -374,9 +374,9 @@ VkResult FrameWork::VulkanDevice::createImage(VulkanImage* vulkanImage, VkExtent
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = getMemoryType(memRequirements.memoryTypeBits, memoryPropertyFlags);
 
-    std::cout << "=== Allocation Debug ===" << std::endl;
-    std::cout << "Requested size: " << memRequirements.size << " bytes (" << memRequirements.size / 1024 / 1024 << " MB)" << std::endl;
-    std::cout << "Memory type index: " << allocInfo.memoryTypeIndex << std::endl;
+    // std::cout << "=== Allocation Debug ===" << std::endl;
+    // std::cout << "Requested size: " << memRequirements.size << " bytes (" << memRequirements.size / 1024 / 1024 << " MB)" << std::endl;
+    // std::cout << "Memory type index: " << allocInfo.memoryTypeIndex << std::endl;
 
     VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &vulkanImage->memory));
 
