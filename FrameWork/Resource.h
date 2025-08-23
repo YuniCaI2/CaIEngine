@@ -48,6 +48,7 @@ namespace FrameWork {
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
 
+
         static Resource& GetInstance();
     };
 }

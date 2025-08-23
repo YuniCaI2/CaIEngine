@@ -58,9 +58,7 @@ namespace FrameWork {
         void SetStorageBuffer(VkShaderStageFlags shaderStageFlags, uint32_t StorageBufferID);
         void DestroyStorageBuffer(uint32_t StorageBufferID);
 
-        void SetTexture(const std::vector<uint32_t>& textures) {
-            textureIDs.insert(textureIDs.end(), textures.begin(), textures.end());
-        }
+
         void SetTexture(VkShaderStageFlags shaderStageFlags,uint32_t textureID);
         void SwitchTexture(VkShaderStageFlags shaderFlags, uint32_t oldTexID, uint32_t newTexID);
         void DestroyTexture(uint32_t textureID);

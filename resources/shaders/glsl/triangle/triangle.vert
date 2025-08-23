@@ -9,7 +9,6 @@ layout (location = 3) in vec2 inTexCoord; // 顶点纹理坐标
 // 全局变换矩阵
 layout (binding = 0) uniform globalUBO
 {
-
 	mat4 viewMatrix;
 	mat4 projectionMatrix;
 } globalUbo;

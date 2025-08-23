@@ -7,14 +7,7 @@
 #include "Slot.h"
 #include <iostream>
 
-void BaseScene::UniformBufferObject::Update(const FrameWork::Camera& camera) {
-    view = camera.GetViewMatrix();
-    projection = glm::perspective(glm::radians(camera.Zoom),
-                                  (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight,
-                                  0.1f, 100.0f);
-    model = glm::mat4(1.0f);
-    projection[1][1] *= -1;
-}
+
 
 BaseScene::BaseScene(FrameWork::Camera& camera) {
     CreateDescriptorSetLayout();
@@ -190,7 +183,7 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
             view = camera.GetViewMatrix();
             projection = glm::perspective(glm::radians(camera.Zoom),
                                               (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
-                                              0.1f, 100.0f);
+                                              0.01f, 100.0f);
             projection[1][1] *= -1;
         }
     };
@@ -203,9 +196,12 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
         );
 
     uint32_t modelID_ = -1;
-    vulkanRenderAPI.LoadModel(modelID_, "japanStreet", ModelType::GLB, Emissive, {0,0, 3}, 0.1f);
-    modelID.push_back(modelID_);
+    vulkanRenderAPI.LoadModel(modelID_, "cocona", ModelType::OBJ, DiffuseColor, {0,0, 0}, 1.0f);
     aabbDeBugging.GenerateAABB(modelID_);
+    modelID.push_back(modelID_);
+    vulkanRenderAPI.GenFace(modelID_, {0, 0, -1}, 1, 1, "../resources/Pic/doro.png");
+    aabbDeBugging.GenerateAABB(modelID_);
+    modelID.push_back(modelID_);
     sceneName = "Base Scene";
 
     GUIFunc = [this]() {

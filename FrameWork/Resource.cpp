@@ -14,6 +14,7 @@
 #include <stb_image.h>
 #include <filesystem>
 
+
 void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes,  ModelType modelType, std::string directory, TextureTypeFlags textureFlags) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
@@ -502,6 +503,7 @@ void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureF
         }
     }
 }
+
 
 FrameWork::Resource& FrameWork::Resource::GetInstance() {
     static Resource instance;

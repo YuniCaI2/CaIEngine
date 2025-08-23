@@ -13,13 +13,7 @@
 
 class BaseScene : public FrameWork::Scene{
 public:
-    struct UniformBufferObject {
-        glm::mat4 projection;
-        glm::mat4 model;
-        glm::mat4 view;
 
-        void Update(const FrameWork::Camera& camera);
-    };
     BaseScene(FrameWork::Camera& camera);
     virtual ~BaseScene() override;
     virtual void Render(const VkCommandBuffer& cmdBuffer) override;
@@ -54,7 +48,6 @@ private:
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
     
     // 场景数据
-    UniformBufferObject ubo{};
     bool useMSAA = false;
     FrameWork::Camera* cameraPtr{};
 

@@ -1014,8 +1014,8 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::str
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     .pNext = nullptr,
-    .setLayoutCount = (uint32_t)(temp.size() > 0 ? temp.size() : 0),
-    .pSetLayouts = (temp.size() > 0 ? temp.data() : nullptr),
+    .setLayoutCount = (uint32_t)(!temp.empty() ? temp.size() : 0),
+    .pSetLayouts = (!temp.empty() ? temp.data() : nullptr),
     .pushConstantRangeCount = 0,
     .pPushConstantRanges = nullptr,
     };
@@ -1033,9 +1033,9 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::str
             .pNext = nullptr,
             .flags = 0,
             .vertexBindingDescriptionCount = static_cast<uint32_t>(vulkanPipelineInfo->vertexBindingDescriptions.size()),
-            .pVertexBindingDescriptions = vulkanPipelineInfo->vertexBindingDescriptions.size() == 0 ? nullptr : vulkanPipelineInfo->vertexBindingDescriptions.data(),
+            .pVertexBindingDescriptions = vulkanPipelineInfo->vertexBindingDescriptions.empty() ? nullptr : vulkanPipelineInfo->vertexBindingDescriptions.data(),
             .vertexAttributeDescriptionCount = static_cast<uint32_t>(vulkanPipelineInfo->vertexAttributeDescriptions.size()),
-            .pVertexAttributeDescriptions = vulkanPipelineInfo->vertexAttributeDescriptions.size() == 0 ? nullptr : vulkanPipelineInfo->vertexAttributeDescriptions.data(),
+            .pVertexAttributeDescriptions = vulkanPipelineInfo->vertexAttributeDescriptions.empty() ? nullptr : vulkanPipelineInfo->vertexAttributeDescriptions.data(),
         };
 
     // 定义需要动态设置的状态
@@ -1572,6 +1572,94 @@ void vulkanFrameWork::DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer) {
     vkCmdDrawIndexed(commandBuffer, mesh->indexCount, 1, 0, 0, 0);
 }
 
+
+void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, float width, float height, std::string filePath) {
+    model = getNextIndex<FrameWork::Model>();
+    auto modelPtr = getByIndex<FrameWork::Model>(model);
+    modelPtr->position = position;
+    modelPtr->materialSlots.resize(1);
+    modelPtr->materials.resize(1);
+    modelPtr->inUse = true;
+
+    //设置slot
+    auto slot = CreateSlot(modelPtr->materialSlots[0]);
+    if (! filePath.empty()) {
+        auto textureData = resourceManager.LoadTextureFullData(filePath, TextureTypeFlagBits::BaseColor);
+        CreateMaterial(modelPtr->materials.back(), {textureData});
+        uint32_t texId = materials[modelPtr->materials.back()]->textures[0];
+        slot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT,texId);
+    }
+    struct ModelUniform {
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        void Update(const glm::vec3& position) {
+            modelMatrix = glm::translate(glm::mat4(1.0f), position);
+        }
+    };
+    slot->SetUniformObject<ModelUniform>(VK_SHADER_STAGE_VERTEX_BIT, position);
+
+    std::vector<FrameWork::Vertex> vertices(4);
+    auto center = position;
+    // 计算平面四个角的位置（在XY平面上）
+    float halfWidth = width * 0.5f;
+    float halfHeight = height * 0.5f;
+
+    // 左下角
+    vertices[0].position = center + glm::vec3(-halfWidth, -halfHeight, 0.0f);
+    vertices[0].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[0].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[0].texCoord = glm::vec2(0.0f, 1.0f);
+
+    // 右下角
+    vertices[1].position = center + glm::vec3(halfWidth, -halfHeight, 0.0f);
+    vertices[1].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[1].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[1].texCoord = glm::vec2(1.0f, 1.0f);
+
+    // 右上角
+    vertices[2].position = center + glm::vec3(halfWidth, halfHeight, 0.0f);
+    vertices[2].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[2].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[2].texCoord = glm::vec2(1.0f, 0.0f);
+
+    // 左上角
+    vertices[3].position = center + glm::vec3(-halfWidth, halfHeight, 0.0f);
+    vertices[3].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[3].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[3].texCoord = glm::vec2(0.0f, 0.0f);
+
+    modelPtr->meshes.resize(1);
+    std::vector<uint32_t> indices = {
+        0, 1, 2,  // 第一个三角形
+        2, 3, 0   // 第二个三角形
+    };
+    SetUpStaticMesh(modelPtr->meshes.back(), vertices, indices, false);
+
+    //构建包围盒子
+    std::vector<FrameWork::AABB> triangleBoundingBoxes;
+    bool firstTriangle = true;
+    for (int i = 0; i < indices.size(); i += 3) {
+        glm::vec3 v1 = vertices[indices[i]].position;
+        glm::vec3 v2 = vertices[indices[i + 1]].position;
+        glm::vec3 v3 = vertices[indices[i + 2]].position;
+
+        FrameWork::AABB triangleAABB;
+        triangleAABB.max = glm::max(glm::max(v1, v2), v3);
+        triangleAABB.min = glm::min(glm::min(v1, v2), v3);
+
+        if (firstTriangle) {
+            modelPtr->aabb = triangleAABB;
+            firstTriangle = false;
+        } else {
+            modelPtr->aabb.max = glm::max(modelPtr->aabb.max, triangleAABB.max);
+            modelPtr->aabb.min = glm::min(modelPtr->aabb.min, triangleAABB.min);
+        }
+
+        triangleBoundingBoxes.push_back(triangleAABB);
+    }
+    modelPtr->triangleBoundingBoxs = std::make_unique<std::vector<FrameWork::AABB>>(std::move(triangleBoundingBoxes));
+    //构建包围盒
+
+}
 
 
 FrameWork::Slot * vulkanFrameWork::CreateSlot(uint32_t &slotID) {

@@ -7,6 +7,8 @@ project(FrameWork)
 find_package(Vulkan REQUIRED)
 find_package(assimp REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(directxtex CONFIG REQUIRED)
+
 add_subdirectory(thirdPart)
 
 file(GLOB frameWorkPath
@@ -23,6 +25,9 @@ target_link_libraries(FrameWork PUBLIC Vulkan::Vulkan)
 target_link_libraries(FrameWork PUBLIC imgui::imgui)
 target_link_libraries(FrameWork PUBLIC
         assimp::assimp
+)
+target_link_libraries(FrameWork PRIVATE
+        Microsoft::DirectXTex
 )
 
 target_include_directories(FrameWork PUBLIC
