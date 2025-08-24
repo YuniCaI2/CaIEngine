@@ -9,13 +9,6 @@
 
 class LTCScene : public FrameWork::Scene {
 public:
-    struct UniformBufferObject {
-        glm::mat4 projection;
-        glm::mat4 model;
-        glm::mat4 view;
-        alignas(16) float intensity = 10;
-        void Update(const FrameWork::Camera& camera, float& intensity);
-    };
     LTCScene(FrameWork::Camera* camera);
     virtual ~LTCScene() override;
     virtual void Render(const VkCommandBuffer& cmdBuffer) override;
@@ -35,6 +28,7 @@ private:
 
     //floor
     uint32_t floorID = -1;
+    float rotate = 0.0f;
 
     std::function<void()> GUIFunc;
 

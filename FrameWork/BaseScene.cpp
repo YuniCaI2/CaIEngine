@@ -179,9 +179,9 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
     struct GlobalParameter {
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
-        void Update(const FrameWork::Camera& camera) {
-            view = camera.GetViewMatrix();
-            projection = glm::perspective(glm::radians(camera.Zoom),
+        void Update(const FrameWork::Camera* camera) {
+            view = camera->GetViewMatrix();
+            projection = glm::perspective(glm::radians(camera->Zoom),
                                               (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
                                               0.01f, 100.0f);
             projection[1][1] *= -1;
@@ -192,14 +192,14 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
     cameraPtr = &camera;
     auto globalSlot = vulkanRenderAPI.CreateSlot(globalSlotID);
     globalSlot->SetUniformObject<GlobalParameter>(
-        VK_SHADER_STAGE_VERTEX_BIT, *cameraPtr
+        VK_SHADER_STAGE_VERTEX_BIT, cameraPtr
         );
 
     uint32_t modelID_ = -1;
     vulkanRenderAPI.LoadModel(modelID_, "cocona", ModelType::OBJ, DiffuseColor, {0,0, 0}, 1.0f);
     aabbDeBugging.GenerateAABB(modelID_);
     modelID.push_back(modelID_);
-    vulkanRenderAPI.GenFace(modelID_, {0, 0, -1}, 1, 1, "../resources/Pic/doro.png");
+    vulkanRenderAPI.GenFace(modelID_, {0, 0, -1}, {0,0,1},1, 1, "../resources/Pic/doro.png");
     aabbDeBugging.GenerateAABB(modelID_);
     modelID.push_back(modelID_);
     sceneName = "Base Scene";

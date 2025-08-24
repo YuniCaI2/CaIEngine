@@ -270,7 +270,7 @@ public:
     void CreateHostVisibleStorageBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer& buffer, void* data);
 
     //快速生成基础几何模型
-    void GenFace(uint32_t& model, const glm::vec3& position, float width, float height, std::string texPath = "");
+    void GenFace(uint32_t& model, const glm::vec3& position, const glm::vec3& normal,float width, float height, std::string texPath = "");
 
     //参数变量向外接口
     static vulkanFrameWork& GetInstance(); //单例接口

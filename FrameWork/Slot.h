@@ -11,81 +11,108 @@ namespace FrameWork {
     class SlotObjectsContainer {
     public:
         virtual ~SlotObjectsContainer() = default;
+
         virtual void Update() = 0;
+
         virtual uint32_t GetDataSize() = 0;
-        virtual void* GetObjectPtr() = 0;
+
+        virtual void *GetObjectPtr() = 0;
     };
 
     template<typename T, typename... Args>
     class SlotObjectsContainerImpl : public SlotObjectsContainer {
     public:
-        SlotObjectsContainerImpl(Args&&... args) : context(std::forward<Args>(args)...) {}
+        SlotObjectsContainerImpl(std::decay_t<Args>... args)
+            : context(args...) {
+        }
+
         void Update() override {
             std::apply(
-                [this](Args&&... args) {
-                    uniformObject.Update(std::forward<Args>(args)...);
+                [this](auto &&... args) {
+                    uniformObject.Update(std::forward<decltype(args)>(args)...);
                 }, context
-                );
+            );
         }
+
         uint32_t GetDataSize() override {
             return sizeof(T);
         }
-        void* GetObjectPtr() override {
+
+        void *GetObjectPtr() override {
             return &uniformObject;
         }
+
     private:
-        T uniformObject; //直接拥有
-        std::tuple<Args...> context;
+        T uniformObject;
+        std::tuple<std::decay_t<Args>...> context;
     };
+
 
     class Slot {
     public:
         template<typename T, typename... Args>
-        void SetUniformObject(VkShaderStageFlags shaderStage, Args&&... args) {
+        void SetUniformObject(VkShaderStageFlags shaderStage, Args &&... args) {
             auto id = VulkanTool::IndexGetter<Slot>::Get<T>();
             if (auto it = uniformObjects.find(id); it != uniformObjects.end()) {
                 return;
-            }else {
-                auto container = std::make_unique<SlotObjectsContainerImpl<T, Args...>>(std::forward<Args>(args)...);
-                uniformObjects.emplace(id ,
-                    std::move(container)
-                    );
+            } else {
+                //使用退化保证存值
+                auto container = std::make_unique<SlotObjectsContainerImpl<T, std::decay_t<Args>...> >(
+                    std::forward<Args>(args)...
+                );
+                uniformObjects.emplace(id,
+                                       std::move(container)
+                );
             }
 
             CreateUniformDescriptorSet(id, shaderStage, sizeof(T));
         }
 
         void SetStorageBuffer(VkShaderStageFlags shaderStageFlags, uint32_t StorageBufferID);
+
         void DestroyStorageBuffer(uint32_t StorageBufferID);
 
 
-        void SetTexture(VkShaderStageFlags shaderStageFlags,uint32_t textureID);
+        void SetTexture(VkShaderStageFlags shaderStageFlags, uint32_t textureID);
+
         void SwitchTexture(VkShaderStageFlags shaderFlags, uint32_t oldTexID, uint32_t newTexID);
+
         void DestroyTexture(uint32_t textureID);
+
         std::vector<VkDescriptorSetLayout> GetAllDescriptorSetLayout() const;
 
         static void DestroyDescriptorSetLayout();
+
         static VkDescriptorSetLayout CreateTextureDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
+
         static VkDescriptorSetLayout CreateStorageDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
+
         static VkDescriptorSetLayout CreateUniformDescriptorSetLayout(VkShaderStageFlags shaderStageFlags);
 
         Slot() = default;
-        Slot& operator=(Slot const& other) = delete;
-        Slot& operator=(Slot && other) = default;
-        Slot(Slot&& other) = default;
-        Slot(const Slot& other) = delete;
+
+        Slot &operator=(Slot const &other) = delete;
+
+        Slot &operator=(Slot &&other) = default;
+
+        Slot(Slot &&other) = default;
+
+        Slot(const Slot &other) = delete;
+
         ~Slot();
 
 
-        void Update();//针对Uniform数据
+        void Update(); //针对Uniform数据
         void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
+
         uint32_t GetDescriptorSetsSize() const;
 
 
         bool inUse = false;
+
     private:
         //Uniform的ID隶属于Slot
-        std::unordered_map<uint32_t, std::unique_ptr<SlotObjectsContainer>> uniformObjects;
+        std::unordered_map<uint32_t, std::unique_ptr<SlotObjectsContainer> > uniformObjects;
         std::vector<uint32_t> textureIDs;
         std::vector<uint32_t> storageBufferIDs;
         std::unordered_map<uint32_t, uint32_t> textureIDIndexMap;
@@ -101,25 +128,26 @@ namespace FrameWork {
         std::vector<VkDescriptorSet> storageDescriptorSetContainer;
         std::vector<VkDescriptorSet> textureDescriptorSetContainer;
         std::vector<VkDescriptorSet> uniformDescriptorSetContainer;
-        std::vector<uint32_t> uniformBufferSizes;//维持线性
-
+        std::vector<uint32_t> uniformBufferSizes; //维持线性
 
 
         inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout> globalUniformDescriptorSetLayouts;
-        inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout> globalStorageBufferDescriptorSetLayouts;
+        inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout>
+        globalStorageBufferDescriptorSetLayouts;
         inline static std::unordered_map<VkShaderStageFlags, VkDescriptorSetLayout> globalTextureDescriptorSetLayouts;
 
-        void CreateUniformDescriptorSet(uint32_t uniformObjectID, VkShaderStageFlags shaderStage, VkDeviceSize deviceSize);
+        void CreateUniformDescriptorSet(uint32_t uniformObjectID, VkShaderStageFlags shaderStage,
+                                        VkDeviceSize deviceSize);
+
         void AddStorageDescriptorSet(uint32_t storageBufferID, VkDescriptorSet descriptorSet);
+
         void AddTextureDescriptorSet(uint32_t textureID, VkDescriptorSet descriptorSet);
+
         void DestroyStorageDescriptorSet(uint32_t storageBufferID);
+
         void DestroyTextureDescriptorSet(uint32_t textureID);
-
     };
-
-
 }
-
 
 
 #endif //SLOT_H

@@ -11,6 +11,7 @@ layout (binding = 0) uniform globalUBO
 {
     mat4 viewMatrix;
     mat4 projectionMatrix;
+    mat4 rotate;
 } globalUbo;
 layout (set = 1, binding = 0) uniform modelUBO
 {
@@ -27,7 +28,7 @@ layout (location = 3) out mat3 outTBN;        // 用于法线贴图的TBN矩阵
 void main()
 {
 
-    vec4 worldPos = modelUbo.modelMatrix * vec4(inPos, 1.0);
+    vec4 worldPos = globalUbo.rotate * modelUbo.modelMatrix * vec4(inPos, 1.0);
     outWorldPos = worldPos.xyz;
 
     gl_Position = globalUbo.projectionMatrix * globalUbo.viewMatrix * worldPos;

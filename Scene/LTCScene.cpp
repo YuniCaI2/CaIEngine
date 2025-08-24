@@ -5,20 +5,9 @@
 #include "LTCScene.h"
 #include <vulkanFrameWork.h>
 
-void LTCScene::UniformBufferObject::Update(const FrameWork::Camera &camera, float& intensity) {
-    view = camera.GetViewMatrix();
-    projection = glm::perspective(glm::radians(camera.Zoom),
-                                  (float)vulkanRenderAPI.windowWidth / (float)vulkanRenderAPI.windowHeight,
-                                  0.1f, 100.0f);
-    model = glm::mat4(1.0f);
-    projection[1][1] *= -1;
-    this->intensity = intensity;
-}
 
 LTCScene::LTCScene(FrameWork::Camera *camera) {
     camera_ = camera;
-
-
     VkVertexInputBindingDescription bindingDescription = FrameWork::Vertex::getBindingDescription();
     auto attributeDescriptions = FrameWork::Vertex::getAttributeDescription();
     VkViewport viewport = {};
@@ -86,27 +75,31 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
     //UI
     GUIFunc = [this] {
         ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 10.0f);
+        ImGui::SliderFloat("Rotate", &rotate, 0.0f, 360.0f);
+
     };
 
     //Parameter
     struct GlobalParameter {
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
-        void Update(const FrameWork::Camera& camera) {
-            view = camera.GetViewMatrix();
-            projection = glm::perspective(glm::radians(camera.Zoom),
+        glm::mat4 rotate = glm::mat4(1.0f);
+        void Update(const FrameWork::Camera* camera,const float* rotate) {
+            view = camera->GetViewMatrix();
+            projection = glm::perspective(glm::radians(camera->Zoom),
                                               (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
-                                              0.01f, 100.0f);
+                                                  0.01f, 100.0f);
+            this->rotate = glm::rotate(glm::mat4(1.0f), glm::radians(*rotate), glm::vec3(0.0f, 1.0f, 0.0f));
             projection[1][1] *= -1;
         }
     };
 
     auto slot = api.CreateSlot(slot_);
     slot->inUse = true;
-    slot->SetUniformObject<GlobalParameter>(VK_SHADER_STAGE_VERTEX_BIT, *camera);
+    slot->SetUniformObject<GlobalParameter>(VK_SHADER_STAGE_VERTEX_BIT, camera, &rotate);
 
     //model
-    api.GenFace(floorID, {0.0f, 0.1f, 0.0f}, 30, 30, "../resources/Pic/doro.png");
+    api.GenFace(floorID, {0.0f, 0.0f, 0.0f}, {0,1,0},1, 1, "../resources/Pic/doro.png");
 
 }
 

@@ -1580,7 +1580,7 @@ void vulkanFrameWork::DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer) {
 }
 
 
-void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, float width, float height, std::string filePath) {
+void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, const glm::vec3& normal, float width, float height, std::string filePath) {
     model = getNextIndex<FrameWork::Model>();
     auto modelPtr = getByIndex<FrameWork::Model>(model);
     modelPtr->position = position;
@@ -1596,13 +1596,50 @@ void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, float 
         uint32_t texId = materials[modelPtr->materials.back()]->textures[0];
         slot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT,texId);
     }
+    glm::vec3 originNormal = {0, 0, 1};
+    auto dot = glm::dot(glm::normalize(normal), originNormal);
+    auto rotateMatrix = glm::mat4(1.0f);
+    if (dot <= -0.9999) {
+        rotateMatrix = glm::rotate(rotateMatrix, glm::radians(180.0f), {0, 1, 0});
+    }else if (dot < 0.9999) {
+        auto cross = glm::cross(originNormal, glm::normalize(normal));
+        cross = glm::normalize(cross);
+        rotateMatrix = glm::rotate(rotateMatrix, glm::acos(dot), cross);
+    }
+    auto printMatrix = [](const glm::mat4& matrix, const std::string& name = "Matrix") {
+        std::cout << name << ":" << std::endl;
+        for (int i = 0; i < 4; i++) {
+            std::cout << "[ ";
+            for (int j = 0; j < 4; j++) {
+                std::cout << std::fixed << std::setprecision(6) << matrix[j][i];
+                if (j < 3) std::cout << ", ";
+            }
+            std::cout << " ]" << std::endl;
+        }
+        std::cout << std::endl;
+    };
+    // printMatrix(rotateMatrix, "Rotate");
+
     struct ModelUniform {
         glm::mat4 modelMatrix = glm::mat4(1.0f);
-        void Update(const glm::vec3& position) {
-            modelMatrix = glm::translate(glm::mat4(1.0f), position);
+        void Update(const glm::vec3& position, const glm::mat4& rotate) {
+            modelMatrix = glm::translate(glm::mat4(1.0f), position) * rotate;
+            // printMatrix(rotate);
+        }
+        void printMatrix(const glm::mat4& matrix, const std::string& name = "Matrix") {
+            std::cout << name << ":" << std::endl;
+            for (int i = 0; i < 4; i++) {
+                std::cout << "[ ";
+                for (int j = 0; j < 4; j++) {
+                    std::cout << std::fixed << std::setprecision(6) << matrix[j][i];
+                    if (j < 3) std::cout << ", ";
+                }
+                std::cout << " ]" << std::endl;
+            }
+            std::cout << std::endl;
         }
     };
-    slot->SetUniformObject<ModelUniform>(VK_SHADER_STAGE_VERTEX_BIT, position);
+    slot->SetUniformObject<ModelUniform>(VK_SHADER_STAGE_VERTEX_BIT, position, rotateMatrix);
     slot->inUse = true;
 
     std::vector<FrameWork::Vertex> vertices(4);
