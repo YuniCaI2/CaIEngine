@@ -242,8 +242,8 @@ void FrameWork::AABBDeBugging::GenerateAABB(uint32_t modelID) {
 
 
         Slot slot;
-        slot.SetUniformObject<UniformBufferObject>(VK_SHADER_STAGE_VERTEX_BIT,viewMatrix,
-            projectionMatrix, vulkanRenderAPI.getByIndex<Model>(modelID)->position);
+        slot.SetUniformObject<UniformBufferObject>(VK_SHADER_STAGE_VERTEX_BIT,&viewMatrix,
+            &projectionMatrix, &vulkanRenderAPI.getByIndex<Model>(modelID)->position);
         slot.inUse = true;
         slots.emplace(modelID , std::move(slot));
 }

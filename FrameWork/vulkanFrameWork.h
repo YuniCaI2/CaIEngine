@@ -154,7 +154,7 @@ public:
     } settings;
 
 
-    VkClearColorValue defaultClearColor = {0.025f, 0.025f, 0.025f, 1.0f};
+    inline static VkClearColorValue defaultClearColor = {0.0025f, 0.0025f, 0.0025f, 1.0f};
 
     static std::vector<const char*> args; // 不确定这是干嘛的
 
@@ -235,10 +235,11 @@ public:
         VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
     //这里注意默认UniformObject时一个大结构体，也方便管理使用偏移更新不失性能，且注意DescriptorSetLayout只需要提供两个种类，具体数量通过后面两个参数控制
     void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout, uint32_t uniform, uint32_t texNum);//最后一项是为了创建的pipelineLayout
+    void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
 
     //简单封装
     VkCommandBuffer BeginCommandBuffer() const;
-    void BeginRenderPass(const std::string& renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const;
+    void BeginRenderPass(const std::string& renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight, VkClearColorValue clearColorValue = defaultClearColor) const;
     void BeginRenderPass(VkRenderPass renderPass, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const;
     void EndRenderPass() const;
     void EndCommandBuffer() const;

@@ -11,33 +11,31 @@ layout (binding = 0) uniform globalUBO
 {
     mat4 viewMatrix;
     mat4 projectionMatrix;
-    mat4 rotate;
 } globalUbo;
-layout (set = 1, binding = 0) uniform modelUBO
+layout (set = 1, binding = 0) uniform uniformLightUBO{
+    mat4 lightMatrix;
+    vec3 position;
+    vec3 normal;
+    float height;
+    float width;
+    float intensity;
+    vec3 color;
+} lightUbo;
+layout (set = 2, binding = 0) uniform modelUBO
 {
     mat4 modelMatrix;
 } modelUbo;
 
 
-layout (location = 0) out vec3 outWorldPos;   // 片段的世界空间位置
-layout (location = 1) out vec3 outWorldNormal; // 片段的世界空间法线
-layout (location = 2) out vec2 outTexCoord;   // 片段的纹理坐标
-layout (location = 3) out mat3 outTBN;        // 用于法线贴图的TBN矩阵
+layout (location = 2) out vec2 outTexCoord;
+layout (location = 4) flat out float intensity;
 
 
 void main()
 {
 
-    vec4 worldPos = globalUbo.rotate * modelUbo.modelMatrix * vec4(inPos, 1.0);
-    outWorldPos = worldPos.xyz;
-
+    vec4 worldPos = lightUbo.lightMatrix * vec4(inPos, 1.0);
     gl_Position = globalUbo.projectionMatrix * globalUbo.viewMatrix * worldPos;
-
-    outWorldNormal = normalize(transpose(inverse(mat3(modelUbo.modelMatrix))) * inNormal);
-    vec3 worldTangent = normalize(mat3(modelUbo.modelMatrix) * inTangent);
-
-    vec3 worldBitangent = cross(outWorldNormal, worldTangent);
-    outTBN = mat3(worldTangent, worldBitangent, outWorldNormal);
-
+    intensity = lightUbo.intensity;
     outTexCoord = inTexCoord;
 }

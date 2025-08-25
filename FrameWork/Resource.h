@@ -39,6 +39,9 @@ namespace FrameWork {
 
         void CompileShader(const std::string& filepath) const;
         void CompileShaderModify() const;
+
+        static TextureFullData LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type);
+        static TextureFullData LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type);
     public:
 
 

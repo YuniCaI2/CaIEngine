@@ -300,7 +300,7 @@ void FrameWork::Slot::CreateUniformDescriptorSet(uint32_t uniformObjectID, VkSha
     uint32_t len = uniformDescriptorSetContainer.size();
     uniformBufferIDIndexMap[uniformObjectID] = len;
     uniformDescriptorSetContainer.push_back(descriptorSet);
-    uniformBufferSizes.push_back(deviceSize * MAX_FRAME);
+    uniformBufferSizes.push_back(dynamicSize * MAX_FRAME);
 }
 
 void FrameWork::Slot::AddStorageDescriptorSet(uint32_t storageBufferID, VkDescriptorSet descriptorSet) {

@@ -530,14 +530,8 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
         return;
     }
 
-    FrameWork::Buffer stagingBuffer;
-    vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        &stagingBuffer, data.width *data.height * data.numChannels , data.data);
-    textureId = getNextIndex<FrameWork::Texture>();
-    auto texture = getByIndex<FrameWork::Texture>(textureId);
-    auto mipmapLevels = VulkanTool::GetMipMapLevels(data.width, data.height);
+    uint32_t pixelSize = 1;
     VkFormat  format = VK_FORMAT_R8G8B8A8_SRGB;
-    //这里是为处理一些法线贴图和AO贴图等等，防止它们发生错误的空间映射
     if (data.numChannels == 3) {
         std::cerr << "Texture Channels are 3 that GPU is Not Supported" << std::endl;
     }
@@ -547,9 +541,11 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
         }
         else if (data.type == SFLOAT32) {
             format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            pixelSize = 4; //每一个像素的大小
         }
         else if (data.type == SFLOAT16) {
             format = VK_FORMAT_R16G16B16A16_SFLOAT;
+            pixelSize = 2;//每一个像素的大小
         }
         else {
             format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -558,6 +554,14 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
     if (data.numChannels == 1) {
         format = VK_FORMAT_R8_UNORM;
     }
+    //这里是为处理一些法线贴图和AO贴图等等，防止它们发生错误的空间映射
+
+    FrameWork::Buffer stagingBuffer;
+    vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &stagingBuffer, data.width *data.height * data.numChannels * pixelSize , data.data);
+    textureId = getNextIndex<FrameWork::Texture>();
+    auto texture = getByIndex<FrameWork::Texture>(textureId);
+    auto mipmapLevels = VulkanTool::GetMipMapLevels(data.width, data.height);
     //这里为了统一性array的加载只支持单层的，如果多层可以使用copy的方法叠起来
     vulkanDevice->createImage(&texture->image, VkExtent2D(data.width, data.height), mipmapLevels, 1,VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -1104,9 +1108,107 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::str
     VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vulkanPipeline->pipeline));
 }
 
-void vulkanFrameWork::BeginRenderPass(const std::string &renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight) const {
+void vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &name, uint32_t &pipelineInfoIdx,
+    const std::string &renderPassName, uint32_t subpassIndex,
+    const std::vector<VkDescriptorSetLayout> &descriptorSetLayout) {
+    pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
+    auto vulkanPipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineIdx);
+    vulkanPipeline->inUse = true;
+    auto vulkanPipelineInfo = getByIndex<FrameWork::VulkanPipelineInfo>(pipelineInfoIdx);
+    vulkanPipelineInfo->inUse = true;
+    vulkanPipeline->descriptorSetLayouts = descriptorSetLayout;
+    std::vector<VkDescriptorSetLayout> temp;
+    temp = descriptorSetLayout;
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    .pNext = nullptr,
+    .setLayoutCount = (uint32_t)(!temp.empty() ? temp.size() : 0),
+    .pSetLayouts = (!temp.empty() ? temp.data() : nullptr),
+    .pushConstantRangeCount = 0,
+    .pPushConstantRanges = nullptr,
+    };
+    //先默认不使用常量推送
+    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &vulkanPipeline->pipelineLayout));
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
+
+    for (auto& stage : vulkanPipelineInfo->shaderModules) {
+        shaderStageCreateInfos.push_back(stage.second);
+    }
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .vertexBindingDescriptionCount = static_cast<uint32_t>(vulkanPipelineInfo->vertexBindingDescriptions.size()),
+            .pVertexBindingDescriptions = vulkanPipelineInfo->vertexBindingDescriptions.empty() ? nullptr : vulkanPipelineInfo->vertexBindingDescriptions.data(),
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vulkanPipelineInfo->vertexAttributeDescriptions.size()),
+            .pVertexAttributeDescriptions = vulkanPipelineInfo->vertexAttributeDescriptions.empty() ? nullptr : vulkanPipelineInfo->vertexAttributeDescriptions.data(),
+        };
+
+    // 定义需要动态设置的状态
+    std::vector dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data()
+    };
+
+    vulkanPipelineInfo->viewportState = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .viewportCount = 1, // 先不支持多视口渲染
+        .pViewports = &vulkanPipelineInfo->viewport,
+        .scissorCount = 1,
+        .pScissors = &vulkanPipelineInfo->scissor,
+    };
+
+    VkPipelineColorBlendStateCreateInfo colorBlending = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY,
+        .attachmentCount = static_cast<uint32_t>(vulkanPipelineInfo->colorBlendAttachmentStates.size()),
+        .pAttachments = vulkanPipelineInfo->colorBlendAttachmentStates.data(),
+    };
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stageCount = (uint32_t)shaderStageCreateInfos.size(),
+        .pStages = shaderStageCreateInfos.data(),
+        .pVertexInputState = &vertexInputInfo ,
+        .pInputAssemblyState = &vulkanPipelineInfo->inputAssembly,
+        .pTessellationState = nullptr,
+        .pViewportState = &vulkanPipelineInfo->viewportState,
+        .pRasterizationState = &vulkanPipelineInfo->rasterizationState,
+        .pMultisampleState = &vulkanPipelineInfo->multisampleState,
+        .pDepthStencilState = &vulkanPipelineInfo->depthStencilState,
+        .pColorBlendState = &colorBlending,
+        .pDynamicState = &dynamicState,
+        .layout = vulkanPipeline->pipelineLayout,
+        .renderPass = renderPasses[renderPassName],
+        .subpass = subpassIndex,
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = -1
+    };
+
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vulkanPipeline->pipeline));
+}
+
+
+void vulkanFrameWork::BeginRenderPass(const std::string &renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight, VkClearColorValue clearColor) const {
     VkClearValue clearValues[2];
-    clearValues[0].color = vulkanRenderAPI.defaultClearColor;
+    clearValues[0].color = clearColor;
     clearValues[1].depthStencil = {1.0f, 0};
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1545,22 +1647,10 @@ void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer,
         std::vector vertexBuffer = {
             mesh->VertexBuffer.buffer,
         };
-        // //Uniform 对于模型这样偏移——其他类别可以不用飞行帧维度偏移
-        // for (int u = 0; u < material->uniformBuffer.size(); u++) {
-        //     std::vector descriptorOffset = {
-        //         vulkanRenderAPI.currentFrame * material->uniformBufferSizes[u]
-        //         / vulkanRenderAPI.MaxFrame
-        //     };
-        //
-        //     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, u,
-        //         1,
-        //         &material->uniformDescriptorSets[u], 1, descriptorOffset.data());
-        // }
-        // //Tex
-        // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, material->uniformDescriptorSets.size(),
-        //     material->textureDescriptorSets.size(), material->textureDescriptorSets.data(), 0, nullptr);
-        auto slot = slots_[model->materialSlots[i]];
-        slot->Bind(commandBuffer, pipelineLayout, firstSet);
+        if (!model->materialSlots.empty()) {
+            auto slot = slots_[model->materialSlots[i]];
+            slot->Bind(commandBuffer, pipelineLayout, firstSet);
+        }
         VkDeviceSize offset[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, (uint32_t)vertexBuffer.size(), vertexBuffer.data(), offset);
         vkCmdBindIndexBuffer(commandBuffer, mesh->IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -1589,6 +1679,7 @@ void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, const 
     modelPtr->inUse = true;
 
     //设置slot
+    modelPtr->materialSlots.resize(1);
     auto slot = CreateSlot(modelPtr->materialSlots[0]);
     if (! filePath.empty()) {
         auto textureData = resourceManager.LoadTextureFullData(filePath, TextureTypeFlagBits::BaseColor);
@@ -1606,19 +1697,7 @@ void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, const 
         cross = glm::normalize(cross);
         rotateMatrix = glm::rotate(rotateMatrix, glm::acos(dot), cross);
     }
-    auto printMatrix = [](const glm::mat4& matrix, const std::string& name = "Matrix") {
-        std::cout << name << ":" << std::endl;
-        for (int i = 0; i < 4; i++) {
-            std::cout << "[ ";
-            for (int j = 0; j < 4; j++) {
-                std::cout << std::fixed << std::setprecision(6) << matrix[j][i];
-                if (j < 3) std::cout << ", ";
-            }
-            std::cout << " ]" << std::endl;
-        }
-        std::cout << std::endl;
-    };
-    // printMatrix(rotateMatrix, "Rotate");
+
 
     struct ModelUniform {
         glm::mat4 modelMatrix = glm::mat4(1.0f);
@@ -1626,48 +1705,35 @@ void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, const 
             modelMatrix = glm::translate(glm::mat4(1.0f), position) * rotate;
             // printMatrix(rotate);
         }
-        void printMatrix(const glm::mat4& matrix, const std::string& name = "Matrix") {
-            std::cout << name << ":" << std::endl;
-            for (int i = 0; i < 4; i++) {
-                std::cout << "[ ";
-                for (int j = 0; j < 4; j++) {
-                    std::cout << std::fixed << std::setprecision(6) << matrix[j][i];
-                    if (j < 3) std::cout << ", ";
-                }
-                std::cout << " ]" << std::endl;
-            }
-            std::cout << std::endl;
-        }
     };
     slot->SetUniformObject<ModelUniform>(VK_SHADER_STAGE_VERTEX_BIT, position, rotateMatrix);
     slot->inUse = true;
 
     std::vector<FrameWork::Vertex> vertices(4);
-    auto center = position;
     // 计算平面四个角的位置（在XY平面上）
     float halfWidth = width * 0.5f;
     float halfHeight = height * 0.5f;
 
     // 左下角
-    vertices[0].position = center + glm::vec3(-halfWidth, -halfHeight, 0.0f);
+    vertices[0].position =glm::vec3(-halfWidth, -halfHeight, 0.0f);
     vertices[0].normal = glm::vec3(0.0f, 0.0f, 1.0f);
     vertices[0].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
     vertices[0].texCoord = glm::vec2(0.0f, 1.0f);
 
     // 右下角
-    vertices[1].position = center + glm::vec3(halfWidth, -halfHeight, 0.0f);
+    vertices[1].position = glm::vec3(halfWidth, -halfHeight, 0.0f);
     vertices[1].normal = glm::vec3(0.0f, 0.0f, 1.0f);
     vertices[1].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
     vertices[1].texCoord = glm::vec2(1.0f, 1.0f);
 
     // 右上角
-    vertices[2].position = center + glm::vec3(halfWidth, halfHeight, 0.0f);
+    vertices[2].position =glm::vec3(halfWidth, halfHeight, 0.0f);
     vertices[2].normal = glm::vec3(0.0f, 0.0f, 1.0f);
     vertices[2].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
     vertices[2].texCoord = glm::vec2(1.0f, 0.0f);
 
     // 左上角
-    vertices[3].position = center + glm::vec3(-halfWidth, halfHeight, 0.0f);
+    vertices[3].position =glm::vec3(-halfWidth, halfHeight, 0.0f);
     vertices[3].normal = glm::vec3(0.0f, 0.0f, 1.0f);
     vertices[3].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
     vertices[3].texCoord = glm::vec2(0.0f, 0.0f);

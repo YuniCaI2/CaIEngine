@@ -42,7 +42,7 @@ void BaseScene::Render(const VkCommandBuffer& cmdBuffer) {
         graphicsPipeline = VulkanPipeline->pipeline;
         pipelineLayout = VulkanPipeline->pipelineLayout;
         vulkanRenderAPI.BeginRenderPass("forward", frameBufferID,
-            vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight());
+            vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(), {0.025f, 0.025f, 0.025f, 1.0f});
     }
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 

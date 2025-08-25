@@ -12,6 +12,7 @@
 #include <ranges>
 #include <DirectXTex.h>
 #define STB_IMAGE_IMPLEMENTATION
+
 #include <stb_image.h>
 #include <filesystem>
 
@@ -478,76 +479,79 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
 
 
 FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath, TextureTypeFlagBits type) {
+    // 获取文件扩展名
+    std::filesystem::path path(filePath);
+    std::string extension = path.extension().string();
+
+    // 转换为小写进行比较
+    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+    if (extension == ".dds") {
+        // 使用DirectXTex加载DDS文件
+        return LoadDDSTexture(filePath, type);
+    } else {
+        // 使用STB加载其他格式（保持原有逻辑）
+        return LoadSTBTexture(filePath, type);
+    }
+}
+
+FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type) {
+    using namespace DirectX;
+
+    TextureFullData texData;
+    texData.path = filePath;
+    texData.type = type;
+
+    // 转换文件路径为宽字符
+    std::wstring wFilePath(filePath.begin(), filePath.end());
+
+    // 加载DDS文件
+    TexMetadata metadata;
+    ScratchImage image;
+
+    HRESULT hr = LoadFromDDSFile(wFilePath.c_str(), DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to load DDS texture from file: " << filePath << std::endl;
+        exit(-1);
+    }
+
+
+    switch (metadata.format) {
+        case DXGI_FORMAT_R32G32B32A32_FLOAT:  // FLOAT32, 4通道
+        case DXGI_FORMAT_R16G16B16A16_FLOAT:  // FLOAT16, 4通道
+            break;
+        default:
+            std::cerr << "Unsupported DDS format. Only FLOAT32 and FLOAT16 4-channel formats are supported." << std::endl;
+            exit(-1);
+    }
+
+    // 获取图像数据
+    const Image* img = image.GetImage(0, 0, 0);
+    if (!img) {
+        std::cerr << "Failed to get image data from DDS file: " << filePath << std::endl;
+        exit(-1);
+    }
+
+    // 分配内存并复制数据
+    size_t dataSize = img->rowPitch * img->height; //rowPitch 是每行字节数
+    unsigned char* data = new unsigned char[dataSize];
+    memcpy(data, img->pixels, dataSize);
+
+    // 填充原有的TextureFullData结构
+    texData.width = static_cast<int>(metadata.width);
+    texData.height = static_cast<int>(metadata.height);
+    texData.numChannels = 4; // DDS文件我们只支持4通道
+    texData.data = data;
+
+    return texData;
+}
+
+FrameWork::TextureFullData FrameWork::Resource::LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type) {
     int width = 100, height = 100, numChannels;
     uint32_t desireChannels = 4;
     unsigned char* data = nullptr;
 
-    if (filePath.ends_with(".dds")) {
-       DirectX::ScratchImage image;
-       DirectX::ScratchImage convertedImage;
-
-       // 转换为宽字符串
-       std::wstring wfilePath(filePath.begin(), filePath.end());
-
-       HRESULT hr = DirectX::LoadFromDDSFile(wfilePath.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
-
-       if (SUCCEEDED(hr)) {
-           const DirectX::Image* img = image.GetImage(0, 0, 0);
-           if (img) {
-               DXGI_FORMAT originalFormat = img->format;
-               DXGI_FORMAT targetFormat;
-
-               // 根据DXGI格式确定目标4通道格式
-               switch (originalFormat) {
-                   // 16位浮点格式 -> 强制转换为4通道16位浮点
-                   case DXGI_FORMAT_R16_FLOAT:
-                   case DXGI_FORMAT_R16G16_FLOAT:
-                   case DXGI_FORMAT_R16G16B16A16_FLOAT:
-                   case DXGI_FORMAT_BC6H_SF16:
-                   case DXGI_FORMAT_BC6H_UF16:
-                       targetFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-                       type = static_cast<TextureTypeFlagBits>(type | TextureTypeFlagBits::SFLOAT16);
-                       break;
-
-                   // 32位浮点格式 -> 强制转换为4通道32位浮点
-                   case DXGI_FORMAT_R32_FLOAT:
-                   case DXGI_FORMAT_R32G32_FLOAT:
-                   case DXGI_FORMAT_R32G32B32_FLOAT:
-                   case DXGI_FORMAT_R32G32B32A32_FLOAT:
-                       targetFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-                       type = static_cast<TextureTypeFlagBits>(type | TextureTypeFlagBits::SFLOAT32);
-                       break;
-
-                   // 其他格式 -> 强制转换为4通道8位无符号整数
-                   default:
-                       targetFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-                       break;
-               }
-
-               // 转换为目标4通道格式
-               hr = DirectX::Convert(*img, targetFormat,
-                                   DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, convertedImage);
-
-               if (SUCCEEDED(hr)) {
-                   const DirectX::Image* convertedImg = convertedImage.GetImage(0, 0, 0);
-                   if (convertedImg) {
-                       width = static_cast<int>(convertedImg->width);
-                       height = static_cast<int>(convertedImg->height);
-
-                       // 计算4通道数据大小
-                       size_t bytesPerChannel = (targetFormat == DXGI_FORMAT_R16G16B16A16_FLOAT) ? 2 :
-                                              (targetFormat == DXGI_FORMAT_R32G32B32A32_FLOAT) ? 4 : 1;
-                       size_t dataSize = width * height * 4 * bytesPerChannel;
-                       data = new unsigned char[dataSize];
-                       memcpy(data, convertedImg->pixels, dataSize);
-                   }
-               }
-           }
-       }
-    }
-    else {
-        data = stbi_load(filePath.c_str(), &width, &height, &numChannels, desireChannels);
-    }
+    data = stbi_load(filePath.c_str(), &width, &height, &numChannels, desireChannels);
 
     TextureFullData texData;
     texData.width = width;
@@ -556,6 +560,7 @@ FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::s
     texData.data = data;
     texData.path = filePath;
     texData.type = type;
+
     if (!data) {
         std::cerr << "Failed to load texture from file, may be the directory was wrong " << filePath << std::endl;
         exit(-1);

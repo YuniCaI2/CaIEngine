@@ -106,10 +106,10 @@ namespace FrameWork {
             glm::mat4 view;
             glm::mat4 proj;
 
-            void Update(const glm::mat4& viewMatrix, const glm::mat4& projection, const glm::vec3& position) {
-                view = viewMatrix;
-                proj = projection;
-                this->model = glm::translate(glm::mat4(1.0f), position);
+            void Update(const glm::mat4* viewMatrix, const glm::mat4* projection, const glm::vec3* position) {
+                view = *viewMatrix;
+                proj = *projection;
+                this->model = glm::translate(glm::mat4(1.0f), *position);
             }
 
         };
