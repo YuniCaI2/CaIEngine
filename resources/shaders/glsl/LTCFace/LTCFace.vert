@@ -13,7 +13,7 @@ layout (set = 0,binding = 0) uniform globalUBO
     mat4 projectionMatrix;
 } globalUbo;
 
-layout (set = 5, binding = 0) uniform modelUBO
+layout (set = 6, binding = 0) uniform modelUBO
 {
     mat4 modelMatrix;
 } modelUbo;

@@ -162,6 +162,7 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
                                          fragDynamicDescriptorSetLayout,
                                          textureDescriptorSetLayout,
                                          textureDescriptorSetLayout,
+                                         textureDescriptorSetLayout,
                                          dynamicDescriptorSetLayout
                                      }
                                      );
@@ -180,7 +181,7 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
         ImGui::SliderFloat("ScaleY", &lightScaleY, 0.0f, 10.0f);
         ImGui::SliderFloat("RotateX", &lightRotateX, 0.0f, 360.0f);
         ImGui::SliderFloat("RotateY", &lightRotateY, 0.0f, 360.0f);
-        ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
+        ImGui::SliderFloat("Roughness", &roughness, 0.01f, 1.0f);
         ImGui::ColorEdit3("Diffuse", &diffuse[0]);
     };
 
@@ -213,10 +214,13 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
     //LTC Loader
     api.CreateTexture(LTCTex1ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_1.dds", SFLOAT16));
     api.CreateTexture(LTCTex2ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_2.dds", SFLOAT16));
+    api.CreateTexture(lightTexID, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/doro.png", DiffuseColor));
     auto ltcSlot = api.CreateSlot(LTCSlot_);
     ltcSlot->inUse = true;
     ltcSlot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT,LTCTex1ID_);
     ltcSlot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT,LTCTex2ID_);
+    ltcSlot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT, lightTexID);
+
 
     //Material
     auto materialSlot = api.CreateSlot(materialSlot_);

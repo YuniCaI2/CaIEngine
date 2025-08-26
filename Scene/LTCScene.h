@@ -28,7 +28,7 @@ private:
 
     //Material
     uint32_t materialSlot_ = -1;
-    float roughness = 0.0;
+    float roughness = 0.01;
     glm::vec3 F0 = {0.03, 0.03, 0.03};
     glm::vec3 diffuse{1.0, 1.0, 1.0};
 
@@ -54,8 +54,8 @@ private:
         alignas(16) glm::mat4 modelMatrix {};
         alignas(16) glm::vec3 position{0,0,0};
         alignas(16) glm::vec3 normal{0.0f, 0.0f, 1.0f};
-        alignas(4) float height{1};
-        alignas(4) float width{1};
+        alignas(4) float height{1};//初始值固定
+        alignas(4) float width{1}; //初始值固定
         alignas(4) float intensity{5};
         alignas(16) glm::vec3 color{1.0f, 1.0f, 1.0f};
         alignas(16) glm::vec3 cameraPosition{0.0f, 0.0f, 0.0f};
@@ -81,6 +81,9 @@ private:
     float lightScaleX = 1.0f;
     float intensity_ = 5.0f;
     uint32_t lightSlot_ = - 1;
+
+    //LightTex
+    uint32_t lightTexID = -1;
 
     //LTC
     uint32_t LTCTex1ID_ = -1;

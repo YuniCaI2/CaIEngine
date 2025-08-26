@@ -27,6 +27,7 @@ layout (set = 2, binding = 0) uniform MaterialUBO{
 // LTC纹理
 layout(set = 3, binding = 0) uniform sampler2D LTC1;
 layout(set = 4, binding = 0) uniform sampler2D LTC2;
+layout(set = 5, binding = 0) uniform sampler2D lightTexture;
 
 
 // 输出
@@ -35,7 +36,7 @@ layout(location = 0) out vec4 fragColor;
 // LUT相关常量
 const float LUT_SIZE = 64.0;
 const float LUT_SCALE = (LUT_SIZE - 1.0)/LUT_SIZE;
-const float LUT_BIAS = 0.5/LUT_SIZE;
+const float LUT_BIAS = 0.5/LUT_SIZE; //移到中心
 
 const float pi = 3.14159265;
 
@@ -126,6 +127,40 @@ vec3 LTC_Evaluate(vec3 N, vec3 V, vec3 P, mat3 Minv, vec3 points[4])
     return Lo_i;
 }
 
+
+vec3 GetLightTex(vec3 points[4], mat3 Minv, vec3 N, vec3 V){
+
+    //Tex
+    vec3 T1, T2;
+    T1 = normalize(V - N*dot(V, N));
+    T2 = cross(N, T1);
+    Minv = Minv * transpose(mat3(T1, T2, N));
+    vec3 normF = getF(outWorldPos, Minv, points);
+    Minv = inverse(Minv);
+    normF = normalize(normF);
+    normF = Minv * normF;
+
+    vec3 lightNormal = cross(points[1] - points[0], points[3] - points[0]);
+    float FdotLn = dot(normF, lightNormal);
+    if(abs(FdotLn) < 1e-4){
+        return vec3(0.01, 0.01, 0.01);
+    }
+    float t = (dot(lightNormal, points[0]) - dot(lightNormal, outWorldPos)) / FdotLn;
+    if(t < 0.0){
+        return vec3(0.01, 0.01, 0.01);
+    }
+    vec3 insertPoint = outWorldPos + t * normF;
+    vec3 xAxis = normalize(points[2] - points[1]);
+    vec3 yAxis = normalize(points[0] - points[1]);
+    float texX = dot(insertPoint - points[1], xAxis);
+    float texY = dot(insertPoint - points[1], yAxis);
+    texX = clamp(texX / length(points[2] - points[1]), 0.0, 1.0);
+    texY = clamp(texY / length(points[0] - points[1]), 0.0, 1.0);
+    vec2 texUV = vec2(texX, texY);
+    float lod = (sqrt(materialUbo.roughness) + sqrt(t) * sqrt(max(abs(texX - 0.5), abs(texY - 0.5)))) * 6.0;
+    return vec3(texUV, t);
+}
+
 void main() {
     vec3 V = normalize(lightUbo.cameraPos - outWorldPos);
     vec3 N = normalize(outNormal);
@@ -163,6 +198,11 @@ void main() {
     // 计算镜面反射
     vec3 spec = LTC_Evaluate(N, V, outWorldPos, Minv, points);
     spec *= materialUbo.F0 * t2.x + (1.0 - materialUbo.F0) * t2.y;
+    vec3 textureRt = GetLightTex(points, Minv, N, V);
+    vec2 texUV = vec2(textureRt.x ,textureRt.y);
+    float t = textureRt.z;
+    float lod = (sqrt(1.0 - max(1.0f, length(spec))) + sqrt(materialUbo.roughness) * 6.0) * 2.0;
+    spec *= vec3(textureLod(lightTexture, texUV, lod));
 
     vec3 diff = LTC_Evaluate(N, V, outWorldPos, mat3(1.0), points);
 
@@ -174,6 +214,6 @@ void main() {
 //    vec3 lightnormal = cross(points[1] - points[0], points[3] - points[0]);
 //    float dot = dot(dir, lightnormal);
 
-//    fragColor = vec4(dot, dot, dot, 1.0);
+//    fragColor = vec4(GetLightTex(points, Minv, abs(length(points[2] - points[1])), abs(length(points[0] - points[1]))), 1.0);
     fragColor = vec4(ACEStonemap(col), 1.0);
 }
