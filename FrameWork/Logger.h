@@ -63,23 +63,23 @@ public:
     }
 
     template<typename... Args>
-    void Error(std::format_string<Args...> fmt, Args&&... args) {
-        log(std::source_location::current(), LogLevel::Error, fmt, std::forward<Args>(args)...);
+    void Error(std::source_location location,std::format_string<Args...> fmt, Args&&... args) {
+        log(location, LogLevel::Error, fmt, std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void Warn(std::format_string<Args...> fmt, Args&&... args) {
-        log(std::source_location::current(), LogLevel::Warn,fmt, std::forward<Args>(args)...);
+    void Warn(std::source_location location,std::format_string<Args...> fmt, Args&&... args) {
+        log(location, LogLevel::Warn,fmt, std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void Trace(std::format_string<Args...> fmt, Args&&... args) {
-        log(std::source_location::current(), LogLevel::Trace,fmt, std::forward<Args>(args)...);
+    void Trace(std::source_location location ,std::format_string<Args...> fmt, Args&&... args) {
+        log(location, LogLevel::Trace,fmt, std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void DeBug(std::format_string<Args...> fmt, Args&&... args) {
-        log(std::source_location::current(), LogLevel::Debug,fmt, std::forward<Args>(args)...);
+    void DeBug(std::source_location location, std::format_string<Args...> fmt, Args&&... args) {
+        log(location, LogLevel::Debug,fmt, std::forward<Args>(args)...);
     }
 
 
@@ -177,7 +177,7 @@ private:
 
     void WriteLog(const LogMessage &logMessage) {
         if (printToFile) {
-            std::ofstream of(logPath);
+            std::ofstream of(logPath, std::ios::app);
             std::println(of, "[{}] [{}] : \"{}\" \n from [{}] \n",
                          (LogLevelToString(logMessage.level)),
                          PrintTimeStamp(logMessage.timeStamp),
@@ -221,5 +221,10 @@ private:
 };
 
 #define LOG Logger::GetInstance()
+#define ERROR(fmt, ...) LOG.Error(std::source_location::current(), fmt, __VA_ARGS__)
+#define WARNING(fmt, ...) LOG.Warn(std::source_location::current(), fmt, __VA_ARGS__)
+#define TRACE(fmt, ...) LOG.Trace(std::source_location::current(), fmt, __VA_ARGS__)
+#define DEBUG(fmt, ...) LOG.DeBug(std::source_location::current(), fmt, __VA_ARGS__)
+
 
 #endif //LOGGER_H
