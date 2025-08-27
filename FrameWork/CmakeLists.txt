@@ -36,4 +36,7 @@ target_include_directories(FrameWork PUBLIC
 target_include_directories(FrameWork PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/stb
     )
-#在Mac端的妥协
+#保证target_link_library可以找到vulkanFrameWork
+target_include_directories(FrameWork INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/
+)

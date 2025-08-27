@@ -1,0 +1,3 @@
+[Trace] [2025-08-27 06:38:54.4320990] : "Trace test : 1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\Logger.h line: 75] 
+

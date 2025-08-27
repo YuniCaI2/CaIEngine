@@ -126,7 +126,12 @@ enum class LightType {
 };
 
 
-
+enum class LogLevel {
+    Trace,
+    Debug,
+    Warn,
+    Error
+};
 #endif //PUBLICENUM_H
 
 
