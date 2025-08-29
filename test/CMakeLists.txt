@@ -5,3 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(loggerTest LoggerTest.cpp)
 target_link_libraries(loggerTest FrameWork)
 add_test(NAME loggerTest COMMAND loggerTest)
+
+add_executable(parserTest parserTest.cpp)
+target_link_libraries(parserTest FrameWork)
+add_test(NAME parserTest COMMAND parserTest)

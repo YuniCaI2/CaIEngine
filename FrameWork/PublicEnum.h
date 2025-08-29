@@ -66,12 +66,12 @@ enum Key {
     Key_Escape,
 };
 
-enum class ShaderType {
-    Comp,
-    Vertex,
-    Frag,
-    Count
+enum ShaderType {
+    Comp = 1 << 0,
+    Vertex = 1 << 2,
+    Frag = 1 << 3,
 };
+using ShaderTypeFlags = uint32_t;
 
 enum class DescriptorType {
     UniformDynamic,
@@ -132,6 +132,88 @@ enum class LogLevel {
     Warn,
     Error
 };
+
+
+enum class ShaderPropertyType
+{
+    BOOL,
+    INT,
+    UINT,
+    FLOAT,
+    VEC2,
+    VEC3,
+    VEC4,
+    IVEC2,
+    IVEC3,
+    IVEC4,
+    UVEC2,
+    UVEC3,
+    UVEC4,
+    MAT2,
+    MAT3,
+    MAT4,
+
+    SAMPLER,
+    SAMPLER_2D,
+    SAMPLER_CUBE,
+};
+
+enum class CompareOption
+{
+    NEVER,
+    LESS,
+    EQUAL,
+    LESS_OR_EQUAL,
+    GREATER,
+    NOT_EQUAL,
+    GREATER_OR_EQUAL,
+    ALWAYS,
+};
+
+
+enum class BlendOption
+{
+    ADD,
+    SUBTRACT,
+    REVERSE_SUBTRACT,
+    MIN,
+    MAX,
+};
+
+enum class BlendFactor
+{
+    ZERO,
+    ONE,
+    SRC_COLOR,
+    ONE_MINUS_SRC_COLOR,
+    DST_COLOR,
+    ONE_MINUS_DST_COLOR,
+    SRC_ALPHA,
+    ONE_MINUS_SRC_ALPHA,
+    DST_ALPHA,
+    ONE_MINUS_DST_ALPHA,
+    CONSTANT_COLOR,
+    ONE_MINUS_CONSTANT_COLOR,
+    CONSTANT_ALPHA,
+    ONE_MINUS_CONSTANT_ALPHA
+};
+
+enum class FaceCullOption {
+    None,
+    Front,
+    Back,
+    FrontAndBack
+};
+
+enum class RenderPassType {
+    Present,
+    Normal,
+    Color,
+    GBuffer,
+    Deferred,
+    MAX
+};
+
 #endif //PUBLICENUM_H
 
 

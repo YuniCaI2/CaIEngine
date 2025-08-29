@@ -1,0 +1,24 @@
+Settings {
+    Blend SrcAlpha OneMinusSrcAlpha
+    BlendOp Add
+    Cull Back
+    ZTest LessOrEqual
+    ZWrite On
+}
+
+Vertex {
+    vertex Test.
+    this is vertex part.
+    Properties {
+        vec3 vertVec3[3]
+        sampler2D vertTex
+    }
+}
+Fragment{
+    fragment Test.
+    this is fragment part.
+    Properties {
+        vec3 fragVec3
+        sampler2D fragTex
+    }
+}

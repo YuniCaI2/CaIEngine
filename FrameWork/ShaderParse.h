@@ -1,0 +1,113 @@
+﻿//
+// Created by 51092 on 25-8-28.
+//
+
+#ifndef SHADERPARSE_H
+#define SHADERPARSE_H
+#include "PublicStruct.h"
+#include <unordered_map>
+
+namespace FrameWork {
+    struct PropertyAlignInfo {
+        uint32_t size = 0; //尺寸
+        uint32_t alignment = 0; //对齐单位，如果是数组则是数组内的对齐单位，MAT可看成数组的数组
+        uint32_t arrayOffset = 0; //将数组中一个对象的对齐单位
+        //根据std140在数组中最少要16字节对齐
+    };
+
+    class ShaderParse {
+    public:
+        static ShaderInfo GetShaderInfo(const std::string &code);
+
+        static void ParseShaderCode(const std::string &code, std::string &vert, std::string &frag); //后续在处理几何着色器和计算着色器
+        static ShaderPropertiesInfo GetShaderProperties(const std::string &code);
+        static bool IsBaseProperty(ShaderPropertyType type);
+        static std::string TranslateToVulkan(const std::string &code);
+
+        // private:
+        // 为了测试
+        static ShaderStateSet GetShaderStateSet(const std::string &code);
+
+        static std::string GetCodeBlock(const std::string &code, const std::string &blockName);
+
+        static void SetUpPropertiesStd140(ShaderInfo &shaderInfo);
+
+        static PropertyAlignInfo GetPropertyAlignInfoStd140(ShaderPropertyType type, uint32_t arrayLength);
+
+        static bool isValidChar(const char &c);
+
+        static size_t FindWord(const std::string &code, const std::string &word, size_t offset);
+
+        static void RemoveCRLF(std::string &code);
+
+        static void RemoveSpaces(std::string &code);
+
+        static std::vector<std::string> SplitString(const std::string &str, char p);
+
+        static std::vector<std::string> ExtractWords(const std::string &str);
+
+        static void GetPropertyNameAndArrayLength(const std::string &propertyStr, std::string &name,
+                                                  uint32_t &arrayLength);
+
+
+
+        //Map
+        inline static std::unordered_map<std::string, ShaderPropertyType> shaderPropertyMap = {
+            {"vec2", ShaderPropertyType::VEC2}, {"vec3", ShaderPropertyType::VEC3}, {"vec4", ShaderPropertyType::VEC4},
+            {"ivec2", ShaderPropertyType::IVEC2}, {"ivec3", ShaderPropertyType::IVEC3},
+            {"ivec4", ShaderPropertyType::IVEC4},
+            {"uvec2", ShaderPropertyType::UVEC2}, {"uvec3", ShaderPropertyType::UVEC3},
+            {"uvec4", ShaderPropertyType::UVEC4},
+            {"mat2", ShaderPropertyType::MAT2}, {"mat3", ShaderPropertyType::MAT3}, {"mat4", ShaderPropertyType::MAT4},
+            {"int", ShaderPropertyType::INT}, {"uint", ShaderPropertyType::UINT}, {"float", ShaderPropertyType::FLOAT},
+            {"bool", ShaderPropertyType::BOOL},
+            {"sampler", ShaderPropertyType::SAMPLER}, {"sampler2D", ShaderPropertyType::SAMPLER_2D},
+            {"samplerCube", ShaderPropertyType::SAMPLER_CUBE}
+        };
+
+        inline static std::unordered_map<std::string, BlendOption> blendOptionMap = {
+            {"Add", BlendOption::ADD}, {"Sub", BlendOption::SUBTRACT}, {"RevSub", BlendOption::REVERSE_SUBTRACT},
+            {"Min", BlendOption::MIN}, {"Max", BlendOption::MAX}
+        };
+
+        inline static std::unordered_map<std::string, FaceCullOption> faceCullOptionMap = {
+            {"Back", FaceCullOption::Back}, {"Front", FaceCullOption::Front},
+            {"None", FaceCullOption::None}, {"All", FaceCullOption::FrontAndBack}
+        };
+
+        inline static std::unordered_map<std::string, CompareOption> depthTestOptionMap = {
+            {"Never", CompareOption::NEVER}, {"Less", CompareOption::LESS},
+            {"LessOrEqual", CompareOption::LESS_OR_EQUAL},
+            {"Always", CompareOption::ALWAYS}, {"Greater", CompareOption::GREATER},
+            {"GreaterOrEqual", CompareOption::GREATER_OR_EQUAL},
+            {"Equal", CompareOption::EQUAL}, {"NotEqual", CompareOption::NOT_EQUAL},
+        };
+
+        inline static std::unordered_map<ShaderPropertyType, std::string> propertyTypeMapToGLSL = {
+            {ShaderPropertyType::VEC2, "vec2"}, {ShaderPropertyType::VEC3, "vec3"}, {ShaderPropertyType::VEC4, "vec4"},
+            {ShaderPropertyType::IVEC2, "ivec2"}, {ShaderPropertyType::IVEC3, "ivec3"},
+            {ShaderPropertyType::IVEC4, "ivec4"},
+            {ShaderPropertyType::UVEC2, "uvec2"}, {ShaderPropertyType::UVEC3, "uvec3"},
+            {ShaderPropertyType::UVEC4, "uvec4"},
+            {ShaderPropertyType::MAT2, "mat2"}, {ShaderPropertyType::MAT3, "mat3"}, {ShaderPropertyType::MAT4, "mat4"},
+            {ShaderPropertyType::INT, "int"}, {ShaderPropertyType::UINT, "uint"}, {ShaderPropertyType::FLOAT, "float"},
+            {ShaderPropertyType::BOOL, "bool"},
+        };
+
+        inline static std::unordered_map<std::string, BlendFactor> blendFactorMap =
+        {
+            {"Zero", BlendFactor::ZERO}, {"One", BlendFactor::ONE},
+            {"SrcColor", BlendFactor::SRC_COLOR}, {"OneMinusSrcColor", BlendFactor::ONE_MINUS_SRC_COLOR},
+            {"DstColor", BlendFactor::DST_COLOR}, {"OneMinusDstColor", BlendFactor::ONE_MINUS_DST_COLOR},
+            {"SrcAlpha", BlendFactor::SRC_ALPHA}, {"OneMinusSrcAlpha", BlendFactor::ONE_MINUS_SRC_ALPHA},
+            {"DstAlpha", BlendFactor::DST_ALPHA}, {"OneMinusDstAlpha", BlendFactor::ONE_MINUS_DST_ALPHA},
+            {"ConstantColor", BlendFactor::CONSTANT_COLOR},
+            {"OneMinusConstantColor", BlendFactor::ONE_MINUS_CONSTANT_COLOR},
+            {"ConstantAlpha", BlendFactor::CONSTANT_ALPHA},
+            {"OneMinusConstantAlpha", BlendFactor::ONE_MINUS_CONSTANT_ALPHA},
+        };
+    };
+}
+
+
+#endif //SHADERPARSE_H

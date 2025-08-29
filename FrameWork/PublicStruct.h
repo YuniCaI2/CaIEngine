@@ -11,6 +11,7 @@
 #include<optional>
 #include <vector>
 #include "Light.h"
+#include <unordered_map>
 
 
 namespace FrameWork {
@@ -282,6 +283,49 @@ namespace FrameWork {
     struct RenderObject {
         uint32_t meshID{};
         uint32_t slotID{};
+    };
+
+    struct ShaderStateSet {
+        BlendOption blendOp = BlendOption::ADD;
+        BlendFactor srcBlendFactor = BlendFactor::SRC_ALPHA;
+        BlendFactor dstBlendFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
+        FaceCullOption faceCullOp = FaceCullOption::Back;
+        CompareOption depthCompareOp = CompareOption::LESS; //深度测试相关
+        //渲染队列，这里先不加
+        bool depthWrite = true;
+    };
+
+    struct ShaderProperty {
+        std::string name {};
+        uint32_t size = 0;        // 整个属性大小(如果是数组则代表整个数组的大小)
+        uint32_t align = 0;       // 单个属性的对齐标准
+        uint32_t offset = 0;      // 属性在Uniform Buffer(Vulkan)或Constant Buffer(D3D12)中的偏移量
+        uint32_t binding = 0;     // 在Vulkan中代表Uniform Buffer和纹理的layout binding
+        uint32_t arrayLength = 0; // 属性数组长度
+        uint32_t arrayOffset = 0; // 如果是数组的话，一个属性在数组内的偏移量
+        ShaderPropertyType type = ShaderPropertyType::FLOAT;
+    };
+
+    struct ShaderPropertiesInfo
+    {
+        std::vector<ShaderProperty> baseProperties;
+        std::vector<ShaderProperty> textureProperties;
+    };
+
+    struct ShaderInfo {
+        ShaderStateSet shaderState; //基本的状态设置
+        ShaderTypeFlags shaderTypeFlags = 0;
+        ShaderPropertiesInfo vertProperties;
+        ShaderPropertiesInfo fragProperties;
+        //这里先省略几何着色器，后面在加
+    };
+
+    struct ShaderReference {
+        std::string path;
+        uint32_t pipelineID = 0;
+        int referenceCount = 1;
+        RenderPassType renderPassType{RenderPassType::Color};
+        ShaderInfo shaderInfo;
     };
 
 }
