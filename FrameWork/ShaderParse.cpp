@@ -35,7 +35,7 @@ FrameWork::ShaderPropertiesInfo FrameWork::ShaderParse::GetShaderProperties(cons
     for (auto& line : lines) {
         auto words = ExtractWords(line);
 
-        if (words.size() == 0) {
+        if (words.empty()) {
             continue;
         }else if (words[0] == "//") {
             //注释
@@ -69,7 +69,7 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
     auto lines = SplitString(settingBlock, '\n');
     for (auto& line : lines) {
         auto words = ExtractWords(line);
-        if (words.size() == 0) {
+        if (words.empty()) {
             continue;
         }else if (words[0] == "//") {
             continue;
@@ -301,7 +301,7 @@ std::vector<std::string> FrameWork::ShaderParse::SplitString(const std::string &
 std::vector<std::string> FrameWork::ShaderParse::ExtractWords(const std::string &str) {
     std::vector<std::string> words;
 
-    size_t s = 0, e = 0;
+    size_t s = 0;
     bool record = false;//是否在记录
     for (size_t i = 0; i < str.size(); i++)
     {
@@ -408,8 +408,7 @@ std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, c
     //并且使用一个整体的UniformBuffer保证了内存的利用效率相较于一一对应绑定点
     if (!properties.baseProperties.empty()) {
         vulkanCode += "layout (binding = " + std::to_string(properties.baseProperties[0].binding) + ") uniform UniformBufferObject {\n";
-        for (auto i = 0; i < properties.baseProperties.size(); i++) {
-            auto& property = properties.baseProperties[i];
+        for (const auto & property : properties.baseProperties) {
             if (property.arrayLength == 0) {
                 //非数组类型
                 vulkanCode += "    " + propertyTypeMapToGLSL[property.type] + " " + property.name + ";\n";
