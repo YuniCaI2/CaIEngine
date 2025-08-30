@@ -1,0 +1,24 @@
+[Error] [2025-08-29 14:59:21.334923] : "Error test 1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 7] 
+
+[Warn] [2025-08-29 14:59:21.334937] : "Warning test1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 8] 
+
+[Trace] [2025-08-29 14:59:21.334940] : "Trace test1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 9] 
+
+[Debug] [2025-08-29 14:59:21.334942] : "Debug test123344" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 10] 
+
+[Error] [2025-08-29 16:29:22.989242] : "Error test 1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 7] 
+
+[Warn] [2025-08-29 16:29:22.989256] : "Warning test1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 8] 
+
+[Trace] [2025-08-29 16:29:22.989257] : "Trace test1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 9] 
+
+[Debug] [2025-08-29 16:29:22.989260] : "Debug test123344" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 10] 
+

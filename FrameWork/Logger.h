@@ -15,6 +15,7 @@
 #include <queue>
 #include <fstream>
 #include <print>
+#include<thread>
 #include <filesystem>
 
 //此Logger类使用单例实现
@@ -221,10 +222,10 @@ private:
 };
 
 #define LOG Logger::GetInstance()
-#define ERROR(fmt, ...) LOG.Error(std::source_location::current(), fmt, __VA_ARGS__)
-#define WARNING(fmt, ...) LOG.Warn(std::source_location::current(), fmt, __VA_ARGS__)
-#define TRACE(fmt, ...) LOG.Trace(std::source_location::current(), fmt, __VA_ARGS__)
-#define DEBUG(fmt, ...) LOG.DeBug(std::source_location::current(), fmt, __VA_ARGS__)
+#define ERROR(fmt, ...) LOG.Error(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define WARNING(fmt, ...) LOG.Warn(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define TRACE(fmt, ...) LOG.Trace(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define DEBUG(fmt, ...) LOG.DeBug(std::source_location::current(), fmt, ##__VA_ARGS__)
 
 
 #endif //LOGGER_H

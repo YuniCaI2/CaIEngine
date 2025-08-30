@@ -7,11 +7,11 @@
 #include <iostream>
 #include <ostream>
 #include<algorithm>
-#include <vcruntime_startup.h>
 
 #include <array>
 #include <vector>
 
+#include "Logger.h"
 #include "VulkanDebug.h"
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
@@ -52,6 +52,8 @@ void vulkanFrameWork::createSurface() {
 }
 
 void vulkanFrameWork::createSwapChain() {
+    //这是为了解决Mac的Retina屏幕问题
+    glfwGetFramebufferSize(window, reinterpret_cast<int*>(&windowWidth), reinterpret_cast<int*>(&windowHeight));
     swapChain.create(windowWidth, windowHeight, settings.vsync, settings.fullscreen);
 }
 
@@ -92,113 +94,118 @@ std::string vulkanFrameWork::getShaderPath() const {
 vulkanFrameWork::vulkanFrameWork() {
 }
 
-vulkanFrameWork::~vulkanFrameWork() {
-    //删除池中的内容,完全释放
-    //高层向低层释放
-    for (int i = 0; i < vulkanPipelines.size(); i++) {
-        if (vulkanPipelines[i] != nullptr) {
-            destroyByIndex<FrameWork::VulkanPipeline>(i);
-            delete vulkanPipelines[i];
-            vulkanPipelines[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < vulkanPipelineInfos.size(); i++) {
-        if (vulkanPipelineInfos[i] != nullptr) {
-            destroyByIndex<FrameWork::VulkanPipelineInfo>(i);
-            delete vulkanPipelineInfos[i];
-            vulkanPipelineInfos[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < materials.size(); i++) {
-        if (materials[i] != nullptr) {
-            destroyByIndex<FrameWork::Material>(i);
-            delete materials[i];
-            materials[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < vulkanFBOs.size(); i++) {
-        if (vulkanFBOs[i] != nullptr) {
-            destroyByIndex<FrameWork::VulkanFBO>(i);
-            delete vulkanFBOs[i];
-            vulkanFBOs[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < attachmentBuffers.size(); i++) {
-        if (attachmentBuffers[i] != nullptr) {
-            destroyByIndex<FrameWork::VulkanAttachment>(i);
-            delete attachmentBuffers[i];
-            attachmentBuffers[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < textures.size(); i++) {
-        if (textures[i] != nullptr) {
-            destroyByIndex<FrameWork::Texture>(i);
-            delete textures[i];
-            textures[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < meshes.size(); i++) {
-        if (meshes[i] != nullptr) {
-            destroyByIndex<FrameWork::Mesh>(i);
-            delete meshes[i];
-            meshes[i] = nullptr;
-        }
-    }
-    for (int i = 0; i < models.size(); i++) {
-        if (models[i] != nullptr) {
-            destroyByIndex<FrameWork::Model>(i);
-            delete models[i];
-            models[i] = nullptr;
-        }
-    }
-    for (auto& [_, r] : renderPasses) {
-       if (r != VK_NULL_HANDLE) {
-           vkDestroyRenderPass(device, r, nullptr);
-       }
-    }
-    for (auto& [_, d] : descriptorSetLayouts) {
-        if (d != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(device, d, nullptr);
-        }
-    }
-    for (auto& slot : slots_) {
-        delete slot;
-    }
-    // Clean up Vulkan resources
-    swapChain.cleanup();
-    vulkanDescriptorPool.DestroyDescriptorPool();
-    if (descriptorPool != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    }
-
-
-    for (auto& shaderModule : shaderModules)
-    {
-        vkDestroyShaderModule(device, shaderModule, nullptr);
-    }
-
-    vkDestroyPipelineCache(device, pipelineCache, nullptr);
-    for (auto& fence : waitFences) {
-        vkDestroyFence(device, fence, nullptr);
-    }
-
-
-    for (int i = 0 ; i < MAX_FRAME; i ++) {
-        vkDestroySemaphore(device, semaphores.presentComplete[i], nullptr);
-        vkDestroySemaphore(device, semaphores.renderComplete[i], nullptr);
-    }
-
-
-    delete vulkanDevice;
-
-    if (settings.validation)
-    {
-        FrameWork::VulkanDebug::freeDebugCallBack(instance);
-    }
-
-    vkDestroyInstance(instance, nullptr);
-}
+// vulkanFrameWork::~vulkanFrameWork() {
+//     //删除池中的内容,完全释放
+//     //高层向低层释放
+//     std::cerr << (int)(device == VK_NULL_HANDLE) << std::endl;
+//
+//
+//     for (int i = 0; i < vulkanPipelineInfos.size(); i++) {
+//         if (vulkanPipelineInfos[i] != nullptr) {
+//             destroyByIndex<FrameWork::VulkanPipelineInfo>(i);
+//             delete vulkanPipelineInfos[i];
+//             vulkanPipelineInfos[i] = nullptr;
+//         }
+//     }
+//
+//     for (int i = 0; i < materials.size(); i++) {
+//         if (materials[i] != nullptr) {
+//             destroyByIndex<FrameWork::Material>(i);
+//             delete materials[i];
+//             materials[i] = nullptr;
+//         }
+//     }
+//     for (int i = 0; i < vulkanFBOs.size(); i++) {
+//         if (vulkanFBOs[i] != nullptr) {
+//             destroyByIndex<FrameWork::VulkanFBO>(i);
+//             delete vulkanFBOs[i];
+//             vulkanFBOs[i] = nullptr;
+//         }
+//     }
+//     for (int i = 0; i < attachmentBuffers.size(); i++) {
+//         if (attachmentBuffers[i] != nullptr) {
+//             destroyByIndex<FrameWork::VulkanAttachment>(i);
+//             delete attachmentBuffers[i];
+//             attachmentBuffers[i] = nullptr;
+//         }
+//     }
+//     for (int i = 0; i < textures.size(); i++) {
+//         if (textures[i] != nullptr) {
+//             destroyByIndex<FrameWork::Texture>(i);
+//             delete textures[i];
+//             textures[i] = nullptr;
+//         }
+//     }
+//     for (int i = 0; i < meshes.size(); i++) {
+//         if (meshes[i] != nullptr) {
+//             destroyByIndex<FrameWork::Mesh>(i);
+//             delete meshes[i];
+//             meshes[i] = nullptr;
+//         }
+//     }
+//     for (int i = 0; i < models.size(); i++) {
+//         if (models[i] != nullptr) {
+//             destroyByIndex<FrameWork::Model>(i);
+//             delete models[i];
+//             models[i] = nullptr;
+//         }
+//     }
+//
+//     for (int i = 0; i < vulkanPipelines.size(); i++) {
+//         if (vulkanPipelines[i] != nullptr) {
+//             destroyByIndex<FrameWork::VulkanPipeline>(i);
+//             delete vulkanPipelines[i];
+//             vulkanPipelines[i] = nullptr;
+//         }
+//     }
+//     for (auto& [_, r] : renderPasses) {
+//        if (r != VK_NULL_HANDLE) {
+//            vkDestroyRenderPass(device, r, nullptr);
+//        }
+//     }
+//     for (auto& [_, d] : descriptorSetLayouts) {
+//         if (d != VK_NULL_HANDLE) {
+//             vkDestroyDescriptorSetLayout(device, d, nullptr);
+//         }
+//     }
+//     for (auto& slot : slots_) {
+//         delete slot;
+//     }
+//     // Clean up Vulkan resources
+//     swapChain.cleanup();
+//     vulkanDescriptorPool.DestroyDescriptorPool();
+//     if (descriptorPool != VK_NULL_HANDLE)
+//     {
+//         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+//     }
+//
+//
+//     for (auto& shaderModule : shaderModules)
+//     {
+//         vkDestroyShaderModule(device, shaderModule, nullptr);
+//     }
+//
+//     vkDestroyPipelineCache(device, pipelineCache, nullptr);
+//     for (auto& fence : waitFences) {
+//         vkDestroyFence(device, fence, nullptr);
+//     }
+//
+//
+//     for (int i = 0 ; i < MAX_FRAME; i ++) {
+//         vkDestroySemaphore(device, semaphores.presentComplete[i], nullptr);
+//         vkDestroySemaphore(device, semaphores.renderComplete[i], nullptr);
+//     }
+//
+//
+//     delete vulkanDevice;
+//
+//     if (settings.validation)
+//     {
+//         FrameWork::VulkanDebug::freeDebugCallBack(instance);
+//     }
+//
+//     vkDestroyInstance(instance, nullptr);
+// }
 
 bool vulkanFrameWork::initVulkan() {
     // Instead of checking for the command line switch, validation can be forced via a define
@@ -280,9 +287,9 @@ bool vulkanFrameWork::initVulkan() {
         enabledFeatures.fillModeNonSolid = deviceFeatures.fillModeNonSolid;
     }
     if (settings.validation) {
-        enabledDeviceExtensions.push_back("VK_KHR_video_decode_queue");
-        enabledDeviceExtensions.push_back("VK_KHR_video_encode_queue");
-        enabledDeviceExtensions.push_back("VK_KHR_video_queue");
+        // enabledDeviceExtensions.push_back("VK_KHR_video_decode_queue");
+        // enabledDeviceExtensions.push_back("VK_KHR_video_encode_queue");
+        // enabledDeviceExtensions.push_back("VK_KHR_video_queue");
     }
 
     vulkanDevice = new FrameWork::VulkanDevice(physicalDevice, instance);
@@ -347,6 +354,114 @@ bool vulkanFrameWork::initVulkan() {
 
     frameCountTimeStamp = 0;
     return true;
+}
+
+void vulkanFrameWork::DestroyAll() {
+    for (int i = 0; i < vulkanPipelineInfos.size(); i++) {
+        if (vulkanPipelineInfos[i] != nullptr) {
+            destroyByIndex<FrameWork::VulkanPipelineInfo>(i);
+            delete vulkanPipelineInfos[i];
+            vulkanPipelineInfos[i] = nullptr;
+        }
+    }
+
+    for (int i = 0; i < materials.size(); i++) {
+        if (materials[i] != nullptr) {
+            destroyByIndex<FrameWork::Material>(i);
+            delete materials[i];
+            materials[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < vulkanFBOs.size(); i++) {
+        if (vulkanFBOs[i] != nullptr) {
+            destroyByIndex<FrameWork::VulkanFBO>(i);
+            delete vulkanFBOs[i];
+            vulkanFBOs[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < attachmentBuffers.size(); i++) {
+        if (attachmentBuffers[i] != nullptr) {
+            destroyByIndex<FrameWork::VulkanAttachment>(i);
+            delete attachmentBuffers[i];
+            attachmentBuffers[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < textures.size(); i++) {
+        if (textures[i] != nullptr) {
+            destroyByIndex<FrameWork::Texture>(i);
+            delete textures[i];
+            textures[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < meshes.size(); i++) {
+        if (meshes[i] != nullptr) {
+            destroyByIndex<FrameWork::Mesh>(i);
+            delete meshes[i];
+            meshes[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < models.size(); i++) {
+        if (models[i] != nullptr) {
+            destroyByIndex<FrameWork::Model>(i);
+            delete models[i];
+            models[i] = nullptr;
+        }
+    }
+
+    for (int i = 0; i < vulkanPipelines.size(); i++) {
+        if (vulkanPipelines[i] != nullptr) {
+            destroyByIndex<FrameWork::VulkanPipeline>(i);
+            delete vulkanPipelines[i];
+            vulkanPipelines[i] = nullptr;
+        }
+    }
+    for (auto& [_, r] : renderPasses) {
+       if (r != VK_NULL_HANDLE) {
+           vkDestroyRenderPass(device, r, nullptr);
+       }
+    }
+    for (auto& [_, d] : descriptorSetLayouts) {
+        if (d != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(device, d, nullptr);
+        }
+    }
+    for (auto& slot : slots_) {
+        delete slot;
+    }
+    // Clean up Vulkan resources
+    swapChain.cleanup();
+    vulkanDescriptorPool.DestroyDescriptorPool();
+    if (descriptorPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    }
+
+
+    for (auto& shaderModule : shaderModules)
+    {
+        vkDestroyShaderModule(device, shaderModule, nullptr);
+    }
+
+    vkDestroyPipelineCache(device, pipelineCache, nullptr);
+    for (auto& fence : waitFences) {
+        vkDestroyFence(device, fence, nullptr);
+    }
+
+
+    for (int i = 0 ; i < MAX_FRAME; i ++) {
+        vkDestroySemaphore(device, semaphores.presentComplete[i], nullptr);
+        vkDestroySemaphore(device, semaphores.renderComplete[i], nullptr);
+    }
+
+
+    delete vulkanDevice;
+
+    if (settings.validation)
+    {
+        FrameWork::VulkanDebug::freeDebugCallBack(instance);
+    }
+
+    vkDestroyInstance(instance, nullptr);
 }
 
 bool vulkanFrameWork::setWindow() {

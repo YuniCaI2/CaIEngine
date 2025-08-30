@@ -5,6 +5,7 @@
 
 #include "BaseScene.h"
 #include "FrameWorkGUI.h"
+#include "Logger.h"
 #include "Scene.h"
 #include "Timer.h"
 #include "VulkanDebug.h"
@@ -67,9 +68,11 @@ public:
     void prepare() {
         //创建场景
         auto scene1 = std::make_unique<BaseScene>(camera);
-        auto scene2 = std::make_unique<LTCScene>(&camera);
         scenes.push_back(std::move(scene1));
+#ifdef _WIN32
+        auto scene2 = std::make_unique<LTCScene>(&camera);
         scenes.push_back(std::move(scene2));
+#endif
         //呈现
         vulkanRenderAPI.InitPresent("uniformPresent", scenes[0]->GetPresentColorAttachment());
         GUI.InitFrameWorkGUI();
@@ -115,7 +118,9 @@ public:
 };
 
 int main() {
-    vulkanRenderAPI.initVulkan(); {
+    vulkanRenderAPI.initVulkan();
+    LOG.Run();
+    {
         Renderer app;
         app.prepare();
         auto &inputManager = FrameWork::InputManager::GetInstance();
@@ -124,5 +129,7 @@ int main() {
             app.render();
         )
     }
+    LOG.Stop();
+    vulkanRenderAPI.DestroyAll();
     return 0;
 }

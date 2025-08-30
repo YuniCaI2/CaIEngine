@@ -143,7 +143,7 @@ public:
 
     struct Settings {
         //验证层
-        bool validation = false;
+        bool validation = true;
 
         bool fullscreen = false;
 
@@ -176,11 +176,12 @@ public:
 
 
 
-    virtual ~vulkanFrameWork();
+    ~vulkanFrameWork() = default;
     vulkanFrameWork(const vulkanFrameWork&) = delete;
     vulkanFrameWork& operator=(const vulkanFrameWork&) = delete;
     //设置Vulkan的实例，设置准许的扩展和链接可用的物理设备
     bool initVulkan();
+    void DestroyAll();
 
     bool setWindow();
 
@@ -382,7 +383,6 @@ public:
             mesh->inUse = false;
             mesh->vertexCount = 0;
             mesh->indexCount = 0;
-            mesh->inUse = false;
             mesh->VertexBuffer.destroy();
             mesh->IndexBuffer.destroy();
         }
@@ -417,11 +417,11 @@ public:
         }else if (std::is_same_v<T, FrameWork::VulkanPipeline>) {
             auto vulkanPipeline = vulkanPipelines[index];
             vulkanPipeline->inUse = false;
-            if (vulkanPipeline->pipeline != VK_NULL_HANDLE) {
-                vkDestroyPipeline(device, vulkanPipeline->pipeline, nullptr);
-            }
             if (vulkanPipeline->pipelineLayout != VK_NULL_HANDLE) {
                 vkDestroyPipelineLayout(device, vulkanPipeline->pipelineLayout, nullptr);
+            }
+            if (vulkanPipeline->pipeline != VK_NULL_HANDLE) {
+                vkDestroyPipeline(device, vulkanPipeline->pipeline, nullptr);
             }
         }else if (std::is_same_v<T, FrameWork::Material>) {
             auto material = materials[index];

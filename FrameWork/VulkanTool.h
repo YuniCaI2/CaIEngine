@@ -10,7 +10,6 @@
 // Default fence timeout in nanoseconds
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
-#include <intrin.h>
 
 #include "pubh.h"
 #include<functional>

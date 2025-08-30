@@ -168,7 +168,9 @@ VkResult FrameWork::VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures e
     std::vector<const char *> deviceExtensions(std::move(enabledExtensions));
     if (useSwapChain) {
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+#if defined(_WIN32)
         deviceExtensions.push_back(VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME);
+#endif
     }
 
     //保证Apple扩展支持

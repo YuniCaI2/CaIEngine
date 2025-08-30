@@ -207,7 +207,10 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
 
 
     ImGui_ImplVulkan_Init(&vulkanInitInfo);
+#ifdef _WIN32
     ImGui_ImplVulkan_CreateFontsTexture();
+#endif
+
 
     auto windowResizeCallback = [this]() {
         for (uint32_t i = 0; i < framebuffers.size(); i++) {

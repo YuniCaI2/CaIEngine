@@ -4,8 +4,14 @@
 
 
 #include <imgui.h>
+#ifdef _WIN32
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#else
+#include <backends/imgui_impl_vulkan.h>
+#include <backends/imgui_impl_glfw.h>
+#endif
+
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <iostream>

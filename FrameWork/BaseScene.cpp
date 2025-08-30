@@ -35,7 +35,7 @@ void BaseScene::Render(const VkCommandBuffer& cmdBuffer) {
         graphicsPipeline = VulkanPipeline->pipeline;
         pipelineLayout = VulkanPipeline->pipelineLayout;
         vulkanRenderAPI.BeginRenderPass("forwardMSAA", msaaFrameBufferID,
-            vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight());
+            vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),{0.025f, 0.025f, 0.025f, 1.0f});
 
     }else {
         auto VulkanPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID);

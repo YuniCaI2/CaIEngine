@@ -10,7 +10,9 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <ranges>
+#ifdef _WIN32
 #include <DirectXTex.h>
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <stb_image.h>
@@ -191,7 +193,8 @@ void FrameWork::Resource::LoadShaderCache() const{
         if (file.eof()) {
             throw std::runtime_error("Failed to read time in : " + shaderTimeCachePath);
         }
-        long long time;
+        std::filesystem::file_time_type timeType;
+        decltype(timeType.time_since_epoch().count()) time;
         file.read(reinterpret_cast<char*>(&time), sizeof(time));
         std::filesystem::file_time_type fileTime{std::filesystem::file_time_type::duration(time)};
         cache[pathStr] = fileTime;
@@ -496,9 +499,9 @@ FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::s
 }
 
 FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type) {
+    TextureFullData texData{};
+#ifdef _WIN32
     using namespace DirectX;
-
-    TextureFullData texData;
     texData.path = filePath;
     texData.type = type;
 
@@ -542,6 +545,8 @@ FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string
     texData.height = static_cast<int>(metadata.height);
     texData.numChannels = 4; // DDS文件我们只支持4通道
     texData.data = data;
+#endif
+
 
     return texData;
 }
