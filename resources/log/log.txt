@@ -22,3 +22,15 @@
 [Debug] [2025-08-29 16:29:22.989260] : "Debug test123344" 
  from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 10] 
 
+[Error] [2025-08-30 06:16:54.846874] : "Error test 1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 7] 
+
+[Warn] [2025-08-30 06:16:54.846888] : "Warning test1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 8] 
+
+[Trace] [2025-08-30 06:16:54.846890] : "Trace test1234" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 9] 
+
+[Debug] [2025-08-30 06:16:54.846892] : "Debug test123344" 
+ from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 10] 
+

@@ -22,7 +22,7 @@ namespace FrameWork {
         static void ParseShaderCode(const std::string &code, std::string &vert, std::string &frag); //后续在处理几何着色器和计算着色器
         static ShaderPropertiesInfo GetShaderProperties(const std::string &code);
         static bool IsBaseProperty(ShaderPropertyType type);
-        static std::string TranslateToVulkan(const std::string &code);
+        static std::string TranslateToVulkan(const std::string &code, const ShaderPropertiesInfo& properties);
 
         // private:
         // 为了测试
@@ -48,6 +48,8 @@ namespace FrameWork {
 
         static void GetPropertyNameAndArrayLength(const std::string &propertyStr, std::string &name,
                                                   uint32_t &arrayLength);
+
+        static void ReplaceAllWordsInBlock(std::string& blockCode, const std::string& src, const std::string& dst);
 
 
 

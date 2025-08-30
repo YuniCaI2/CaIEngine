@@ -7,11 +7,25 @@ Settings {
 }
 
 Vertex {
-    vertex Test.
-    this is vertex part.
+    Input{
+       0 vec2 inPos
+       1 vec2 inUv
+       2 vec4 inColor
+    }
+    Output{
+       0 vec2 outUV
+       1 vec4 outColor
+    }
     Properties {
-        vec3 vertVec3[3]
-        sampler2D vertTex
+       vec2 scale
+       vec2 translate
+    }
+    Program{
+        int main(){
+            outUV = inUV;
+            outColor = inColor;
+            gl_Position = vec4(inPos * scale + translate, 0.0, 1.0);
+        }
     }
 }
 Fragment{
@@ -22,3 +36,4 @@ Fragment{
         sampler2D fragTex
     }
 }
+

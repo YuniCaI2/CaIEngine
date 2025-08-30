@@ -349,10 +349,90 @@ void FrameWork::ShaderParse::GetPropertyNameAndArrayLength(const std::string &pr
     arrayLength = std::stoi(lenStr);
 }
 
+void FrameWork::ShaderParse::ReplaceAllWordsInBlock(std::string &blockCode, const std::string &src,
+    const std::string &dst) {
+    size_t offset = 0;
+    auto pos = FindWord(blockCode, src, offset);
+    auto srcLen = src.size();
+    auto dstLen = dst.size();
+    while (pos != std::string::npos) {
+        //找到对应单词则替换
+        blockCode.replace(pos, srcLen, dst);
+        offset = pos + dstLen;//查找起始位置更新到替换单词的后一个
+        pos = FindWord(blockCode, src, offset);//继续查找后面相同单词
+    }
+}
+
 bool FrameWork::ShaderParse::IsBaseProperty(ShaderPropertyType type) {
     return !(type == ShaderPropertyType::SAMPLER || type == ShaderPropertyType::SAMPLER_2D || type == ShaderPropertyType::SAMPLER_CUBE);
 }
 
-std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code) {
+std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, const ShaderPropertiesInfo &properties) {
+    if (code.empty()) {
+        WARNING("Empty code in TranslateToVulkan");
+        return "";
+    }
+    //着色器版本
+    std::string vulkanCode = "#version 460 core\n\n";
+    size_t pos = 0;
 
+    //处理输入内容
+    std::string inputBlock = GetCodeBlock(code, "Input");
+    auto lines = SplitString(inputBlock, '\n');
+    for (auto& line : lines) {
+        auto words = ExtractWords(line);
+        if ( words.size() >= 3 && words[0] != "//") {
+            vulkanCode += "layout (location = " + words[0] + ") in " + words[1] + " " + words[2] + ";\n";
+        }
+    }
+    vulkanCode += "\n";
+
+    //TODO几何着色器的特化处理
+
+    //TODO实例化处理
+
+    //输出内容，例如vertex传递到frag的部分内容
+    std::string outputBlock = GetCodeBlock(code, "Output");
+    lines = SplitString(outputBlock, '\n');
+    for (auto& line : lines) {
+        auto words = ExtractWords(line);
+        if (words.size() >= 3 && words[0] != "//") {
+            vulkanCode += "layout(location = " + words[0] + ") out " + words[1] + " " + words[2] + ";\n";
+        }
+    }
+    vulkanCode += "\n";
+
+    //处理UBO，这里的思路是使用uniformObject结构体，到host端中可以使用vulkan内存规则，
+    //使用主机可见的内存直接对内存区域映射，不需要创建结构体与着色器对应
+    //此处将所有的UniformData塞到一个结构体中，vulkan支持离散的绑定点所以问题不大，
+    //并且使用一个整体的UniformBuffer保证了内存的利用效率相较于一一对应绑定点
+    if (!properties.baseProperties.empty()) {
+        vulkanCode += "layout (binding = " + std::to_string(properties.baseProperties[0].binding) + ") uniform UniformBufferObject {\n";
+        for (auto i = 0; i < properties.baseProperties.size(); i++) {
+            auto& property = properties.baseProperties[i];
+            if (property.arrayLength == 0) {
+                //非数组类型
+                vulkanCode += "    " + propertyTypeMapToGLSL[property.type] + " " + property.name + ";\n";
+            }else {
+                //数组类型
+                vulkanCode += "    " + propertyTypeMapToGLSL[property.type] + " " + property.name + "["
+                + std::to_string(property.arrayLength) + "]" + ";\n";
+            }
+        }
+        vulkanCode += "} _UBO;\n";
+    }
+    vulkanCode += "\n";
+
+    //将code中使用uniformData 的变量名加上前缀
+    std::string programBlock = GetCodeBlock(code, "Program");
+    if (!properties.baseProperties.empty()) {
+        for (auto& property : properties.baseProperties) {
+            ReplaceAllWordsInBlock(programBlock, property.name,  "_UBO." + property.name);
+        }
+    }
+    vulkanCode += programBlock;
+
+
+    //返回
+    return vulkanCode;
 }

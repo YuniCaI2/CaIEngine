@@ -83,6 +83,15 @@ void testShaderStateSet(const std::string& code) {
    DEBUG("测试ShaderStateSet");
 }
 
+void testTranslate(const std::string& code) {
+   auto info = ShaderParse::GetShaderInfo(code);
+   DEBUG("测试Translate");
+   std::string vert, frag;
+   ShaderParse::ParseShaderCode(code, vert, frag);
+   auto vulkanCode = ShaderParse::TranslateToVulkan(vert, info.vertProperties);
+   TRACE("Vert :{}", vulkanCode);
+}
+
 int main(){
    LOG.Run();
    LOG.SetPrintToFile(false);
@@ -98,7 +107,8 @@ int main(){
    // testParserCode(code);
    // testSplit(code);
    // testGetProperty(code);
-   testGetShaderInfo(code);
+   // testGetShaderInfo(code);
    // testShaderStateSet(code);
+   testTranslate(code);
    LOG.Stop();
 }
