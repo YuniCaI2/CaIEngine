@@ -2365,5 +2365,7 @@ void vulkanFrameWork::submitFrame() {
     else {
         VK_CHECK_RESULT(result);
     }
+    vulkanDescriptorPool.ClearPendingQueue();
+
     currentFrame = (currentFrame + 1) % MAX_FRAME;
 }

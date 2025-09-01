@@ -3,6 +3,7 @@
 //
 
 #include "DescriptorPool.h"
+#include "vulkanFrameWork.h"
 #include <ranges>
 #include "VulkanTool.h"
 
@@ -32,14 +33,17 @@ FrameWork::VulkanDescriptorPool::~VulkanDescriptorPool() {
 
 void FrameWork::VulkanDescriptorPool::InitDescriptorPool(FrameWork::VulkanDevice *vulkanDevice) {
     this->vulkanDevice = vulkanDevice;
+    pendingDescriptorSets.resize(vulkanRenderAPI.MaxFrame);
 }
 
 void FrameWork::VulkanDescriptorPool::AllocateDescriptorSet(VkDescriptorSetLayout descriptorSetLayout,
     VkDescriptorType descriptorType, VkDescriptorSet&descriptorSet) {
+    std::lock_guard<std::mutex> lock(mutex);
     //实现查找hashmap
     if (unusedDescriptorSetMap.contains(descriptorSetLayout)) {
         descriptorSet = unusedDescriptorSetMap[descriptorSetLayout].front();
         unusedDescriptorSetMap[descriptorSetLayout].pop();
+        return;
     }
     if (! descriptorPoolMap.contains(descriptorSetLayout)) {
         //不存在则需要创建
@@ -96,7 +100,24 @@ void FrameWork::VulkanDescriptorPool::AllocateDescriptorSet(VkDescriptorSetLayou
 
 void FrameWork::VulkanDescriptorPool::RegisterUnusedDescriptorSet(VkDescriptorSetLayout SetLayout,
     VkDescriptorSet descriptorSet) {
-    unusedDescriptorSetMap[SetLayout].emplace(descriptorSet);
+    std::lock_guard<std::mutex> lock(mutex);
+    pendingDescriptorSets[vulkanRenderAPI.GetCurrentFrame()][SetLayout].push(descriptorSet);
+}
+
+void FrameWork::VulkanDescriptorPool::ClearPendingQueue() {
+    std::lock_guard<std::mutex> lock(mutex);
+    auto frame = vulkanRenderAPI.GetCurrentFrame() + 1;
+    frame = frame % vulkanRenderAPI.MaxFrame;
+    if (! pendingDescriptorSets[frame].empty()) {
+        for (auto& p : pendingDescriptorSets[frame]) {
+            while (p.second.size() > 0) {
+                unusedDescriptorSetMap[p.first].push(p.second.front());
+                p.second.pop();
+            }
+        }
+        //一起清理
+        pendingDescriptorSets[frame].clear();
+    }
 }
 
 

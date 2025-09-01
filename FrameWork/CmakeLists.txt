@@ -18,7 +18,6 @@ elseif(APPLE)
             ${MacOSImGuiPath}/imgui_draw.cpp
             ${MacOSImGuiPath}/imgui_tables.cpp
             ${MacOSImGuiPath}/imgui_widgets.cpp
-            # 添加后端实现文件！这是你出错的关键！
             ${MacOSImGuiPath}/backends/imgui_impl_glfw.cpp
             ${MacOSImGuiPath}/backends/imgui_impl_vulkan.cpp
     )
@@ -31,7 +30,6 @@ elseif(APPLE)
             Vulkan::Vulkan
             assimp::assimp
     )
-
 endif()
 
 add_subdirectory(thirdPart)
@@ -43,21 +41,19 @@ file(GLOB frameWorkPath
 
 add_library(FrameWork ${frameWorkPath})
 
-# 统一使用关键字语法链接所有库
+# 基础库链接（所有平台共用）
 target_link_libraries(FrameWork PUBLIC
         glfw
         Vulkan::Vulkan
         assimp::assimp
-        imgui_lib
 )
 
 # 平台特定的库和配置
 if(WIN32)
     target_link_libraries(FrameWork PUBLIC imgui::imgui)
     target_link_libraries(FrameWork PRIVATE Microsoft::DirectXTex)
-
 elseif(APPLE)
-    target_link_libraries(FrameWork PUBLIC glfw)
+    target_link_libraries(FrameWork PUBLIC imgui_lib)
     target_include_directories(FrameWork PUBLIC ${MacOSImGuiPath} ${MacOSImGuiPath}/backend)
 endif()
 
