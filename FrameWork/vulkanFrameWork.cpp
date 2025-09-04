@@ -1320,6 +1320,106 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::str
     VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vulkanPipeline->pipeline));
 }
 
+FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
+    RenderPassType renderPassType, uint32_t subpass, uint32_t width, uint32_t height) {
+    //获取到ShaderModules
+    FrameWork::ShaderInfo shaderInfo = {};
+    auto shaderModules = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
+    if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
+        ERROR("The CreateVulkanPipeline Func can't create computer Shader Pipeline !");
+    }
+    //获取VulkanPipeline容器
+    pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
+    auto pipeline  = getByIndex<FrameWork::VulkanPipeline>(pipelineIdx);
+    //声明使用
+    pipeline->inUse = true;
+
+    //创建对应的VkDescriptorSetLayout
+    std::vector<VkDescriptorSetLayoutBinding> descriptorBindings = {};
+    if (! shaderInfo.vertProperties.baseProperties.empty()) {
+        //因为这里的策略是所有的uniformObject结构体，所以只需要绑定第一个base值即可
+        VkDescriptorSetLayoutBinding binding = {
+            .binding = shaderInfo.vertProperties.baseProperties[0].binding,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = nullptr
+        };
+        descriptorBindings.push_back(binding);
+    }
+    if (! shaderInfo.fragProperties.baseProperties.empty()) {
+        VkDescriptorSetLayoutBinding binding = {
+            .binding = shaderInfo.fragProperties.baseProperties[0].binding,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr
+        };
+        descriptorBindings.push_back(binding);
+    }
+
+    //处理纹理绑定点
+    if (! shaderInfo.vertProperties.textureProperties.empty()) {
+        for (auto& texProperty : shaderInfo.vertProperties.textureProperties) {
+            VkDescriptorSetLayoutBinding binding = {
+                .binding = texProperty.binding,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .pImmutableSamplers = nullptr
+            };
+            descriptorBindings.push_back(binding);
+        }
+    }
+
+    if (! shaderInfo.fragProperties.textureProperties.empty()) {
+        for (auto& texProperty : shaderInfo.fragProperties.textureProperties) {
+            VkDescriptorSetLayoutBinding binding = {
+                .binding = texProperty.binding,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .pImmutableSamplers = nullptr
+            };
+            descriptorBindings.push_back(binding);
+        }
+    }
+
+    //创建SetLayout
+    VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .bindingCount = (uint32_t)descriptorBindings.size(),
+        .pBindings = descriptorBindings.data()
+    };
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VK_CHECK_RESULT(
+        vkCreateDescriptorSetLayout(device, &setLayoutCreateInfo, nullptr, &layout)
+        );
+    pipeline->descriptorSetLayouts.push_back(layout);
+
+    //创建管线
+    //layout
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .setLayoutCount = (uint32_t)pipeline->descriptorSetLayouts.size(),
+        .pSetLayouts = pipeline->descriptorSetLayouts.data(),
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges =  nullptr,
+    };
+    VK_CHECK_RESULT(
+        vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo,
+            nullptr, &pipeline->pipelineLayout)
+        );
+
+    //根据ShaderState创建管线
+    auto shaderState = shaderInfo.shaderState;
+
+}
+
 
 void vulkanFrameWork::BeginRenderPass(const std::string &renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight, VkClearColorValue clearColor) const {
     VkClearValue clearValues[2];
@@ -2226,6 +2326,7 @@ void vulkanFrameWork::setupRenderPass() {
 
         VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
         renderPasses["forwardMSAA"] = renderPass;
+        renderPassTable[RenderPassType::Forward] = renderPass;
     }
 
 }

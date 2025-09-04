@@ -14,7 +14,7 @@
 #include "pubh.h"
 #include<functional>
 #include <queue>
-
+#include "Logger.h"
 #include "VulkanDevice.h"
 
 #define VK_CHECK_RESULT(f)                                                      \
@@ -22,8 +22,7 @@
 VkResult res = (f);                                                         \
 if (res != VK_SUCCESS)                                                      \
 {                                                                           \
-std::cerr << "Fatal : VkResult is \"" << res << "\" in " << __FILE__    \
-<< " at line " << __LINE__ << "\n";                           \
+ERROR("vulkan has error ! the res is : {}", static_cast<int>(res)); \
 exit(-1);                                              \
 }                                                                           \
 }

@@ -151,7 +151,6 @@ void FrameWork::ShaderParse::SetUpPropertiesStd140(ShaderInfo &shaderInfo) {
         for (auto& property : shaderInfo.vertProperties.baseProperties) {
             auto alignInfo = GetPropertyAlignInfoStd140(property.type, property.arrayLength);
             property.binding = binding;
-            property.offset = offset;
             property.align = alignInfo.alignment;
             property.arrayOffset = alignInfo.arrayOffset;
             uint32_t padding = offset % alignInfo.alignment;
@@ -160,6 +159,8 @@ void FrameWork::ShaderParse::SetUpPropertiesStd140(ShaderInfo &shaderInfo) {
             }else {
                 property.offset = offset - padding + alignInfo.alignment;
             }
+
+            //现在的offset是当前轮property的结尾
             offset += property.offset + property.size;
         }
         binding++;

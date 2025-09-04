@@ -119,6 +119,7 @@ protected:
     std::vector<FrameWork::VulkanPipeline*> vulkanPipelines;
     std::vector<FrameWork::VulkanPipelineInfo*> vulkanPipelineInfos;
     std::unordered_map<std::string, VkRenderPass> renderPasses;//记录renderpass
+    std::unordered_map<RenderPassType, VkRenderPass> renderPassTable;
     std::unordered_map<std::string, VkDescriptorSetLayout> descriptorSetLayouts;
     std::vector<FrameWork::Material*> materials;
     std::vector<FrameWork::Model*> models;
@@ -235,8 +236,18 @@ public:
     void AddPipelineColorBlendState(uint32_t& pipelineInfoIdx, bool hasColor, BlendOp blendOp,
         VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
     //这里注意默认UniformObject时一个大结构体，也方便管理使用偏移更新不失性能，且注意DescriptorSetLayout只需要提供两个种类，具体数量通过后面两个参数控制
+
+    //适配CaIShader处理ShaderState
+    VkPipelineColorBlendAttachmentState SetPipelineColorBlendAttachment(const FrameWork::ShaderInfo& shaderInfo);
+    VkPipelineShaderStageCreateInfo SetPipelineShaderStageInfo(const FrameWork::ShaderModulePackages& shaderModules);
+    VkPipelineInputAssemblyStateCreateInfo SetPipelineInputAssembly(const FrameWork::ShaderInfo& shaderInfo);
+    VkPipelineRasterizationStateCreateInfo SetRasterization(const FrameWork::ShaderInfo& shaderInfo);
+
+
     void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout, uint32_t uniform, uint32_t texNum);//最后一项是为了创建的pipelineLayout
     void CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& name, uint32_t& pipelineInfoIdx, const std::string& renderPassName, uint32_t subpass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
+    //适配CaIShader                                                                                                                                              //这里的宽和高设置渲染的视口大小，这里的默认值为-1，作用是默认为窗口大小
+    FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string& shaderPath, RenderPassType renderPassType, uint32_t subpass = 0, uint32_t width = -1, uint32_t height = -1);//先只支持多pass，如果支持subpass则在各种延迟渲染中需要使用InputAttachment来代替普通RenderPass使用纹理传入的Attachment需要分类讨论
 
     //简单封装
     VkCommandBuffer BeginCommandBuffer() const;
@@ -262,7 +273,6 @@ public:
     void LoadModel(uint32_t& modelID, const std::string& fileName, ModelType modelType, TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
     void DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer);
-    void BindMaterial(uint32_t materialID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
     FrameWork::Slot* CreateSlot(uint32_t& slotID);
     void UpdateAllSlots();
 
