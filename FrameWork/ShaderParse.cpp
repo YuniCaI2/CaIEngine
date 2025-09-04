@@ -373,7 +373,7 @@ std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, c
         return "";
     }
     //着色器版本
-    std::string vulkanCode = "#version 460 core\n\n";
+    std::string vulkanCode = "#version 450 core\n\n";
     size_t pos = 0;
 
     //处理输入内容
@@ -421,6 +421,13 @@ std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, c
         vulkanCode += "} _UBO;\n";
     }
     vulkanCode += "\n";
+
+    if (!properties.textureProperties.empty()) {
+        for (int i = 0; i < properties.textureProperties.size(); ++i) {
+            vulkanCode += "layout (binding = " + std::to_string(properties.textureProperties[i].binding) +
+                ") uniform sampler2D " + properties.textureProperties[i].name + ";\n";
+        }
+    }
 
     //将code中使用uniformData 的变量名加上前缀
     std::string programBlock = GetCodeBlock(code, "Program");

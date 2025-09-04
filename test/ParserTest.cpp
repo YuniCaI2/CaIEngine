@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include "Logger.h"
+#include "vulkanFrameWork.h"
 std::string testFilePath = "../../resources/test/testShader.caishader";
 using namespace FrameWork;
 
@@ -92,8 +93,19 @@ void testTranslate(const std::string& code) {
    TRACE("Vert :{}", vulkanCode);
 }
 
+void testGetShaderModule() {
+   auto& resource = Resource::GetInstance();
+   ShaderInfo shaderInfo;
+   auto shaderModules = resource.GetShaderCaIShaderModule(
+      vulkanRenderAPI.GetVulkanDevice()->logicalDevice, testFilePath, shaderInfo);
+   for (auto& shaderModule : shaderModules) {
+      vkDestroyShaderModule(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, shaderModule.second, nullptr);
+   }
+}
+
 int main(){
    LOG.Run();
+   vulkanRenderAPI.initVulkan();
    LOG.SetPrintToFile(false);
    std::ifstream testFile(testFilePath);
    if (! testFile.is_open()) {
@@ -109,6 +121,9 @@ int main(){
    // testGetProperty(code);
    // testGetShaderInfo(code);
    // testShaderStateSet(code);
-   testTranslate(code);
+   // testTranslate(code);
+   // testGetShaderInfo(code);
+   testGetShaderModule();
+   vulkanRenderAPI.DestroyAll();
    LOG.Stop();
 }

@@ -21,19 +21,31 @@ Vertex {
        vec2 translate
     }
     Program{
-        int main(){
-            outUV = inUV;
+        void main(){
+            outUV = inUv;
             outColor = inColor;
             gl_Position = vec4(inPos * scale + translate, 0.0, 1.0);
         }
     }
 }
 Fragment{
-    fragment Test.
-    this is fragment part.
+    Input{
+       0 vec2 inUV
+       1 vec4 inColor
+    }
+    Output{
+       0 vec4 outColor
+    }
     Properties {
-        vec3 fragVec3
-        sampler2D fragTex
+       sampler2D mainTexture
+       vec4 tintColor
+       float brightness
+    }
+    Program{
+        void main(){
+            vec4 texColor = texture(mainTexture, inUV);
+            outColor = texColor * inColor * tintColor;
+            outColor.rgb *= brightness;
+        }
     }
 }
-

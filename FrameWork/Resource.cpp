@@ -10,6 +10,9 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <ranges>
+#include "Logger.h"
+
+#include "ShaderParse.h"
 #ifdef _WIN32
 #include <DirectXTex.h>
 #endif
@@ -19,7 +22,8 @@
 #include <filesystem>
 
 
-void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes,  ModelType modelType, std::string directory, TextureTypeFlags textureFlags) {
+void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
+                                      ModelType modelType, std::string directory, TextureTypeFlags textureFlags) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(processMesh(mesh, modelType, scene, directory, textureFlags));
@@ -30,7 +34,8 @@ void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::v
     }
 }
 
-FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene,  std::string directory, TextureTypeFlags textureFlags) {
+FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene,
+                                                     std::string directory, TextureTypeFlags textureFlags) {
     MeshData meshData;
 
     //Vertex
@@ -52,7 +57,7 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType mod
         if (mesh->mTextureCoords[0]) {
             vertex.texCoord.x = mesh->mTextureCoords[0][i].x;
             vertex.texCoord.y = mesh->mTextureCoords[0][i].y;
-        }else {
+        } else {
             //异常
             vertex.texCoord.x = 0;
             vertex.texCoord.y = 0;
@@ -63,34 +68,34 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType mod
 
     //index
     for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
-         aiFace face = mesh->mFaces[i];
+        aiFace face = mesh->mFaces[i];
         for (uint32_t j = 0; j < face.mNumIndices; j++) {
             meshData.indices.push_back(face.mIndices[j]);
         }
     }
 
     //纹理加载
-    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+    aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
     //这里先只加载漫反射贴图--因为我手头的模型除了PBR就是漫反射贴图
     if ((textureFlags & DiffuseColor) == DiffuseColor) {
-        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_DIFFUSE,  directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_DIFFUSE, directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & BaseColor) == BaseColor) {
-        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_BASE_COLOR,  directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_BASE_COLOR, directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & Normal) == Normal) {
-        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_NORMALS,  directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_NORMALS, directory);
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
     }
     if ((textureFlags & MetallicRoughness) == MetallicRoughness) {
-        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_METALNESS,  directory);
+        auto textureMap = LoadTextureFullDatas(material, scene, aiTextureType_METALNESS, directory);
         if (textureMap.empty()) {
-            textureMap = LoadTextureFullDatas(material, scene, aiTextureType_DIFFUSE_ROUGHNESS,  directory);
+            textureMap = LoadTextureFullDatas(material, scene, aiTextureType_DIFFUSE_ROUGHNESS, directory);
             if (textureMap.empty()) {
-                textureMap = LoadTextureFullDatas(material, scene, aiTextureType_UNKNOWN,  directory);
+                textureMap = LoadTextureFullDatas(material, scene, aiTextureType_UNKNOWN, directory);
             }
         }
         meshData.texData.insert(meshData.texData.end(), textureMap.begin(), textureMap.end());
@@ -116,10 +121,10 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
     texData.numChannels = desireChannels;
     texData.path = "None";
     texData.type = type;
-    unsigned char* pixels = new unsigned char[width * height * numChannels];
+    unsigned char *pixels = new unsigned char[width * height * numChannels];
     if (type == TextureTypeFlagBits::DiffuseColor) {
         for (uint32_t i = 0; i < width * height * numChannels; i++) {
-            pixels[i] = 255;//全部置为1
+            pixels[i] = 255; //全部置为1
         }
     }
     if (type == TextureTypeFlagBits::MetallicRoughness) {
@@ -151,40 +156,39 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
     if (type == TextureTypeFlagBits::BaseColor) {
         for (uint32_t i = 0; i < width * height * numChannels; i++) {
             pixels[i] = 1;
-
         }
     }
     texData.data = pixels;
     return texData;
 }
 
-void FrameWork::Resource::SaveCache(const std::string &filePath) const{
+void FrameWork::Resource::SaveCache(const std::string &filePath) const {
     std::ofstream file(shaderTimeCachePath, std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file " + filePath);
     }
-    for (const auto& [pathStr, time] : shaderTimeCache) {
+    for (const auto &[pathStr, time]: shaderTimeCache) {
         uint32_t pathLen = pathStr.length();
-        file.write(reinterpret_cast<const char*>(&pathLen), sizeof(pathLen));
+        file.write(reinterpret_cast<const char *>(&pathLen), sizeof(pathLen));
 
         file.write(pathStr.c_str(), pathLen);
 
         auto timeRep = time.time_since_epoch().count();
-        file.write(reinterpret_cast<const char*>(&timeRep), sizeof(timeRep));
+        file.write(reinterpret_cast<const char *>(&timeRep), sizeof(timeRep));
     }
 }
 
 
-void FrameWork::Resource::LoadShaderCache() const{
+FrameWork::Resource::ShaderTimeCache FrameWork::Resource::LoadShaderCache(const std::string& filePath) const {
     ShaderTimeCache cache;
-    std::ifstream file(shaderTimeCachePath, std::ios::binary);
+    std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         //未创建直接返回
         std::cerr << "the first use shader time cache , shader cache is empty" << std::endl;
-        return;
+        return {};
     }
     uint32_t pathLen = 0;
-    while (file.read(reinterpret_cast<char*>(&pathLen), sizeof(pathLen))) {
+    while (file.read(reinterpret_cast<char *>(&pathLen), sizeof(pathLen))) {
         if (file.eof()) {
             throw std::runtime_error("Failed to read path str in : " + shaderTimeCachePath);
         }
@@ -195,20 +199,20 @@ void FrameWork::Resource::LoadShaderCache() const{
         }
         std::filesystem::file_time_type timeType;
         decltype(timeType.time_since_epoch().count()) time;
-        file.read(reinterpret_cast<char*>(&time), sizeof(time));
+        file.read(reinterpret_cast<char *>(&time), sizeof(time));
         std::filesystem::file_time_type fileTime{std::filesystem::file_time_type::duration(time)};
         cache[pathStr] = fileTime;
     }
-    shaderTimeCache = cache;
+    return cache;
 }
 
-void FrameWork::Resource::CompileShader(const std::string &filepath) const{
-    std::string command = "GLSLANG "+ filepath + " -V -o " + filepath + ".spv";
+void FrameWork::Resource::CompileShader(const std::string &filepath) const {
+    std::string command = "GLSLANG " + filepath + " -V -o " + filepath + ".spv";
     std::cout << "Compiling shader:   " << filepath << std::endl;
     int result = system(command.c_str());
     if (result != 0) {
         std::cerr << "Error compiling shader: " << filepath << std::endl;
-    }else {
+    } else {
         std::cout << "Shader compiled successfully!" << std::endl;
         std::cout << std::endl;
     }
@@ -218,15 +222,15 @@ void FrameWork::Resource::CompileShaderModify() const {
     std::string vertExtension = ".vert";
     std::string fragExtension = ".frag";
     std::string compExtension = ".comp";
-    std::string vertspvExtension  = ".vert.spv";
-    std::string fragspvExtension  = ".frag.spv";
-    std::string compspvExtension  = ".comp.spv";
+    std::string vertspvExtension = ".vert.spv";
+    std::string fragspvExtension = ".frag.spv";
+    std::string compspvExtension = ".comp.spv";
     std::filesystem::path allShaderPath = generalShaderPath;
-    if (! std::filesystem::exists(allShaderPath) || ! std::filesystem::is_directory(allShaderPath)) {
+    if (!std::filesystem::exists(allShaderPath) || !std::filesystem::is_directory(allShaderPath)) {
         std::cerr << "Error loading shader: " << allShaderPath << std::endl;
         throw std::runtime_error("Error loading shader: " + generalShaderPath);
     }
-    auto GetExtension =  [](const std::string& path) {
+    auto GetExtension = [](const std::string &path) {
         auto start = path.find_last_of("/\\");
         auto dotstart = path.substr(start).find_first_of('.');
         if (start == std::string::npos || dotstart == std::string::npos) {
@@ -236,31 +240,31 @@ void FrameWork::Resource::CompileShaderModify() const {
         return path.substr(start + dotstart);
     };
 
-    auto IfCompile  = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type& time)->bool {
+    auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
         if (filepath1.string() == ".") {
             return false;
         }
         auto time1 = std::filesystem::last_write_time(filepath1);
         if (time1 == time) {
             return false;
-        }else {
+        } else {
             return true;
         }
     };
 
     //加载时间缓存
     try {
-        LoadShaderCache();
-    }catch (std::exception &e) {
+        shaderTimeCache =  LoadShaderCache(shaderTimeCachePath);
+    } catch (std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
     bool flag = false; //标记位
     //遍历所有文件夹
-    for (auto& singleFile :
-        std::filesystem::directory_iterator(allShaderPath)) {
+    for (auto &singleFile:
+         std::filesystem::directory_iterator(allShaderPath)) {
         if (singleFile.is_directory()) {
             std::vector<std::filesystem::path> shaderPaths(6, ".");
-            for (auto& shaderPath : std::filesystem::directory_iterator(singleFile)) {
+            for (auto &shaderPath: std::filesystem::directory_iterator(singleFile)) {
                 std::string path = shaderPath.path().string();
                 std::string extension = GetExtension(path);
                 if (extension == vertExtension) {
@@ -290,10 +294,10 @@ void FrameWork::Resource::CompileShaderModify() const {
                         flag = true;
                         shaderTimeCache[shaderPaths[i].string()] = last_write_time(shaderPaths[i]);
                     }
-                }else {
-                        CompileShader(shaderPaths[i].string());
-                        flag = true;
-                        shaderTimeCache[shaderPaths[i].string()] = last_write_time(shaderPaths[i]);
+                } else {
+                    CompileShader(shaderPaths[i].string());
+                    flag = true;
+                    shaderTimeCache[shaderPaths[i].string()] = last_write_time(shaderPaths[i]);
                 }
             }
         }
@@ -301,15 +305,19 @@ void FrameWork::Resource::CompileShaderModify() const {
     if (flag) {
         SaveCache(shaderTimeCachePath);
     }
+}
 
+void FrameWork::Resource::CompileCaIShader(const std::string &filepath) const {
+}
 
-
+void FrameWork::Resource::CompileCaIShaderModify() const {
 }
 
 FrameWork::Resource::Resource() {
 }
 
-VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, const std::string &fileName, VkShaderStageFlags shaderStage) const{
+VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, const std::string &fileName,
+                                                           VkShaderStageFlags shaderStage) const {
     auto shaderPath = generalShaderPath + fileName + "/" + fileName;
     switch (shaderStage) {
         case VK_SHADER_STAGE_VERTEX_BIT:
@@ -330,7 +338,7 @@ VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, cons
     try {
         CompileShaderModify();
         shaderModule = VulkanTool::loadShader(shaderPath, device);
-    }catch(const std::ios_base::failure &e) {
+    } catch (const std::ios_base::failure &e) {
         std::cerr << e.what() << std::endl;
         return VK_NULL_HANDLE;
     }
@@ -338,7 +346,8 @@ VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, cons
 }
 
 //这里默认这里的Obj不支持PBR贴图，等待后续扩展
-std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale) {
+std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType,
+                                                               TextureTypeFlags textureFlags, float scale) {
     Assimp::Importer importer;
     std::vector<std::string_view> fsplits;
     std::string path;
@@ -352,128 +361,108 @@ std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string
     } else if (modelType == ModelType::GLTF) {
         path = generalModelPath + fileName + "/" + fileName + ".glTF";
         directory = generalModelPath + fileName + "/";
-    }else if (modelType == ModelType::GLB) {
+    } else if (modelType == ModelType::GLB) {
         path = generalModelPath + fileName + "/" + fileName + ".glb";
         directory = generalModelPath + fileName + "/";
     }
     importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals |aiProcess_CalcTangentSpace | aiProcess_FlipUVs |  aiProcess_GlobalScale);
+    const aiScene *scene = importer.ReadFile(
+        path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs |
+              aiProcess_GlobalScale);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         throw std::runtime_error("Failed to load model from file " + fileName);
     }
-    std::vector<MeshData> meshes;//返回值
+    std::vector<MeshData> meshes; //返回值
     processNode(scene->mRootNode, scene, meshes, modelType, directory, textureFlags);
     return meshes;
 }
 
-std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(aiMaterial *mat, const aiScene* scene,aiTextureType type,
+std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(
+    aiMaterial *mat, const aiScene *scene, aiTextureType type,
     std::string directory) {
     std::vector<TextureFullData> textures;
     int n = 0;
-    n =  mat->GetTextureCount(type);
+    n = mat->GetTextureCount(type);
     for (unsigned int i = 0; i < n; i++) {
         aiString str;
         mat->GetTexture(type, i, &str);
         if (auto it = textureMap.find(directory + str.C_Str()); it != textureMap.end()) {
             textures.push_back(it->second);
-        }else {
+        } else {
             auto texture = scene->GetEmbeddedTexture(str.C_Str());
             if (texture != nullptr) {
                 TextureFullData texData;
-                texData.data = (unsigned char*)texture->pcData;
+                texData.data = (unsigned char *) texture->pcData;
                 texData.width = texture->mWidth;
                 texData.height = texture->mHeight;
                 if (type == aiTextureType_DIFFUSE) {
                     texData.type = DiffuseColor;
-                }
-                else if (type == aiTextureType_NORMALS) {
+                } else if (type == aiTextureType_NORMALS) {
                     texData.type = Normal;
-                }
-                else if (type == aiTextureType_UNKNOWN) {
+                } else if (type == aiTextureType_UNKNOWN) {
                     texData.type = MetallicRoughness;
-                }
-                else if (type == aiTextureType_METALNESS) {
+                } else if (type == aiTextureType_METALNESS) {
                     texData.type = MetallicRoughness;
-                }
-                else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
+                } else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
                     texData.type = MetallicRoughness;
-                }
-                else if (type == aiTextureType_EMISSIVE) {
+                } else if (type == aiTextureType_EMISSIVE) {
                     texData.type = Emissive;
-                }
-                else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+                } else if (type == aiTextureType_AMBIENT_OCCLUSION) {
                     texData.type = Occlusion;
-                }else if (type == aiTextureType_BASE_COLOR) {
+                } else if (type == aiTextureType_BASE_COLOR) {
                     texData.type = BaseColor;
-                }
-                else {
+                } else {
                     std::cerr << "this type process has not complete !" << std::endl;
                 }
                 if (texData.width == 0 || texData.height == 0) {
                     texData.data = stbi_load_from_memory(texData.data, texData.width,
-                        &texData.width, &texData.height, &texData.numChannels, 4);
+                                                         &texData.width, &texData.height, &texData.numChannels, 4);
                 }
                 texData.path = directory + str.C_Str();
                 texData.numChannels = 4;
                 textures.push_back(texData);
                 textureMap[directory + str.C_Str()] = texData;
-
-            }else {
+            } else {
                 TextureFullData texData;
                 if (type == aiTextureType_DIFFUSE) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::DiffuseColor);
-                }
-                else if (type == aiTextureType_NORMALS) {
+                } else if (type == aiTextureType_NORMALS) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Normal);
-                }
-                else if (type == aiTextureType_UNKNOWN) {
+                } else if (type == aiTextureType_UNKNOWN) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
-                }
-                else if (type == aiTextureType_METALNESS) {
+                } else if (type == aiTextureType_METALNESS) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
-                }
-                else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
+                } else if (type == aiTextureType_DIFFUSE_ROUGHNESS) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::MetallicRoughness);
-                }
-                else if (type == aiTextureType_EMISSIVE) {
+                } else if (type == aiTextureType_EMISSIVE) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Emissive);
-                }
-                else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+                } else if (type == aiTextureType_AMBIENT_OCCLUSION) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::Occlusion);
-                }
-                else if (type == aiTextureType_BASE_COLOR) {
+                } else if (type == aiTextureType_BASE_COLOR) {
                     texData = LoadTextureFullData(directory + str.C_Str(), TextureTypeFlagBits::BaseColor);
-                }
-                else {
+                } else {
                     std::cerr << "this type process has not complete !" << std::endl;
                 }
                 textures.push_back(texData);
                 textureMap[directory + str.C_Str()] = texData;
             }
-
         }
     }
 
     if (n <= 0) {
         if (type == aiTextureType_DIFFUSE) {
             textures.push_back(CreateDefaultTexture(DiffuseColor));
-        }
-        else if (type == aiTextureType_NORMALS) {
+        } else if (type == aiTextureType_NORMALS) {
             textures.push_back(CreateDefaultTexture(Normal));
-        }
-        else if (type == aiTextureType_UNKNOWN) {
+        } else if (type == aiTextureType_UNKNOWN) {
             textures.push_back(CreateDefaultTexture(MetallicRoughness));
-        }
-        else if (type == aiTextureType_EMISSIVE) {
+        } else if (type == aiTextureType_EMISSIVE) {
             textures.push_back(CreateDefaultTexture(Emissive));
-        }
-        else if (type == aiTextureType_AMBIENT_OCCLUSION) {
+        } else if (type == aiTextureType_AMBIENT_OCCLUSION) {
             textures.push_back(CreateDefaultTexture(Occlusion));
-        }
-        else if (type == aiTextureType_BASE_COLOR) {
+        } else if (type == aiTextureType_BASE_COLOR) {
             textures.push_back(CreateDefaultTexture(BaseColor));
-        }
-        else {
+        } else {
             std::cerr << "this type process has not complete !" << std::endl;
         }
     }
@@ -481,7 +470,8 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
 }
 
 
-FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath, TextureTypeFlagBits type) {
+FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath,
+                                                                    TextureTypeFlagBits type) {
     // 获取文件扩展名
     std::filesystem::path path(filePath);
     std::string extension = path.extension().string();
@@ -520,16 +510,17 @@ FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string
 
 
     switch (metadata.format) {
-        case DXGI_FORMAT_R32G32B32A32_FLOAT:  // FLOAT32, 4通道
-        case DXGI_FORMAT_R16G16B16A16_FLOAT:  // FLOAT16, 4通道
+        case DXGI_FORMAT_R32G32B32A32_FLOAT: // FLOAT32, 4通道
+        case DXGI_FORMAT_R16G16B16A16_FLOAT: // FLOAT16, 4通道
             break;
         default:
-            std::cerr << "Unsupported DDS format. Only FLOAT32 and FLOAT16 4-channel formats are supported." << std::endl;
+            std::cerr << "Unsupported DDS format. Only FLOAT32 and FLOAT16 4-channel formats are supported." <<
+                    std::endl;
             exit(-1);
     }
 
     // 获取图像数据
-    const Image* img = image.GetImage(0, 0, 0);
+    const Image *img = image.GetImage(0, 0, 0);
     if (!img) {
         std::cerr << "Failed to get image data from DDS file: " << filePath << std::endl;
         exit(-1);
@@ -537,7 +528,7 @@ FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string
 
     // 分配内存并复制数据
     size_t dataSize = img->rowPitch * img->height; //rowPitch 是每行字节数
-    unsigned char* data = new unsigned char[dataSize];
+    unsigned char *data = new unsigned char[dataSize];
     memcpy(data, img->pixels, dataSize);
 
     // 填充原有的TextureFullData结构
@@ -554,7 +545,7 @@ FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string
 FrameWork::TextureFullData FrameWork::Resource::LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type) {
     int width = 100, height = 100, numChannels;
     uint32_t desireChannels = 4;
-    unsigned char* data = nullptr;
+    unsigned char *data = nullptr;
 
     data = stbi_load(filePath.c_str(), &width, &height, &numChannels, desireChannels);
 
@@ -574,9 +565,88 @@ FrameWork::TextureFullData FrameWork::Resource::LoadSTBTexture(const std::string
     return texData;
 }
 
+FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(VkDevice device, const std::string &filePath,
+                                                             ShaderInfo &shaderInfo) const {
+
+    auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
+        if (filepath1.string() == ".") {
+            return false;
+        }
+        auto time1 = std::filesystem::last_write_time(filepath1);
+        if (time1 == time) {
+            return false;
+        } else {
+            return true;
+        }
+    };
+
+    FrameWork::ShaderModulePackages shaderModules{};
+    caiShaderTimeCache = LoadShaderCache(caiShaderTimeCachePath);
+    std::ifstream testFile(filePath);
+    bool ifCompile = true;
+    if (! caiShaderTimeCache.empty()) {
+        ifCompile = IfCompile(filePath, caiShaderTimeCache[filePath]);
+    }
+    if (!testFile.is_open()) {
+        ERROR("Failed to open test file from: {}", filePath);
+    }
+    std::stringstream ss;
+    ss << testFile.rdbuf();
+    std::string code = ss.str();
+    shaderInfo = ShaderParse::GetShaderInfo(code);
+    std::string vert, frag;
+    ShaderParse::ParseShaderCode(code, vert, frag);
+    bool hasVertex = ! vert.empty();
+    bool hasFrag = ! frag.empty();
+    if (!hasVertex && !hasFrag) {
+        ERROR("Vertex and fragment shader not found in file: {}", filePath);
+        return {};
+    }
+    if (! hasVertex) {
+        WARNING("Vertex shader not found in file: {}", filePath);
+    }
+    if (! hasFrag) {
+        WARNING("Fragment shader not found in file: {}", filePath);
+    }
+    std::string vulkanVertCode{} , vulkanFragCode{};
+    std::filesystem::path vulkanShaderPath = std::filesystem::path(filePath).parent_path();
+    vulkanShaderPath = vulkanShaderPath / std::filesystem::path(filePath).stem();
+    if (hasVertex) {
+        if (ifCompile) {
+            vulkanVertCode = ShaderParse::TranslateToVulkan(vert, shaderInfo.vertProperties);
+            std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".vert");
+            if (! vulkanVertShaderFile.is_open()) {
+                ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
+                return {};
+            }
+            vulkanVertShaderFile << vulkanVertCode;
+            vulkanVertShaderFile.close();
+            CompileShader(vulkanShaderPath.string() + ".vert");
+        }
+        auto vertShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".vert.spv" , device);
+        shaderModules.emplace_back(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule);
+    }
+    if (hasFrag) {
+        if (ifCompile) {
+            vulkanFragCode = ShaderParse::TranslateToVulkan(frag, shaderInfo.fragProperties);
+            std::ofstream vulkanFragShaderFile(vulkanShaderPath.string() + ".frag");
+            if (! vulkanFragShaderFile.is_open()) {
+                ERROR("Failed to open fragment shader file: {}", vulkanShaderPath.string());
+                return {};
+            }
+            vulkanFragShaderFile << vulkanFragCode;
+            vulkanFragShaderFile.close();
+            CompileShader(vulkanShaderPath.string() + ".frag");
+        }
+        auto fragShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".frag.spv" , device);
+        shaderModules.emplace_back(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule);
+    }
+    return shaderModules;
+}
+
 void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureFullData) {
     //主要是释放图像的指针指向的数据
-    for (auto& it : textureMap) {
+    for (auto &it: textureMap) {
         if (it.second.path == textureFullData.path) {
             stbi_image_free(it.second.data);
             textureMap.erase(it.first);
@@ -586,7 +656,7 @@ void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureF
 }
 
 
-FrameWork::Resource& FrameWork::Resource::GetInstance() {
+FrameWork::Resource &FrameWork::Resource::GetInstance() {
     static Resource instance;
     return instance;
 }
