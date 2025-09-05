@@ -108,6 +108,57 @@ namespace FrameWork {
             {"ConstantAlpha", BlendFactor::CONSTANT_ALPHA},
             {"OneMinusConstantAlpha", BlendFactor::ONE_MINUS_CONSTANT_ALPHA},
         };
+
+
+        inline static std::unordered_map<std::string, PolygonMode> polygonModeMap = {
+            {"Line", PolygonMode::Line},
+            {"Fill", PolygonMode::Fill},
+        };
+
+        inline static std::unordered_map<BlendOption, VkBlendOp> blendOpToVulkanBlendOp = {
+            {BlendOption::ADD, VK_BLEND_OP_ADD}, {BlendOption::MAX, VK_BLEND_OP_MAX},
+            {BlendOption::MIN, VK_BLEND_OP_MIN}, {BlendOption::SUBTRACT, VK_BLEND_OP_SUBTRACT},
+            {BlendOption::REVERSE_SUBTRACT, VK_BLEND_OP_REVERSE_SUBTRACT}
+        };
+
+        inline static std::unordered_map<BlendFactor, VkBlendFactor> blendFactorToVulkanBlendFactor = {
+            {BlendFactor::ZERO, VK_BLEND_FACTOR_ZERO},
+            {BlendFactor::ONE, VK_BLEND_FACTOR_ONE},
+            {BlendFactor::SRC_COLOR, VK_BLEND_FACTOR_SRC_COLOR},
+            {BlendFactor::ONE_MINUS_SRC_COLOR, VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR},
+            {BlendFactor::DST_COLOR, VK_BLEND_FACTOR_DST_COLOR},
+            {BlendFactor::ONE_MINUS_DST_COLOR, VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR},
+            {BlendFactor::SRC_ALPHA, VK_BLEND_FACTOR_SRC_ALPHA},
+            {BlendFactor::ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA},
+            {BlendFactor::DST_ALPHA, VK_BLEND_FACTOR_DST_ALPHA},
+            {BlendFactor::ONE_MINUS_DST_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA},
+            {BlendFactor::CONSTANT_COLOR, VK_BLEND_FACTOR_CONSTANT_COLOR},
+            {BlendFactor::ONE_MINUS_CONSTANT_COLOR, VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR},
+            {BlendFactor::CONSTANT_ALPHA, VK_BLEND_FACTOR_CONSTANT_ALPHA},
+            {BlendFactor::ONE_MINUS_CONSTANT_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA}
+        };
+
+        inline static std::unordered_map<PolygonMode, VkPolygonMode> polygonModeToVulkanPolygonMode = {
+           {PolygonMode::Line, VK_POLYGON_MODE_LINE},
+            {PolygonMode::Fill, VK_POLYGON_MODE_FILL},
+        };
+
+        inline static std::unordered_map<FaceCullOption, VkCullModeFlags> cullModeToVulkanCullMode = {
+            {FaceCullOption::Front, VK_CULL_MODE_FRONT_BIT},
+            {FaceCullOption::Back, VK_CULL_MODE_BACK_BIT},
+            {FaceCullOption::None, VK_CULL_MODE_NONE},
+            {FaceCullOption::FrontAndBack, VK_CULL_MODE_FRONT_AND_BACK}
+        };
+
+        inline static std::unordered_map<CompareOption, VkCompareOp> compareModeToVulkanCompareMode = {
+            {CompareOption::LESS, VK_COMPARE_OP_LESS},
+            {CompareOption::EQUAL, VK_COMPARE_OP_EQUAL},
+            {CompareOption::NEVER, VK_COMPARE_OP_NEVER},
+            {CompareOption::ALWAYS, VK_COMPARE_OP_ALWAYS},
+            {CompareOption::GREATER, VK_COMPARE_OP_GREATER},
+            {CompareOption::NOT_EQUAL, VK_COMPARE_OP_NOT_EQUAL},
+            {CompareOption::GREATER_OR_EQUAL, VK_COMPARE_OP_GREATER_OR_EQUAL},
+        };
     };
 }
 

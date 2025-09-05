@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Logger.h"
+#include "ShaderParse.h"
 #include "VulkanDebug.h"
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
@@ -1119,8 +1120,88 @@ void vulkanFrameWork::AddPipelineColorBlendState(uint32_t& pipelineInfoIdx, bool
     }
 }
 
+VkPipelineColorBlendAttachmentState vulkanFrameWork::SetPipelineColorBlendAttachment(
+    const FrameWork::ShaderInfo &shaderInfo) {
+    return {
+        .blendEnable = VK_TRUE,
+        .srcColorBlendFactor = FrameWork::ShaderParse::blendFactorToVulkanBlendFactor[shaderInfo.shaderState.srcBlendFactor],
+        .dstColorBlendFactor = FrameWork::ShaderParse::blendFactorToVulkanBlendFactor[shaderInfo.shaderState.dstBlendFactor],
+        .colorBlendOp = FrameWork::ShaderParse::blendOpToVulkanBlendOp[shaderInfo.shaderState.blendOp],
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE, //这里不混合alpha
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .alphaBlendOp = VK_BLEND_OP_ADD,
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+        //保证所有颜色都写入,等到需要操作通道的时候在扩展shaderState
+    };
+}
+
+std::vector<VkPipelineShaderStageCreateInfo> vulkanFrameWork::SetPipelineShaderStageInfo(
+    const FrameWork::ShaderModulePackages &shaderModules) {
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    shaderStages.reserve(shaderModules.size());
+    for (auto& shaderModule : shaderModules) {
+        VkPipelineShaderStageCreateInfo shaderStage = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = shaderModule.first,
+            .module = shaderModule.second,
+            .pName = "main",
+            //不需要常量特化,直接写在着色器里吧
+        };
+        shaderStages.emplace_back(shaderStage);
+    }
+    return shaderStages;
+}
+
+VkPipelineInputAssemblyStateCreateInfo vulkanFrameWork::SetPipelineInputAssembly() {
+    return {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .primitiveRestartEnable = VK_FALSE, //片元启动一般不会用
+    };
+}
+
+VkPipelineRasterizationStateCreateInfo vulkanFrameWork::SetRasterization(const FrameWork::ShaderInfo &shaderInfo) {
+    return {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE, //不丢弃结果
+        .polygonMode = FrameWork::ShaderParse::polygonModeToVulkanPolygonMode[shaderInfo.shaderState.polygonMode], //填充线段
+        .cullMode = FrameWork::ShaderParse::cullModeToVulkanCullMode[shaderInfo.shaderState.faceCullOp],
+        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE, //遵循OpenGL的默认
+        .depthBiasEnable = VK_FALSE,
+        .depthBiasConstantFactor = 0.0f, //不适用深度偏移
+        .depthBiasClamp = 0.0f,
+        .depthBiasSlopeFactor = 0.0f,
+        .lineWidth = 1.0f
+    };
+}
+
+VkPipelineDepthStencilStateCreateInfo vulkanFrameWork::SetDepthStencil(const FrameWork::ShaderInfo &shaderInfo) {
+    return {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = shaderInfo.shaderState.depthWrite ? VK_TRUE : VK_FALSE,
+        .depthCompareOp = FrameWork::ShaderParse::compareModeToVulkanCompareMode[shaderInfo.shaderState.depthCompareOp],
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE, //模板等到使用时再拓展
+        .front = {},
+        .back = {},
+        .minDepthBounds = 0.0f,
+        .maxDepthBounds = 1.0f
+    };
+}
+
 void vulkanFrameWork::CreateVulkanPipeline(uint32_t& pipelineIdx, const std::string &name, uint32_t& pipelineInfoIdx,
-    const std::string &renderPassName, uint32_t subpassIndex, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t uniformNum,uint32_t texNum) {
+                                           const std::string &renderPassName, uint32_t subpassIndex, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t uniformNum,uint32_t texNum) {
     pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
     auto vulkanPipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineIdx);
     vulkanPipeline->inUse = true;
@@ -1321,7 +1402,7 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::str
 }
 
 FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
-    RenderPassType renderPassType, uint32_t subpass, uint32_t width, uint32_t height) {
+    RenderPassType renderPassType, bool onlyFrame,uint32_t subpass, uint32_t width, uint32_t height) {
     //获取到ShaderModules
     FrameWork::ShaderInfo shaderInfo = {};
     auto shaderModules = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
@@ -1416,7 +1497,12 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         );
 
     //根据ShaderState创建管线
-    auto shaderState = shaderInfo.shaderState;
+    auto shaderModuleInfos = SetPipelineShaderStageInfo(shaderModules);
+    auto colorBlendState = SetPipelineColorBlendAttachment(shaderInfo);
+    auto depthStencilState = SetDepthStencil(shaderInfo);
+    auto inputAssembly = SetPipelineInputAssembly();
+    auto rasterization = SetRasterization(shaderInfo);
+
 
 }
 

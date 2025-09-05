@@ -291,6 +291,7 @@ namespace FrameWork {
         BlendFactor dstBlendFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
         FaceCullOption faceCullOp = FaceCullOption::Back;
         CompareOption depthCompareOp = CompareOption::LESS; //深度测试相关
+        PolygonMode polygonMode = PolygonMode::Fill;//这里为了区分渲染是直线还是填充
         //渲染队列，这里先不加
         bool depthWrite = true;
     };

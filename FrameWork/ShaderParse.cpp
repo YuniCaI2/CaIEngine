@@ -106,7 +106,14 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
                 return shaderStateSet;
             }
             shaderStateSet.depthWrite = words[1] == "On";
-        }else {
+        }else if (words[0] == "PolygonMode") {
+            if (words[1] != "Line" && words[1] != "Fill") {
+                WARNING("The polygon mode is wrong, use default state set");
+                return shaderStateSet;
+            }
+            shaderStateSet.polygonMode = polygonModeMap[words[1]];
+        }
+        else {
             WARNING("Can't find suitable operation for {}", words[0]);
         }
     }

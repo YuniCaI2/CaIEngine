@@ -215,6 +215,10 @@ enum class RenderPassType {
     MAX
 };
 
+enum class PolygonMode {
+    Line,
+    Fill
+};
 #endif //PUBLICENUM_H
 
 
