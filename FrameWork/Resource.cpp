@@ -162,10 +162,10 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
     return texData;
 }
 
-void FrameWork::Resource::SaveCache(const std::string &filePath) const {
-    std::ofstream file(shaderTimeCachePath, std::ios::binary | std::ios::trunc);
+void FrameWork::Resource::SaveCache(const std::string &filePath, const ShaderTimeCache& shaderTimeCache) const {
+    std::ofstream file(filePath, std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file " + filePath);
+        ERROR("Failed to open file {}", filePath);
     }
     for (const auto &[pathStr, time]: shaderTimeCache) {
         uint32_t pathLen = pathStr.length();
@@ -303,7 +303,7 @@ void FrameWork::Resource::CompileShaderModify() const {
         }
     }
     if (flag) {
-        SaveCache(shaderTimeCachePath);
+        SaveCache(shaderTimeCachePath, shaderTimeCache);
     }
 }
 
@@ -641,6 +641,11 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
         auto fragShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".frag.spv" , device);
         shaderModules.emplace_back(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule);
     }
+    if (ifCompile) {
+        // SaveCache(caiShaderTimeCachePath, caiShaderTimeCache);
+        //测试会因为地址原因报错
+    }
+
     return shaderModules;
 }
 

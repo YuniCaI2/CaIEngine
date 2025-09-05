@@ -34,7 +34,7 @@ namespace FrameWork {
         FrameWork::MeshData processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene, std::string, TextureTypeFlags textureFlags);
         TextureFullData CreateDefaultTexture(TextureTypeFlagBits textureFlagBits);
 
-        void SaveCache(const std::string& filePath) const;
+        void SaveCache(const std::string& filePath, const ShaderTimeCache& shaderTimeCache) const;
         ShaderTimeCache LoadShaderCache(const std::string& filePath) const;
 
         void CompileShader(const std::string& filepath) const;

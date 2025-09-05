@@ -103,6 +103,15 @@ void testGetShaderModule() {
    }
 }
 
+void testCreatePipeline() {
+   TRACE("Test CreatePipeline");
+   uint32_t pipelineID = -1;
+   auto shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(
+      pipelineID, testFilePath, RenderPassType::Forward
+      );
+   DEBUG("会报关于没有释放descriptorSetLayout的错，因为我为了集中性将DescriptorSetLayout的管理封装给了slot，得后续处理");
+};
+
 int main(){
    LOG.Run();
    vulkanRenderAPI.initVulkan();
@@ -123,7 +132,9 @@ int main(){
    // testShaderStateSet(code);
    // testTranslate(code);
    // testGetShaderInfo(code);
-   testGetShaderModule();
+   // testGetShaderModule();
+   testCreatePipeline();
+
    vulkanRenderAPI.DestroyAll();
    LOG.Stop();
 }

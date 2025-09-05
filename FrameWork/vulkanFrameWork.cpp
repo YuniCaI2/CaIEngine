@@ -277,12 +277,10 @@ bool vulkanFrameWork::initVulkan() {
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
     vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
-    deviceProperties.limits.
 
 
 
     //给派生类接口可以添加特性
-    getEnabledFeatures();
     //设置各项异性
     if (deviceFeatures.samplerAnisotropy) {
         enabledFeatures.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
@@ -1377,6 +1375,8 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::str
         .pAttachments = vulkanPipelineInfo->colorBlendAttachmentStates.data(),
     };
 
+
+
     VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext = nullptr,
@@ -1403,7 +1403,7 @@ void vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::str
 }
 
 FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
-    RenderPassType renderPassType, bool onlyFrame,uint32_t subpass, uint32_t width, uint32_t height) {
+    RenderPassType renderPassType, uint32_t subpass, uint32_t width, uint32_t height) {
     //获取到ShaderModules
     FrameWork::ShaderInfo shaderInfo = {};
     auto shaderModules = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
@@ -1504,7 +1504,107 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     auto inputAssembly = SetPipelineInputAssembly();
     auto rasterization = SetRasterization(shaderInfo);
 
+    auto bindingDescription = FrameWork::Vertex::getBindingDescription();
+    auto attributeDescriptions = FrameWork::Vertex::getAttributeDescription();
 
+    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .vertexBindingDescriptionCount = 1,
+        .pVertexBindingDescriptions = &bindingDescription,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+        .pVertexAttributeDescriptions = attributeDescriptions.data()
+    };
+
+    VkViewport viewport = {
+        .x = 0,
+        .y = 0,
+        .width = (float)width,
+        .height = (float)height,
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
+    };
+
+    VkRect2D scissor = {
+        .offset = VkOffset2D(0, 0),
+        .extent = VkExtent2D((width == -1 ? windowWidth : width),
+            (height == -1 ? windowHeight : height))
+    };
+
+
+    VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .viewportCount = 1,
+        .pViewports = &viewport,
+        .scissorCount = 1,
+        .pScissors = &scissor
+    };
+
+    std::vector dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .dynamicStateCount = 1,
+        .pDynamicStates = dynamicStates.data()
+    };
+
+    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .rasterizationSamples = (renderPassType == RenderPassType::MsaaForward) ? VK_SAMPLE_COUNT_1_BIT : msaaSamples,
+        .sampleShadingEnable = VK_FALSE,
+        .minSampleShading = 0,
+    };
+
+    std::vector blendAttachments((renderPassType ==  RenderPassType::GBuffer ? 3 : 1), colorBlendState);
+
+    VkPipelineColorBlendStateCreateInfo colorBlending = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY,
+        .attachmentCount = static_cast<uint32_t>(blendAttachments.size()),
+        .pAttachments = blendAttachments.data(),
+    };
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stageCount = static_cast<uint32_t>(shaderModuleInfos.size()),
+        .pStages = shaderModuleInfos.data(),
+        .pVertexInputState = shaderInfo.shaderState.inputVertex ? &vertexInputStateCreateInfo : nullptr,
+        .pInputAssemblyState = &inputAssembly,
+        .pTessellationState = nullptr,
+        .pViewportState = &viewportStateCreateInfo,
+        .pRasterizationState = &rasterization,
+        .pMultisampleState = &multisampleStateCreateInfo,
+        .pDepthStencilState = &depthStencilState,
+        .pColorBlendState = &colorBlending,
+        .pDynamicState = &dynamicState,
+        .layout = pipeline->pipelineLayout,
+        .renderPass = renderPassTable[renderPassType],
+        .subpass = subpass,
+    };
+    VK_CHECK_RESULT(
+        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline->pipeline)
+        );
+    for (auto& shaderModule : shaderModules ){
+        vkDestroyShaderModule(
+            device, shaderModule.second, nullptr
+            );
+    }
+    return shaderInfo;
 }
 
 

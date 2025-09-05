@@ -209,6 +209,7 @@ enum class FaceCullOption {
 enum class RenderPassType {
     Present,
     Forward,
+    MsaaForward,
     Normal,
     Color,
     GBuffer,
