@@ -4,6 +4,7 @@
 
 #ifndef PUBLICENUM_H
 #define PUBLICENUM_H
+#include<iostream>
 
 enum class MouseButton {
     Mid,

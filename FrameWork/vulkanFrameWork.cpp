@@ -277,6 +277,7 @@ bool vulkanFrameWork::initVulkan() {
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
     vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
+    deviceProperties.limits.
 
 
 

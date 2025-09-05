@@ -112,6 +112,13 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
                 return shaderStateSet;
             }
             shaderStateSet.polygonMode = polygonModeMap[words[1]];
+        }else if (words[0] == "InputVertex") {
+            if (words[1] != "Off" && words[1] != "On") {
+                WARNING("The InputVertex is wrong, use default state set");
+                return shaderStateSet;
+            }
+            shaderStateSet.inputVertex = words[1] == "On";
+            //  是否输入顶点
         }
         else {
             WARNING("Can't find suitable operation for {}", words[0]);

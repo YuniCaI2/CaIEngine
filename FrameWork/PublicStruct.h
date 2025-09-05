@@ -294,6 +294,7 @@ namespace FrameWork {
         PolygonMode polygonMode = PolygonMode::Fill;//这里为了区分渲染是直线还是填充
         //渲染队列，这里先不加
         bool depthWrite = true;
+        bool inputVertex = true;
     };
 
     struct ShaderProperty {
