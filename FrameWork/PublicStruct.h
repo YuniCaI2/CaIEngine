@@ -330,6 +330,16 @@ namespace FrameWork {
         ShaderInfo shaderInfo;
     };
 
+    struct MaterialData { //用来存储Vulkan中的资源
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts; //此处仅仅只是一个引用不管理其生命周期
+        std::vector<VkDescriptorSet> descriptorSets;
+        std::vector<Buffer> vertexUniformBuffers; //和descriptorSet对应
+        std::vector<Buffer> fragmentUniformBuffers;
+        //等到需要使用几何着色器的时候进行添加
+
+        bool inUse = false;
+    };
+
 }
 
 

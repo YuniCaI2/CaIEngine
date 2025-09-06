@@ -171,7 +171,7 @@ void FrameWork::ShaderParse::SetUpPropertiesStd140(ShaderInfo &shaderInfo) {
             if (padding == 0) {
                 property.offset = offset;
             }else {
-                property.offset = offset - padding + alignInfo.alignment;
+                property.offset = offset - padding + alignInfo.alignment; //这里是offset的开头
             }
 
             //现在的offset是当前轮property的结尾

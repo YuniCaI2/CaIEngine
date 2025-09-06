@@ -77,14 +77,10 @@ void vulkanFrameWork::RecreateAllWindowFrameBuffers() {
     ReCreateAttachment();
     for (uint32_t i = 0; i < vulkanFBOs.size(); i++) {
         if (vulkanFBOs[i]->inUse && vulkanFBOs[i]->isFollowWindow) {
-            if (vulkanFBOs[i]->isPresent) {
-                RecreatePresentFrameBuffer(i);
-
-            }else {
-                RecreateFrameBuffer(i);
-            }
+            RecreateFrameBuffer(i);
         }
     }
+    RecreatePresentFrameBuffer(presentFrameBuffer);
 }
 
 
@@ -428,6 +424,12 @@ void vulkanFrameWork::DestroyAll() {
     for (auto& slot : slots_) {
         delete slot;
     }
+
+    //清理presentFrameBuffer
+    for (auto& fbo : presentFrameBuffer->framebuffers) {
+        vkDestroyFramebuffer(device, fbo, nullptr);
+    }
+
     // Clean up Vulkan resources
     swapChain.cleanup();
     vulkanDescriptorPool.DestroyDescriptorPool();
@@ -634,6 +636,20 @@ void vulkanFrameWork::CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 
     //删除中转内存
     stagingBuffer.destroy();
+}
+
+FrameWork::Buffer vulkanFrameWork::CreateUniformBuffer(const std::vector<FrameWork::ShaderProperty> &properties) {
+    FrameWork::Buffer uniformBuffer{};
+    if (properties.empty()) {
+        ERROR("This Properties are empty. Can't create uniform buffer");
+        return uniformBuffer;
+    }
+    uniformBuffer.size = static_cast<VkDeviceSize>(properties.back().offset + properties.back().size);
+    vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer,
+        uniformBuffer.size, nullptr
+        );
+    uniformBuffer.map();
+    return uniformBuffer;
 }
 
 
@@ -869,32 +885,24 @@ void vulkanFrameWork::CreateFrameBuffer(uint32_t &frameBufferId, const std::vect
     }
 }
 
-void vulkanFrameWork::CreatePresentFrameBuffer(uint32_t &frameBufferId, uint32_t attachment,
-    VkRenderPass renderPass) {
-    auto attachmentObj = getByIndex<FrameWork::VulkanAttachment>(attachment);
-    if (attachmentObj->type != AttachmentType::Present) {
-        std::cerr << "When you use CreatePresentFrameBuffer, you should input atttachment that' s type is Present !" << std::endl;
-        exit(-1);
+void vulkanFrameWork::CreatePresentFrameBuffer(std::unique_ptr<FrameWork::VulkanFBO>& presentFBO, VkRenderPass renderPass) {
+    //存储renderPass，方便重建
+    if (presentFBO == nullptr) {
+        presentFBO = std::make_unique<FrameWork::VulkanFBO>();
+        presentFBO->inUse = true;
     }
-    frameBufferId = getNextIndex<FrameWork::VulkanFBO>();
-    auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
-    fbo->isPresent = true;
-    fbo->inUse = true;
-    fbo->framebuffers.resize(swapChain.imageViews.size());
-    fbo->renderPass = renderPass;
-    fbo->AttachmentsIdx = std::vector {
-        attachment,
-    };
+    presentFBO->renderPass = renderPass;
+    presentFBO->framebuffers.resize(swapChain.imageViews.size());
     for (uint32_t i = 0; i < swapChain.images.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = 1;
-        framebufferInfo.width = getByIndex<FrameWork::VulkanAttachment>(attachment)->width;
-        framebufferInfo.height = getByIndex<FrameWork::VulkanAttachment>(attachment)->height;
+        framebufferInfo.width = windowWidth;
+        framebufferInfo.height = windowHeight;
         framebufferInfo.layers = 1;
-        framebufferInfo.pAttachments = &getByIndex<FrameWork::Texture>(attachmentObj->attachmentsArray[i])->imageView;
-        VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferInfo, nullptr,&fbo->framebuffers[i]));
+        framebufferInfo.pAttachments = &swapChain.imageViews[i];
+        VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &presentFBO->framebuffers[i]));
     }
 }
 
@@ -938,40 +946,13 @@ void vulkanFrameWork::RecreateFrameBuffer(uint32_t &frameBufferId) {
 }
 
 
-void vulkanFrameWork::RecreatePresentFrameBuffer(uint32_t &frameBufferId) {
-    auto fbo = getByIndex<FrameWork::VulkanFBO>(frameBufferId);
-    fbo->inUse = true;
-    // std::cerr << "present FrameBuffer :" << frameBufferId << "         rebuild !" << std::endl;
-
-    // 只销毁framebuffer对象，保留其他数据
-    for (auto& framebuffer : fbo->framebuffers) {
+void vulkanFrameWork::RecreatePresentFrameBuffer(std::unique_ptr<FrameWork::VulkanFBO>& presentFBO) {
+    for (auto& framebuffer : presentFBO->framebuffers) {
         if (framebuffer != VK_NULL_HANDLE) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
     }
-        auto size = fbo->framebuffers.size();
-    fbo->framebuffers.clear();
-    fbo->framebuffers.resize(size);
-
-    auto attachmentObj = getByIndex<FrameWork::VulkanAttachment>(fbo->AttachmentsIdx[0]);
-    fbo->framebuffers.resize(swapChain.imageViews.size());
-
-    for (uint32_t i = 0; i < swapChain.images.size(); i++) {
-        auto& imageView = getByIndex<FrameWork::Texture>(attachmentObj->attachmentsArray[i])->imageView;
-        if (imageView == VK_NULL_HANDLE) {
-            std::cerr << "the imageView is Null Handle here" << std::endl;
-            exit(-1);
-        }
-        VkFramebufferCreateInfo framebufferInfo = {};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = fbo->renderPass;
-        framebufferInfo.attachmentCount = 1;
-        framebufferInfo.width = windowWidth;
-        framebufferInfo.height = windowHeight;
-        framebufferInfo.layers = 1;
-        framebufferInfo.pAttachments = &imageView;
-        VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &fbo->framebuffers[i]));
-    }
+    CreatePresentFrameBuffer(presentFBO, presentFBO->renderPass);
 }
 
 void vulkanFrameWork::RegisterRenderPass(VkRenderPass renderPass, const std::string &name) {
@@ -1749,9 +1730,8 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
     auto presentDescriptorLayout = CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
     RegisterDescriptorSetLayout(presentDescriptorLayout, "presentDescriptorLayout");
 
-    uint32_t attachment = -1;
-    CreateAttachment(attachment, windowWidth, windowHeight, AttachmentType::Present, VK_SAMPLE_COUNT_1_BIT, false);
-    CreatePresentFrameBuffer(presentFrameBufferIndex, attachment, presentRenderPass);
+    CreatePresentFrameBuffer(presentFrameBuffer, presentRenderPass);
+
     //管线的创建 ---------------------------------------------------------------------------------------------------------
 
     uint32_t presentPipelineInfoIdx = 0;
@@ -1839,7 +1819,7 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext = nullptr,
         .renderPass = GetRenderPass("presentRenderPass"),
-        .framebuffer = getByIndex<FrameWork::VulkanFBO>(presentFrameBufferIndex)->framebuffers[imageIndex],
+        .framebuffer = presentFrameBuffer->framebuffers[imageIndex],
         .renderArea = {
             .offset = {0, 0},
             .extent = {
@@ -1919,8 +1899,82 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, const std::vector<Fr
     }
 }
 
+void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
+    auto shaderRef = caiMaterial.GetShader();
+    if (shaderRef.expired()) {
+        ERROR("This Material didn't bind the shader or the shader has been destroyed");
+        return;
+    }
+    caiMaterial.dataID = getNextIndex<FrameWork::MaterialData>();
+    auto materialData = getByIndex<FrameWork::MaterialData>(caiMaterial.dataID);
+    materialData->inUse = true;
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef.lock()->GetPipelineID());
+    auto shaderInfo = shaderRef.lock()->GetShaderInfo();
+
+
+    materialData->vertexUniformBuffers.resize(MAX_FRAME);
+    materialData->fragmentUniformBuffers.resize(MAX_FRAME);
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        if(!shaderInfo.vertProperties.baseProperties.empty()) {
+            materialData->vertexUniformBuffers[i] =
+                CreateUniformBuffer(shaderInfo.vertProperties.baseProperties);
+        }
+        if (!shaderInfo.fragProperties.baseProperties.empty()) {
+            materialData->fragmentUniformBuffers[i] =
+                CreateUniformBuffer(shaderInfo.fragProperties.baseProperties);
+        }
+    }
+
+    //AllocateDescriptorSet
+    materialData->descriptorSets.resize(MAX_FRAME);
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        vulkanDescriptorPool.AllocateDescriptorSet(pipeline->descriptorSetLayouts.back(),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, materialData->descriptorSets[i]
+            );
+
+        if (!materialData->vertexUniformBuffers.empty()) {
+            VkWriteDescriptorSet descriptorWrite = {
+               .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+               .pNext = nullptr,
+               .dstSet = materialData->descriptorSets[i],
+               .dstBinding = shaderInfo.vertProperties.baseProperties[0].binding, //绑定点是首位
+               .dstArrayElement = 0,
+               .descriptorCount = 1,
+               .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+               .pImageInfo = nullptr,
+               .pBufferInfo = &materialData->vertexUniformBuffers[i].descriptor,
+            };
+            descriptorWrites.push_back(descriptorWrite);
+        }
+
+        if (!materialData->fragmentUniformBuffers.empty()) {
+            VkWriteDescriptorSet descriptorWrite = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = materialData->descriptorSets[i],
+                .dstBinding = shaderInfo.fragProperties.baseProperties[0].binding,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &materialData->fragmentUniformBuffers[i].descriptor,
+            };
+            descriptorWrites.push_back(descriptorWrite);
+        }
+
+        vkUpdateDescriptorSets(device,
+            static_cast<uint32_t>(descriptorWrites.size()),
+            descriptorWrites.data(), 0, nullptr
+            );
+
+        //对于纹理，后续需要添加鲁棒性，可以使用一个默认纹理来防止验证层报错
+    }
+
+}
+
 void vulkanFrameWork::UpdateUniformBuffer(const std::vector<FrameWork::Buffer> &uniformBuffer, const std::vector<void *> &data,
-    const std::vector<uint32_t>& sizes, uint32_t offset) {//这里
+                                          const std::vector<uint32_t>& sizes, uint32_t offset) {//这里
     for (int i = 0 ; i < uniformBuffer.size(); i++) {
         memcpy(static_cast<char*>(uniformBuffer[i].mapped) + offset, data[i], sizes[i]);
     }
@@ -2296,6 +2350,51 @@ VkSampleCountFlagBits vulkanFrameWork::GetSampleCount() const {
     return msaaSamples;
 }
 
+void vulkanFrameWork::DeleteTexture(uint32_t id) {
+    if (id < textures.size() && textures[id]->inUse) {
+        textureReleaseQueue.emplace_back(id, MAX_FRAME);
+    }
+}
+
+void vulkanFrameWork::DeleteMesh(uint32_t id) {
+    if (id < meshes.size() && meshes[id]->inUse) {
+        meshReleaseQueue.emplace_back(id, MAX_FRAME);
+    }
+}
+
+void vulkanFrameWork::DeleteAttachment(uint32_t id) {
+    if (id < attachmentBuffers.size() && attachmentBuffers[id]->inUse) {
+        attachmentReleaseQueue.emplace_back(id, MAX_FRAME);
+    }
+}
+
+void vulkanFrameWork::DeleteFBO(uint32_t id) {
+    if (id < vulkanFBOs.size() && vulkanFBOs[id]->inUse) {
+        fboReleaseQueue.emplace_back(id, MAX_FRAME);
+    }
+}
+
+void vulkanFrameWork::DeletePipeline(uint32_t id) {
+    if (id < vulkanPipelines.size() && vulkanPipelines[id]->inUse) {
+        pipelineReleaseQueue.emplace_back(id, MAX_FRAME);
+    }
+}
+
+void vulkanFrameWork::DeleteMaterialData(uint32_t id) {
+    if (id < materialDatas_.size() && materialDatas_[id]->inUse) {
+        materialDataReleaseQueue.emplace_back(id, MAX_FRAME);
+    }
+}
+
+void vulkanFrameWork::CheckDelete() {
+    processReleaseQueue<FrameWork::Texture>(textureReleaseQueue);
+    processReleaseQueue<FrameWork::Mesh>(meshReleaseQueue);
+    processReleaseQueue<FrameWork::VulkanAttachment>(attachmentReleaseQueue);
+    processReleaseQueue<FrameWork::VulkanFBO>(fboReleaseQueue);
+    processReleaseQueue<FrameWork::VulkanPipeline>(pipelineReleaseQueue);
+    processReleaseQueue<FrameWork::MaterialData>(materialDataReleaseQueue);
+}
+
 void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {
     windowResizedCallbacks.push_back(callback);
 }
@@ -2654,6 +2753,7 @@ void vulkanFrameWork::submitFrame() {
         VK_CHECK_RESULT(result);
     }
     vulkanDescriptorPool.ClearPendingQueue();
+    CheckDelete(); //帧尾释放一定资源
 
     currentFrame = (currentFrame + 1) % MAX_FRAME;
 }

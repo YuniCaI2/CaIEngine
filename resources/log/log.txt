@@ -34,3 +34,39 @@
 [Debug] [2025-08-30 06:16:54.846892] : "Debug test123344" 
  from [file: /Users/yunicai/Code_file/CaIEngine/test/LoggerTest.cpp line: 10] 
 
+[Error] [2025-09-06 03:35:18.2962542] : "Error test 1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 7] 
+
+[Warn] [2025-09-06 03:35:18.2962663] : "Warning test1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 8] 
+
+[Trace] [2025-09-06 03:35:18.2962687] : "Trace test1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 9] 
+
+[Debug] [2025-09-06 03:35:18.2962710] : "Debug test123344" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 10] 
+
+[Error] [2025-09-06 03:35:28.8528887] : "Error test 1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 7] 
+
+[Warn] [2025-09-06 03:35:28.8528992] : "Warning test1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 8] 
+
+[Trace] [2025-09-06 03:35:28.8529015] : "Trace test1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 9] 
+
+[Debug] [2025-09-06 03:35:28.8529038] : "Debug test123344" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 10] 
+
+[Error] [2025-09-06 03:36:10.8292617] : "Error test 1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 7] 
+
+[Warn] [2025-09-06 03:36:10.8292719] : "Warning test1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 8] 
+
+[Trace] [2025-09-06 03:36:10.8292744] : "Trace test1234" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 9] 
+
+[Debug] [2025-09-06 03:36:10.8292766] : "Debug test123344" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 10] 
+
