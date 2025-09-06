@@ -14,13 +14,14 @@ FrameWork::CaIMaterial::CaIMaterial(std::weak_ptr<CaIShader> shader) {
 }
 
 FrameWork::CaIMaterial::~CaIMaterial() {
-    vulkanRenderAPI.DeleteMaterialData(dataID);
+    if (dataID != UINT32_MAX)
+        vulkanRenderAPI.DeleteMaterialData(dataID);
 }
 
 void FrameWork::CaIMaterial::SetTexture(const std::string &name,uint32_t id) const {
     //Update DescriptorSet
     if (shaderRef.expired()) {
-        ERROR("Failed to set texture for material \"{}\" ", name);
+        LOG_ERROR("Failed to set texture for material \"{}\" ", name);
         return;
     }
     auto shaderInfo = shaderRef.lock()->GetShaderInfo();
@@ -43,11 +44,11 @@ void FrameWork::CaIMaterial::SetTexture(const std::string &name,uint32_t id) con
 
     auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(id);
     if (texture == nullptr) {
-        ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
+        LOG_ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
         return;
     }
     if (texture->inUse == false) {
-        ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
+        LOG_ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
         return;
     }
     for (auto& set : materialData->descriptorSets) {
@@ -74,7 +75,7 @@ void FrameWork::CaIMaterial::SetTexture(const std::string &name,uint32_t id) con
 void FrameWork::CaIMaterial::SetAttachment(const std::string &name, uint32_t id) const {
     //Update DescriptorSet
     if (shaderRef.expired()) {
-        ERROR("Failed to set texture for material \"{}\" ", name);
+        LOG_ERROR("Failed to set texture for material \"{}\" ", name);
         return;
     }
     auto shaderInfo = shaderRef.lock()->GetShaderInfo();
@@ -97,11 +98,11 @@ void FrameWork::CaIMaterial::SetAttachment(const std::string &name, uint32_t id)
 
     auto attachment = vulkanRenderAPI.getByIndex<FrameWork::VulkanAttachment>(id);
     if (attachment == nullptr) {
-        ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
+        LOG_ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
         return;
     }
     if (attachment->inUse == false) {
-        ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
+        LOG_ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
         return;
     }
     for (int i = 0; i < materialData->descriptorSets.size(); i++) {
@@ -132,7 +133,7 @@ std::weak_ptr<FrameWork::CaIShader> FrameWork::CaIMaterial::GetShader() const{
 
 void FrameWork::CaIMaterial::Bind(const VkCommandBuffer &cmdBuffer) const {
     if (shaderRef.expired()) {
-        ERROR("Failed to Bind Material, because it's shader has been destroyed");
+        LOG_ERROR("Failed to Bind Material, because it's shader has been destroyed");
     }
     auto vulkanPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(shaderRef.lock()->GetPipelineID());
     auto materialData = vulkanRenderAPI.getByIndex<FrameWork::MaterialData>(dataID);

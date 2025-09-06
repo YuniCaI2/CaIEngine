@@ -13,7 +13,8 @@ FrameWork::CaIShader::CaIShader(const std::string &shaderPath, RenderPassType re
 
 FrameWork::CaIShader::~CaIShader() {
     //释放的方式押入释放队列，因为多飞行帧的原因不能立刻释放资源，释放队列由vulkanRenderAPI管理
-    vulkanRenderAPI.DeletePipeline(pipelineID);
+    if (pipelineID != UINT32_MAX)
+        vulkanRenderAPI.DeletePipeline(pipelineID);
 }
 
 void * FrameWork::CaIShader::GetShaderPropertyAddress(uint32_t materialDataID, const std::string &name, uint32_t id) {
@@ -31,7 +32,7 @@ void * FrameWork::CaIShader::GetShaderPropertyAddress(uint32_t materialDataID, c
             (materialData->fragmentUniformBuffers[vulkanRenderAPI.currentFrame].mapped) + property.offset + property.arrayOffset * id;
         }
     }
-    ERROR("Can't find shader property name : {}", name);
+    LOG_ERROR("Can't find shader property name : {}", name);
     return nullptr;
 }
 

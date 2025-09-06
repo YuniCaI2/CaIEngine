@@ -222,10 +222,10 @@ private:
 };
 
 #define LOG Logger::GetInstance()
-#define ERROR(fmt, ...) LOG.Error(std::source_location::current(), fmt, ##__VA_ARGS__)
-#define WARNING(fmt, ...) LOG.Warn(std::source_location::current(), fmt, ##__VA_ARGS__)
-#define TRACE(fmt, ...) LOG.Trace(std::source_location::current(), fmt, ##__VA_ARGS__)
-#define DEBUG(fmt, ...) LOG.DeBug(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LOG.Error(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define LOG_WARNING(fmt, ...) LOG.Warn(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define LOG_TRACE(fmt, ...) LOG.Trace(std::source_location::current(), fmt, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) LOG.DeBug(std::source_location::current(), fmt, ##__VA_ARGS__)
 
 
 #endif //LOGGER_H

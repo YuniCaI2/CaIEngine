@@ -101,6 +101,8 @@ protected:
     std::unique_ptr<FrameWork::VulkanFBO> presentFrameBuffer{};
     uint32_t presentPipelineIndex{0};
     uint32_t presentColorAttachmentID = -1;
+    std::shared_ptr<FrameWork::CaIShader> presentShader;
+    FrameWork::CaIMaterial presentMaterial;
     std::vector<uint32_t> presentSlotIDs;
 
     //同步信号量

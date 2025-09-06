@@ -20,6 +20,7 @@
 
 #include <stb_image.h>
 #include <filesystem>
+#include "Logger.h"
 
 
 void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
@@ -165,7 +166,7 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
 void FrameWork::Resource::SaveCache(const std::string &filePath, const ShaderTimeCache& shaderTimeCache) const {
     std::ofstream file(filePath, std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
-        ERROR("Failed to open file {}", filePath);
+        LOG_ERROR("Failed to open file {}", filePath);
     }
     for (const auto &[pathStr, time]: shaderTimeCache) {
         uint32_t pathLen = pathStr.length();
@@ -588,7 +589,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
         ifCompile = IfCompile(filePath, caiShaderTimeCache[filePath]);
     }
     if (!testFile.is_open()) {
-        ERROR("Failed to open test file from: {}", filePath);
+        LOG_ERROR("Failed to open test file from: {}", filePath);
     }
     std::stringstream ss;
     ss << testFile.rdbuf();
@@ -599,14 +600,14 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
     bool hasVertex = ! vert.empty();
     bool hasFrag = ! frag.empty();
     if (!hasVertex && !hasFrag) {
-        ERROR("Vertex and fragment shader not found in file: {}", filePath);
+        LOG_ERROR("Vertex and fragment shader not found in file: {}", filePath);
         return {};
     }
     if (! hasVertex) {
-        WARNING("Vertex shader not found in file: {}", filePath);
+        LOG_WARNING("Vertex shader not found in file: {}", filePath);
     }
     if (! hasFrag) {
-        WARNING("Fragment shader not found in file: {}", filePath);
+        LOG_WARNING("Fragment shader not found in file: {}", filePath);
     }
     std::string vulkanVertCode{} , vulkanFragCode{};
     std::filesystem::path vulkanShaderPath = std::filesystem::path(filePath).parent_path();
@@ -616,7 +617,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
             vulkanVertCode = ShaderParse::TranslateToVulkan(vert, shaderInfo.vertProperties);
             std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".vert");
             if (! vulkanVertShaderFile.is_open()) {
-                ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
+                LOG_ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
                 return {};
             }
             vulkanVertShaderFile << vulkanVertCode;
@@ -631,7 +632,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
             vulkanFragCode = ShaderParse::TranslateToVulkan(frag, shaderInfo.fragProperties);
             std::ofstream vulkanFragShaderFile(vulkanShaderPath.string() + ".frag");
             if (! vulkanFragShaderFile.is_open()) {
-                ERROR("Failed to open fragment shader file: {}", vulkanShaderPath.string());
+                LOG_ERROR("Failed to open fragment shader file: {}", vulkanShaderPath.string());
                 return {};
             }
             vulkanFragShaderFile << vulkanFragCode;

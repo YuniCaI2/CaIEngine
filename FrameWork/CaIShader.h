@@ -13,6 +13,12 @@ namespace FrameWork {
         CaIShader(const std::string& shaderPath, RenderPassType renderPassType);
         ~CaIShader();
 
+        CaIShader() = default;
+        CaIShader(const CaIShader&) = delete;
+        CaIShader& operator=(const CaIShader&) = delete;
+        CaIShader(CaIShader&&) = default;
+        CaIShader& operator=(CaIShader&&) = default;
+
         void* GetShaderPropertyAddress(uint32_t materialDataID, const std::string& name, uint32_t id = 0);//得到对应的地址方便映射
 
         void Bind(const VkCommandBuffer& cmdBuffer) const;
@@ -22,7 +28,7 @@ namespace FrameWork {
     private:
         std::string shaderPath{};
         ShaderInfo shaderInfo{};
-        uint32_t pipelineID{};
+        uint32_t pipelineID{UINT32_MAX};
     };
 }
 

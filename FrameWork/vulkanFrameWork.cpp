@@ -641,7 +641,7 @@ void vulkanFrameWork::CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 FrameWork::Buffer vulkanFrameWork::CreateUniformBuffer(const std::vector<FrameWork::ShaderProperty> &properties) {
     FrameWork::Buffer uniformBuffer{};
     if (properties.empty()) {
-        ERROR("This Properties are empty. Can't create uniform buffer");
+        LOG_ERROR("This Properties are empty. Can't create uniform buffer");
         return uniformBuffer;
     }
     uniformBuffer.size = static_cast<VkDeviceSize>(properties.back().offset + properties.back().size);
@@ -1387,9 +1387,9 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     RenderPassType renderPassType, uint32_t subpass, uint32_t width, uint32_t height) {
     //获取到ShaderModules
     FrameWork::ShaderInfo shaderInfo = {};
-    auto shaderModules = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
+    auto shaderModulePackages = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
-        ERROR("The CreateVulkanPipeline Func can't create computer Shader Pipeline !");
+        LOG_ERROR("The CreateVulkanPipeline Func can't create computer Shader Pipeline !");
     }
     //获取VulkanPipeline容器
     pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
@@ -1479,7 +1479,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         );
 
     //根据ShaderState创建管线
-    auto shaderModuleInfos = SetPipelineShaderStageInfo(shaderModules);
+    auto shaderModuleInfos = SetPipelineShaderStageInfo(shaderModulePackages);
     auto colorBlendState = SetPipelineColorBlendAttachment(shaderInfo);
     auto depthStencilState = SetDepthStencil(shaderInfo);
     auto inputAssembly = SetPipelineInputAssembly();
@@ -1541,7 +1541,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .rasterizationSamples = (renderPassType == RenderPassType::MsaaForward) ? VK_SAMPLE_COUNT_1_BIT : msaaSamples,
+        .rasterizationSamples = (renderPassType != RenderPassType::MsaaForward) ? VK_SAMPLE_COUNT_1_BIT : msaaSamples,
         .sampleShadingEnable = VK_FALSE,
         .minSampleShading = 0,
     };
@@ -1580,7 +1580,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     VK_CHECK_RESULT(
         vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline->pipeline)
         );
-    for (auto& shaderModule : shaderModules ){
+    for (auto& shaderModule : shaderModulePackages ){
         vkDestroyShaderModule(
             device, shaderModule.second, nullptr
             );
@@ -1795,6 +1795,12 @@ void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t
 
     //管线创建------------------------------------------------------------------------------------------------------------
 
+    presentShader = std::make_shared<FrameWork::CaIShader>(
+        "../resources/CaIShaders/Present/present.caishader", RenderPassType::Present
+        );
+    presentMaterial = FrameWork::CaIMaterial(presentShader);
+    presentMaterial.SetAttachment("colorTexture", colorAttachmentID);
+
     auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
     presentColorAttachmentID = colorAttachmentID;
     presentSlotIDs.resize(colorAttachment->attachmentsArray.size());
@@ -1844,10 +1850,12 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent.height = windowHeight;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipeline);
-    auto presentSlot = slots_[presentSlotIDs[GetCurrentFrame()]];
-    presentSlot->Bind(commandBuffer,  getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipelineLayout, 0);
+    // vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    // vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipeline);
+    // auto presentSlot = slots_[presentSlotIDs[GetCurrentFrame()]];
+    // presentSlot->Bind(commandBuffer,  getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipelineLayout, 0);
+    presentShader->Bind(commandBuffer);
+    presentMaterial.Bind(commandBuffer);
     //呈现的顶点硬编码在着色器中
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
@@ -1902,7 +1910,7 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, const std::vector<Fr
 void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
     auto shaderRef = caiMaterial.GetShader();
     if (shaderRef.expired()) {
-        ERROR("This Material didn't bind the shader or the shader has been destroyed");
+        LOG_ERROR("This Material didn't bind the shader or the shader has been destroyed");
         return;
     }
     caiMaterial.dataID = getNextIndex<FrameWork::MaterialData>();
@@ -1912,8 +1920,12 @@ void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
     auto shaderInfo = shaderRef.lock()->GetShaderInfo();
 
 
-    materialData->vertexUniformBuffers.resize(MAX_FRAME);
-    materialData->fragmentUniformBuffers.resize(MAX_FRAME);
+    if (!shaderInfo.vertProperties.baseProperties.empty()) {
+        materialData->vertexUniformBuffers.resize(MAX_FRAME);
+    }
+    if (!shaderInfo.fragProperties.baseProperties.empty()) {
+        materialData->fragmentUniformBuffers.resize(MAX_FRAME);
+    }
     for (uint32_t i = 0; i < MAX_FRAME; i++) {
         if(!shaderInfo.vertProperties.baseProperties.empty()) {
             materialData->vertexUniformBuffers[i] =
@@ -2521,6 +2533,7 @@ void vulkanFrameWork::setupRenderPass() {
         VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 
         renderPasses["forward"] = renderPass;
+        renderPassTable[RenderPassType::Forward] = renderPass;
     }
 
     //MSAA
@@ -2612,7 +2625,68 @@ void vulkanFrameWork::setupRenderPass() {
 
         VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
         renderPasses["forwardMSAA"] = renderPass;
-        renderPassTable[RenderPassType::Forward] = renderPass;
+        renderPassTable[RenderPassType::MsaaForward] = renderPass;
+    }
+    //Present
+    {
+        VkAttachmentDescription colorAttachmentDescription = {
+            .flags = 0,
+            .format = swapChain.colorFormat,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        VkAttachmentReference colorAttachmentRef = {
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        };
+        std::vector colorAttachments = {
+            colorAttachmentRef,
+        };
+
+        VkSubpassDescription subpassDescription = {
+            .flags = 0,
+            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+            .inputAttachmentCount = 0,
+            .pInputAttachments = nullptr,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = colorAttachments.data(),
+            .pResolveAttachments = nullptr,
+            .pDepthStencilAttachment = nullptr,
+            .preserveAttachmentCount = 0,
+            .pPreserveAttachments = nullptr
+        };
+
+        VkSubpassDependency dependency = {
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+            .dependencyFlags = 0
+        };
+
+        VkRenderPassCreateInfo renderPassInfo = {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .attachmentCount = 1,
+            .pAttachments = &colorAttachmentDescription,
+            .subpassCount = 1,
+            .pSubpasses = &subpassDescription,
+            .dependencyCount = 1,
+            .pDependencies = &dependency
+        };
+
+        VkRenderPass presentRenderPass = VK_NULL_HANDLE;
+        VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &presentRenderPass));
+        renderPassTable[RenderPassType::Present] = presentRenderPass;
     }
 
 }

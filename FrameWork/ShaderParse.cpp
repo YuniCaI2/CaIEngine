@@ -16,7 +16,7 @@ FrameWork::ShaderInfo FrameWork::ShaderParse::GetShaderInfo(const std::string &c
     info.fragProperties = GetShaderProperties(fragCode);
     info.shaderTypeFlags = ShaderType::Vertex | ShaderType::Frag;
     SetUpPropertiesStd140(info);
-    return info;//
+    return info;
 }
 
 void FrameWork::ShaderParse::ParseShaderCode(const std::string &code, std::string &vert, std::string &frag) {
@@ -28,7 +28,7 @@ FrameWork::ShaderPropertiesInfo FrameWork::ShaderParse::GetShaderProperties(cons
     ShaderPropertiesInfo propertiesInfo{};
     auto propertiesBlock = GetCodeBlock(code, "Properties");
     if (propertiesBlock.empty()) {
-        WARNING("the property is empty!");
+        LOG_WARNING("the property is empty!");
         return propertiesInfo;
     }
     auto lines = SplitString(propertiesBlock, '\n');
@@ -43,7 +43,7 @@ FrameWork::ShaderPropertiesInfo FrameWork::ShaderParse::GetShaderProperties(cons
         }else {
             auto iter = shaderPropertyMap.find(words[0]);
             if (iter == shaderPropertyMap.end()) {
-                ERROR("Invalid shader property type of {}", words[0]);
+                LOG_ERROR("Invalid shader property type of {}", words[0]);
             }else {
                 auto type = iter->second;
                 ShaderProperty shaderProperty = {};
@@ -64,6 +64,7 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
     ShaderStateSet shaderStateSet{};
     std::string settingBlock = GetCodeBlock(code, "Settings");
     if (settingBlock.empty()) {
+        LOG_WARNING("The settings block is empty!, Make Sure Settings not Setting");
         return shaderStateSet;//传回默认设置
     }
     auto lines = SplitString(settingBlock, '\n');
@@ -76,7 +77,7 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
         }else if (words[0] == "Blend") {
             if (blendFactorMap.find(words[1]) == blendFactorMap.end() ||
                 blendFactorMap.find(words[2]) == blendFactorMap.end()) {
-                WARNING("The blend factor is wrong, use default state set");
+                LOG_WARNING("The blend factor is wrong, use default state set");
                 return shaderStateSet;
             }else {
                 shaderStateSet.srcBlendFactor = blendFactorMap[words[1]];
@@ -84,44 +85,44 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
             }
         }else if (words[0] == "BlendOp") {
             if (blendOptionMap.find(words[1]) == blendOptionMap.end()) {
-                WARNING("The blend option is wrong, use default state set");
+                LOG_WARNING("The blend option is wrong, use default state set");
                 return shaderStateSet;
             }
             shaderStateSet.blendOp = blendOptionMap[words[1]];
         }else if (words[0] == "Cull") {
             if (faceCullOptionMap.find(words[1]) == faceCullOptionMap.end()) {
-                WARNING("The cull option is wrong, use default state set");
+                LOG_WARNING("The cull option is wrong, use default state set");
                 return shaderStateSet;
             }
             shaderStateSet.faceCullOp = faceCullOptionMap[words[1]];
         }else if (words[0] == "ZTest") {
             if (depthTestOptionMap.find(words[1]) == depthTestOptionMap.end()) {
-                WARNING("The ztest option is wrong, use default state set");
+                LOG_WARNING("The ztest option is wrong, use default state set");
                 return shaderStateSet;
             }
             shaderStateSet.depthCompareOp = depthTestOptionMap[words[1]];
         }else if (words[0] == "ZWrite") {
             if (words[1] != "Off" && words[1] != "On") {
-                WARNING("The zwrite option is wrong, use default state set");
+                LOG_WARNING("The zwrite option is wrong, use default state set");
                 return shaderStateSet;
             }
             shaderStateSet.depthWrite = words[1] == "On";
         }else if (words[0] == "PolygonMode") {
             if (words[1] != "Line" && words[1] != "Fill") {
-                WARNING("The polygon mode is wrong, use default state set");
+                LOG_WARNING("The polygon mode is wrong, use default state set");
                 return shaderStateSet;
             }
             shaderStateSet.polygonMode = polygonModeMap[words[1]];
         }else if (words[0] == "InputVertex") {
             if (words[1] != "Off" && words[1] != "On") {
-                WARNING("The InputVertex is wrong, use default state set");
+                LOG_WARNING("The InputVertex is wrong, use default state set");
                 return shaderStateSet;
             }
             shaderStateSet.inputVertex = words[1] == "On";
             //  是否输入顶点
         }
         else {
-            WARNING("Can't find suitable operation for {}", words[0]);
+            LOG_WARNING("Can't find suitable operation for {}", words[0]);
         }
     }
     return shaderStateSet;
@@ -133,9 +134,15 @@ std::string FrameWork::ShaderParse::GetCodeBlock(const std::string &code, const 
         return "";
 
     //保证开头无有效字符，保证结尾无有效字符
-    if ((begin > 0 && isValidChar(code[begin - 1])) ||
+    // LOG_DEBUG("blockName: {}", blockName);
+    // LOG_DEBUG("code[begin - 1] : {}", code[begin - 1]);
+    // LOG_DEBUG("code[begin + size] : {}", code[begin + blockName.size()]);
+    while ((begin > 0 && isValidChar(code[begin - 1])) ||
         (begin + blockName.size() < code.size() && isValidChar(code[begin + blockName.size()]))) {
-        return "";
+        begin = code.find(blockName, begin + blockName.size());
+        if (begin == std::string::npos) {
+            return "";
+        }
     }
     int level = 0; //表示括号层级
     uint32_t s = 0;
@@ -266,7 +273,7 @@ FrameWork::PropertyAlignInfo FrameWork::ShaderParse::GetPropertyAlignInfoStd140(
             return { .size = std_size * ((arrayLength * 4) * 4),
                 .alignment = std_size * 4, .arrayOffset = std_size * 4 * 4 };
     }else {
-        ERROR("Invalid shader property type!");
+        LOG_ERROR("Invalid shader property type!");
         return {};
     }
 }
@@ -384,7 +391,7 @@ bool FrameWork::ShaderParse::IsBaseProperty(ShaderPropertyType type) {
 
 std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, const ShaderPropertiesInfo &properties) {
     if (code.empty()) {
-        WARNING("Empty code in TranslateToVulkan");
+        LOG_WARNING("Empty code in TranslateToVulkan");
         return "";
     }
     //着色器版本

@@ -1,0 +1,45 @@
+#version 450 core
+
+
+layout(location = 0) out vec2 fragTexCoord;
+
+
+
+    vec2 positions[6] = vec2[](
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 0.0),  // 右下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 1.0)   // 左上
+    );
+
+    // 对应的纹理坐标
+    vec2 texCoords[6] = vec2[](
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 0.0),  // 右下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 1.0)   // 左上
+    );
+
+
+        void main(){
+            // 获取当前顶点索引
+            int vertexIndex = gl_VertexIndex;
+
+            // 获取顶点位置（范围 [0,1]）
+            vec2 pos = positions[vertexIndex];
+
+            // 转换到NDC坐标系 (范围 [-1,1])
+            vec2 ndcPos = pos * 2.0 - 1.0;
+
+            // 设置输出位置
+            gl_Position = vec4(ndcPos, 0.0, 1.0);
+
+            // 传递纹理坐标到片段着色器
+            fragTexCoord = texCoords[vertexIndex];
+
+        }
+    

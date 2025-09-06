@@ -70,3 +70,173 @@
 [Debug] [2025-09-06 03:36:10.8292766] : "Debug test123344" 
  from [file: D:\Visual Studio Project\CaIEngine\test\LoggerTest.cpp line: 10] 
 
+[Warn] [2025-09-06 11:45:54.8621263] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 11:45:54.8622251] : "Vertex shader not found in file: ../resources/CaIShaders/Present/present.caishader" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\Resource.cpp line: 606] 
+
+[Warn] [2025-09-06 11:57:31.4739849] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 11:57:31.4740688] : "Vertex shader not found in file: ../resources/CaIShaders/Present/present.caishader" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\Resource.cpp line: 607] 
+
+[Warn] [2025-09-06 11:59:18.8874291] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 11:59:18.8875105] : "Vertex shader not found in file: ../resources/CaIShaders/Present/present.caishader" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\Resource.cpp line: 607] 
+
+[Warn] [2025-09-06 12:01:16.5634691] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:01:16.5635485] : "Vertex shader not found in file: ../resources/CaIShaders/Present/present.caishader" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\Resource.cpp line: 607] 
+
+[Debug] [2025-09-06 12:08:16.7663672] : "blockName: Vertex" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6911978] : "blockName: Vertex" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6912176] : "code[begin - 1] : t" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6912218] : "code[begin + size] :  " 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Debug] [2025-09-06 12:08:35.6912323] : "blockName: Fragment" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6912354] : "code[begin - 1] : 
+" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6912383] : "code[begin + size] : {" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Warn] [2025-09-06 12:08:35.6912555] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Debug] [2025-09-06 12:08:35.6912806] : "blockName: Properties" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6912835] : "code[begin - 1] :  " 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6912873] : "code[begin + size] : {" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Debug] [2025-09-06 12:08:35.6913620] : "blockName: Vertex" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6913648] : "code[begin - 1] : t" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6913672] : "code[begin + size] :  " 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Debug] [2025-09-06 12:08:35.6913706] : "blockName: Fragment" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6913729] : "code[begin - 1] : 
+" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6913753] : "code[begin + size] : {" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Warn] [2025-09-06 12:08:35.6913902] : "Vertex shader not found in file: ../resources/CaIShaders/Present/present.caishader" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\Resource.cpp line: 607] 
+
+[Debug] [2025-09-06 12:08:35.6914099] : "blockName: Input" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6914124] : "code[begin - 1] :  " 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6914155] : "code[begin + size] : {" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Debug] [2025-09-06 12:08:35.6914433] : "blockName: Output" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6914457] : "code[begin - 1] :  " 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6914485] : "code[begin + size] : {" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Debug] [2025-09-06 12:08:35.6914847] : "blockName: Program" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 136] 
+
+[Debug] [2025-09-06 12:08:35.6914898] : "code[begin - 1] :  " 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 137] 
+
+[Debug] [2025-09-06 12:08:35.6914935] : "code[begin + size] : {" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 138] 
+
+[Warn] [2025-09-06 12:16:00.5326795] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:17:54.6649889] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:23:57.8792971] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:24:08.4421876] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:26:40.6573324] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:34:55.2374548] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:38:50.3135509] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:39:50.8788623] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:41:00.5327871] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:42:33.3372609] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:47:53.7362846] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:54:05.8947724] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 12:54:28.3852957] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:42:19.4331897] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:43:15.5974036] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:43:29.5067679] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:46:26.3844557] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:47:42.3507882] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:48:03.1488326] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:48:57.6905638] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+
+[Warn] [2025-09-06 13:49:45.8598530] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 31] 
+

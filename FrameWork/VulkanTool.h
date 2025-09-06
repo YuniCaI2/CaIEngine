@@ -22,7 +22,7 @@
 VkResult res = (f);                                                         \
 if (res != VK_SUCCESS)                                                      \
 {                                                                           \
-ERROR("vulkan has error ! the res is : {}", static_cast<int>(res)); \
+LOG_ERROR("vulkan has error ! the res is : {}", static_cast<int>(res)); \
 exit(-1);                                              \
 }                                                                           \
 }
