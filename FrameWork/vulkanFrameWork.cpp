@@ -1521,7 +1521,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .dynamicStateCount = 2,
+        .dynamicStateCount = (uint32_t)dynamicStates.size(),
         .pDynamicStates = dynamicStates.data()
     };
 
