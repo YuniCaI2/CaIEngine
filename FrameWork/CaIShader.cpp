@@ -4,6 +4,48 @@
 
 #include "CaIShader.h"
 #include"vulkanFrameWork.h"
+FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::string& shaderPath, RenderPassType renderPassType) {
+    for (int i = 0; i < caiShaderPool.size(); i++) {
+        if (caiShaderPool[i] == nullptr) {
+            id = i;
+            return new FrameWork::CaIShader(shaderPath, renderPassType);
+        }
+    }
+    caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath, renderPassType));
+    id = caiShaderPool.size() - 1;
+    return caiShaderPool.back();
+}
+
+
+void FrameWork::CaIShader::Destroy(uint32_t &id) {
+    if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
+        delete caiShaderPool[id];
+        caiShaderPool[id] = nullptr;
+        return;
+    }
+    LOG_WARNING("Destroy {} is not existed shader", id);
+}
+
+FrameWork::CaIShader * FrameWork::CaIShader::Get(uint32_t id) {
+    if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
+        return caiShaderPool[id];
+    }
+    LOG_ERROR("Trying to access non-existent shader id {}", id);
+    return nullptr;
+}
+
+void FrameWork::CaIShader::DestroyAll() {
+    for (auto& shader: caiShaderPool) {
+        delete shader;
+    }
+}
+
+bool FrameWork::CaIShader::exist(uint32_t id) {
+    if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
+        return true;
+    }
+    return false;
+}
 
 FrameWork::CaIShader::CaIShader(const std::string &shaderPath, RenderPassType renderPassType) {
     //创建Vulkan资源, 得到ShaderInfo，为了后续创建Material所使用

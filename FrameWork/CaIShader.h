@@ -10,6 +10,12 @@
 namespace FrameWork {
     class CaIShader {
     public:
+        static CaIShader* Create(uint32_t& id, const std::string& shaderPath, RenderPassType renderPassType);
+        static void Destroy(uint32_t& id);
+        static CaIShader* Get(uint32_t id);
+        static void DestroyAll();
+        static bool exist(uint32_t id);
+
         CaIShader(const std::string& shaderPath, RenderPassType renderPassType);
         ~CaIShader();
 
@@ -29,6 +35,8 @@ namespace FrameWork {
         std::string shaderPath{};
         ShaderInfo shaderInfo{};
         uint32_t pipelineID{UINT32_MAX};
+
+        inline static std::vector<CaIShader*> caiShaderPool{};
     };
 }
 

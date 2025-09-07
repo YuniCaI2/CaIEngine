@@ -46,6 +46,7 @@ private:
     VkDescriptorSetLayout textureDescriptorSetLayout = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
+
     
     // 场景数据
     bool useMSAA = false;

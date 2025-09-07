@@ -352,7 +352,15 @@ bool vulkanFrameWork::initVulkan() {
     return true;
 }
 
+
+
+
 void vulkanFrameWork::DestroyAll() {
+
+    //手动释放智能指针，因为API是手动释放的
+    FrameWork::CaIShader::DestroyAll();
+    FrameWork::CaIMaterial::DestroyAll();
+
     for (int i = 0; i < vulkanPipelineInfos.size(); i++) {
         if (vulkanPipelineInfos[i] != nullptr) {
             destroyByIndex<FrameWork::VulkanPipelineInfo>(i);
@@ -429,6 +437,9 @@ void vulkanFrameWork::DestroyAll() {
     for (auto& fbo : presentFrameBuffer->framebuffers) {
         vkDestroyFramebuffer(device, fbo, nullptr);
     }
+
+
+    //----------------
 
     // Clean up Vulkan resources
     swapChain.cleanup();
@@ -785,18 +796,6 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
             tex->sampler = CreateSampler(1);
         }
     }
-    else if (attachmentType == AttachmentType::Present) {
-        attachment->attachmentsArray.resize(swapChain.imageViews.size());
-        attachment->inUse = true;
-        for (int i = 0; i < swapChain.imageViews.size(); i++) {
-            attachment->attachmentsArray[i] = getNextIndex<FrameWork::Texture>();
-            auto tex = getByIndex<FrameWork::Texture>(attachment->attachmentsArray[i]);
-            tex->inUse = true;
-            tex->sampler = VK_NULL_HANDLE;//不需要
-            tex->imageView = swapChain.imageViews[i];
-            //这里只要获得引用则可，用于构建帧缓冲，生命周期由交换链管理
-        }
-    }
 }
 
 void vulkanFrameWork::ReCreateAttachment() {
@@ -831,17 +830,6 @@ void vulkanFrameWork::ReCreateAttachment() {
                    attachment->isSampled ? (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT) : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
                 CreateImageView(tex->image, tex->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
                 tex->sampler = CreateSampler(1);
-            }
-        }
-        else if (attachmentType == AttachmentType::Present) {
-            attachment->attachmentsArray.resize(swapChain.imageViews.size());
-            attachment->inUse = true;
-            for (int i = 0; i < swapChain.imageViews.size(); i++) {
-                auto tex = getByIndex<FrameWork::Texture>(attachment->attachmentsArray[i]);
-                tex->inUse = true;
-                tex->sampler = VK_NULL_HANDLE;//不需要
-                tex->imageView = swapChain.imageViews[i];
-                //这里只要获得引用则可，用于构建帧缓冲，生命周期由交换链管理
             }
         }
     }
@@ -1492,10 +1480,10 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .vertexBindingDescriptionCount = 1,
-        .pVertexBindingDescriptions = &bindingDescription,
-        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-        .pVertexAttributeDescriptions = attributeDescriptions.data()
+        .vertexBindingDescriptionCount = (uint32_t)(shaderInfo.shaderState.inputVertex ? 1 : 0),
+        .pVertexBindingDescriptions = shaderInfo.shaderState.inputVertex ? &bindingDescription : nullptr,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(shaderInfo.shaderState.inputVertex ? attributeDescriptions.size() : 0),
+        .pVertexAttributeDescriptions = shaderInfo.shaderState.inputVertex ? attributeDescriptions.data() : nullptr
     };
 
     VkViewport viewport = {
@@ -1533,7 +1521,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .dynamicStateCount = 1,
+        .dynamicStateCount = 2,
         .pDynamicStates = dynamicStates.data()
     };
 
@@ -1564,7 +1552,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .flags = 0,
         .stageCount = static_cast<uint32_t>(shaderModuleInfos.size()),
         .pStages = shaderModuleInfos.data(),
-        .pVertexInputState = shaderInfo.shaderState.inputVertex ? &vertexInputStateCreateInfo : nullptr,
+        .pVertexInputState = &vertexInputStateCreateInfo,
         .pInputAssemblyState = &inputAssembly,
         .pTessellationState = nullptr,
         .pViewportState = &viewportStateCreateInfo,
@@ -1668,163 +1656,25 @@ VkCommandBuffer vulkanFrameWork::BeginCommandBuffer() const {
 }
 
 void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t colorAttachmentID) {
-    VkAttachmentDescription colorAttachmentDescription = {
-        .flags = 0,
-        .format = swapChain.colorFormat,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    };
-
-    VkAttachmentReference colorAttachmentRef = {
-        .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-    };
-    std::vector colorAttachments = {
-        colorAttachmentRef,
-    };
-
-    VkSubpassDescription subpassDescription = {
-        .flags = 0,
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .inputAttachmentCount = 0,
-        .pInputAttachments = nullptr,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = colorAttachments.data(),
-        .pResolveAttachments = nullptr,
-        .pDepthStencilAttachment = nullptr,
-        .preserveAttachmentCount = 0,
-        .pPreserveAttachments = nullptr
-    };
-
-    VkSubpassDependency dependency = {
-        .srcSubpass = VK_SUBPASS_EXTERNAL,
-        .dstSubpass = 0,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-        .dependencyFlags = 0
-    };
-
-    VkRenderPassCreateInfo renderPassInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .attachmentCount = 1,
-        .pAttachments = &colorAttachmentDescription,
-        .subpassCount = 1,
-        .pSubpasses = &subpassDescription,
-        .dependencyCount = 1,
-        .pDependencies = &dependency
-    };
-
-    VkRenderPass presentRenderPass = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &presentRenderPass));
-    RegisterRenderPass(presentRenderPass, "presentRenderPass");
-
-    auto presentDescriptorLayout = CreateDescriptorSetLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    RegisterDescriptorSetLayout(presentDescriptorLayout, "presentDescriptorLayout");
-
-    CreatePresentFrameBuffer(presentFrameBuffer, presentRenderPass);
-
-    //管线的创建 ---------------------------------------------------------------------------------------------------------
-
-    uint32_t presentPipelineInfoIdx = 0;
-    InitPipelineInfo(presentPipelineInfoIdx);
-    LoadPipelineShader(presentPipelineInfoIdx, presentShaderName, VK_SHADER_STAGE_VERTEX_BIT);
-    LoadPipelineShader(presentPipelineInfoIdx, presentShaderName, VK_SHADER_STAGE_FRAGMENT_BIT);
-    VkViewport viewport = {
-        .x = 0,
-        .y = 0,
-        .width = (float)windowWidth,
-        .height = (float)windowHeight,
-        .minDepth = 0,
-        .maxDepth = 1
-    };
-    SetPipelineViewPort(presentPipelineInfoIdx, viewport);
-    VkRect2D scissor = {
-        .offset = {0,0},
-        .extent = {windowWidth,windowHeight}
-    };
-    SetPipelineScissor(presentPipelineInfoIdx, scissor);
-    VkPipelineRasterizationStateCreateInfo rasterizer = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .depthClampEnable = VK_FALSE,
-        .rasterizerDiscardEnable = VK_FALSE,
-        .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VK_CULL_MODE_NONE,
-        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-        .depthBiasEnable = VK_FALSE,
-        .depthBiasConstantFactor = 0,
-        .depthBiasClamp = 0,
-        .depthBiasSlopeFactor = 0,
-        .lineWidth = 1.0f,
-    };
-    SetPipelineRasterizationState(presentPipelineInfoIdx, rasterizer);
-    VkPipelineMultisampleStateCreateInfo multisampleState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-        .sampleShadingEnable = VK_FALSE, //解决了纹理高频变化
-        .minSampleShading = 0.0f,
-        .pSampleMask = nullptr,
-        .alphaToCoverageEnable = VK_FALSE,
-        .alphaToOneEnable = VK_FALSE
-    };
-    SetPipelineMultiSampleState(presentPipelineInfoIdx, multisampleState);
-    VkPipelineDepthStencilStateCreateInfo depthStencilState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .depthTestEnable = VK_FALSE, //呈现纹理不需要深度测试
-        .depthWriteEnable = VK_FALSE,
-        .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-        .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_FALSE,
-    };
-    SetPipelineDepthStencilState(presentPipelineInfoIdx, depthStencilState);
-    AddPipelineColorBlendState(presentPipelineInfoIdx, true, BlendOp::Opaque);
-
-    //管线创建------------------------------------------------------------------------------------------------------------
-
-    presentShader = std::make_shared<FrameWork::CaIShader>(
+    CreatePresentFrameBuffer(presentFrameBuffer, renderPassTable[RenderPassType::Present]);
+    auto presentShader = FrameWork::CaIShader::Create (presentShaderID,
         "../resources/CaIShaders/Present/present.caishader", RenderPassType::Present
         );
-    presentMaterial = FrameWork::CaIMaterial(presentShader);
-    presentMaterial.SetAttachment("colorTexture", colorAttachmentID);
+    auto presentMaterial = FrameWork::CaIMaterial::Create(presentMaterialID,presentShaderID);
+    presentMaterial->SetAttachment("colorTexture", colorAttachmentID);
 
     auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
     presentColorAttachmentID = colorAttachmentID;
-    presentSlotIDs.resize(colorAttachment->attachmentsArray.size());
-    for (int i = 0; i < colorAttachment->attachmentsArray.size(); i++) {
-        auto presentSlot = CreateSlot(presentSlotIDs[i]);
-        presentSlot->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT, colorAttachment->attachmentsArray[i]);
-
-        //将纹理信息进行传递
-    }
-    CreateVulkanPipeline(presentPipelineIndex, "presentPipeline", presentPipelineInfoIdx,
-    "presentRenderPass", 0,
-    {slots_[presentSlotIDs.back()]->GetAllDescriptorSetLayout()}, 0, 1);
-
 }
 
 void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     VkClearValue clearValue[2];
     clearValue[0].color = defaultClearColor;
     clearValue[1].depthStencil = {1.0f, 0};
-
     VkRenderPassBeginInfo renderPassInfo = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext = nullptr,
-        .renderPass = GetRenderPass("presentRenderPass"),
+        .renderPass = renderPassTable[RenderPassType::Present],
         .framebuffer = presentFrameBuffer->framebuffers[imageIndex],
         .renderArea = {
             .offset = {0, 0},
@@ -1837,7 +1687,6 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
         .pClearValues = clearValue
     };
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
     VkViewport viewport = {};
     viewport.width = (float) windowWidth;
     viewport.height = (float) windowHeight;
@@ -1850,12 +1699,9 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent.height = windowHeight;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    // vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    // vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipeline);
-    // auto presentSlot = slots_[presentSlotIDs[GetCurrentFrame()]];
-    // presentSlot->Bind(commandBuffer,  getByIndex<FrameWork::VulkanPipeline>(presentPipelineIndex)->pipelineLayout, 0);
-    presentShader->Bind(commandBuffer);
-    presentMaterial.Bind(commandBuffer);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    FrameWork::CaIShader::Get(presentShaderID)->Bind(commandBuffer);
+    FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(commandBuffer);
     //呈现的顶点硬编码在着色器中
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
@@ -1863,13 +1709,8 @@ void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t image
 }
 
 void vulkanFrameWork::SwitchPresentColorAttachment(uint32_t colorAttachmentIDs) {
-    for (int i = 0; i < presentSlotIDs.size(); i++) {
-        slots_[presentSlotIDs[i]]->DestroyTexture(attachmentBuffers[presentColorAttachmentID]->attachmentsArray[i]);
-    }
     presentColorAttachmentID = colorAttachmentIDs;
-    for (int i = 0; i < presentSlotIDs.size(); i++) {
-        slots_[presentSlotIDs[i]]->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT ,attachmentBuffers[presentColorAttachmentID]->attachmentsArray[i]);
-    }
+    FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", colorAttachmentIDs);
 }
 
 VkDescriptorSetLayout vulkanFrameWork::CreateDescriptorSetLayout(
@@ -1909,15 +1750,11 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, const std::vector<Fr
 
 void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
     auto shaderRef = caiMaterial.GetShader();
-    if (shaderRef.expired()) {
-        LOG_ERROR("This Material didn't bind the shader or the shader has been destroyed");
-        return;
-    }
     caiMaterial.dataID = getNextIndex<FrameWork::MaterialData>();
     auto materialData = getByIndex<FrameWork::MaterialData>(caiMaterial.dataID);
     materialData->inUse = true;
-    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef.lock()->GetPipelineID());
-    auto shaderInfo = shaderRef.lock()->GetShaderInfo();
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef->GetPipelineID());
+    auto shaderInfo = shaderRef->GetShaderInfo();
 
 
     if (!shaderInfo.vertProperties.baseProperties.empty()) {
@@ -2364,37 +2201,37 @@ VkSampleCountFlagBits vulkanFrameWork::GetSampleCount() const {
 
 void vulkanFrameWork::DeleteTexture(uint32_t id) {
     if (id < textures.size() && textures[id]->inUse) {
-        textureReleaseQueue.emplace_back(id, MAX_FRAME);
+        textureReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteMesh(uint32_t id) {
     if (id < meshes.size() && meshes[id]->inUse) {
-        meshReleaseQueue.emplace_back(id, MAX_FRAME);
+        meshReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteAttachment(uint32_t id) {
     if (id < attachmentBuffers.size() && attachmentBuffers[id]->inUse) {
-        attachmentReleaseQueue.emplace_back(id, MAX_FRAME);
+        attachmentReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteFBO(uint32_t id) {
     if (id < vulkanFBOs.size() && vulkanFBOs[id]->inUse) {
-        fboReleaseQueue.emplace_back(id, MAX_FRAME);
+        fboReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeletePipeline(uint32_t id) {
     if (id < vulkanPipelines.size() && vulkanPipelines[id]->inUse) {
-        pipelineReleaseQueue.emplace_back(id, MAX_FRAME);
+        pipelineReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteMaterialData(uint32_t id) {
     if (id < materialDatas_.size() && materialDatas_[id]->inUse) {
-        materialDataReleaseQueue.emplace_back(id, MAX_FRAME);
+        materialDataReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
@@ -2730,35 +2567,17 @@ void vulkanFrameWork::windowResize() {
     }
     //传递变换后的窗口尺寸
 
+    LOG_DEBUG(" windowResize : width {}, height {}", windowWidth, windowHeight);
+
     vkDeviceWaitIdle(device);
-
-
     //重建交换链
     createSwapChain();
 
-    // Recreate the frame buffers
-    //删除附件、重建附件
-    //删除帧缓冲、重建帧缓冲
-    //--------------------------对呈现的descriptorSet重建--------------------------------------
-    // destroyByIndex<FrameWork::Material>(presentMaterialIndex);
-    for (int i = 0; i < presentSlotIDs.size(); i++) {
-        slots_[presentSlotIDs[i]]->DestroyTexture(attachmentBuffers[presentColorAttachmentID]->attachmentsArray[i]);
-    }
-    //--------------------------对呈现的descriptorSet重建--------------------------------------
-
     RecreateAllWindowFrameBuffers();
-    for (int i = 0; i < presentSlotIDs.size(); i++) {
-        slots_[presentSlotIDs[i]]->SetTexture(VK_SHADER_STAGE_FRAGMENT_BIT ,attachmentBuffers[presentColorAttachmentID]->attachmentsArray[i]);
-    }
+    SwitchPresentColorAttachment(presentColorAttachmentID);
 
-    //--------------------------对呈现的descriptorSet重建--------------------------------------
-    // CreateMaterial(presentMaterialIndex, presentMaterialCreateInfo);
-    //--------------------------对呈现的descriptorSet重建--------------------------------------
-    /*这里这样做的原因是因为这里的我是把descriptorSet封装到我的Material中，所以在显示的时候我并未单独的设计slot单独使用，
-     *而是拿封装好的Material来作为一个DescriptorSet Slot
-     * 所以Destroy一个Material 会吧Texture的所有内容删除——vulkanImage 和 vulkanImageView 等等
-     * 所以先删除再创建，防止重新创建好的附件的imageView被删除了
-     */
+
+
     for (auto& windowResizedCallback : windowResizedCallbacks) {
         if (windowResizedCallback != nullptr) {
             windowResizedCallback();
@@ -2771,9 +2590,9 @@ void vulkanFrameWork::windowResize() {
 
 
 void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
+    FrameWork::CaIMaterial::PendingSetAttachments(); //帧头执行保证切换descriptorSet的安全性
     vkWaitForFences(device, 1, &waitFences[currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &waitFences[currentFrame]);
-
     frameCounter++;
     frameTimer = deltaMilliTime /1000.0f;
 

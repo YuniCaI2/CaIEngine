@@ -99,11 +99,9 @@ protected:
     VulkanSwapChain swapChain;
     //呈现
     std::unique_ptr<FrameWork::VulkanFBO> presentFrameBuffer{};
-    uint32_t presentPipelineIndex{0};
     uint32_t presentColorAttachmentID = -1;
-    std::shared_ptr<FrameWork::CaIShader> presentShader;
-    FrameWork::CaIMaterial presentMaterial;
-    std::vector<uint32_t> presentSlotIDs;
+    uint32_t presentShaderID = -1;
+    uint32_t presentMaterialID = -1;
 
     //同步信号量
     struct Semaphores {
@@ -194,7 +192,7 @@ public:
     GLFWwindow *window{nullptr};
 
 
-    ~vulkanFrameWork() = default;
+    virtual ~vulkanFrameWork() = default;
 
     vulkanFrameWork(const vulkanFrameWork &) = delete;
 

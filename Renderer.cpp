@@ -30,24 +30,24 @@ public:
         auto physicalDevice = vulkanRenderAPI.GetVulkanPhysicalDevice();
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
 
-        for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
-            auto& memType = memProps.memoryTypes[i];
-            auto& heap = memProps.memoryHeaps[memType.heapIndex];
-
-            std::cout << "Memory Type " << i << ":" << std::endl;
-            std::cout << "  Heap size: " << heap.size / 1024 / 1024 << " MB" << std::endl;
-
-            if (memType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
-                std::cout << "  HOST_VISIBLE: Yes" << std::endl;
-            }
-            if (memType.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
-                std::cout << "  HOST_COHERENT: Yes" << std::endl;
-            }
-            if (memType.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                std::cout << "  DEVICE_LOCAL: Yes" << std::endl;
-            }
-            std::cout << std::endl;
-        }
+        // for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
+        //     auto& memType = memProps.memoryTypes[i];
+        //     auto& heap = memProps.memoryHeaps[memType.heapIndex];
+        //
+        //     std::cout << "Memory Type " << i << ":" << std::endl;
+        //     std::cout << "  Heap size: " << heap.size / 1024 / 1024 << " MB" << std::endl;
+        //
+        //     if (memType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+        //         std::cout << "  HOST_VISIBLE: Yes" << std::endl;
+        //     }
+        //     if (memType.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+        //         std::cout << "  HOST_COHERENT: Yes" << std::endl;
+        //     }
+        //     if (memType.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+        //         std::cout << "  DEVICE_LOCAL: Yes" << std::endl;
+        //     }
+        //     std::cout << std::endl;
+        // }
     }
 
     ~Renderer() {
