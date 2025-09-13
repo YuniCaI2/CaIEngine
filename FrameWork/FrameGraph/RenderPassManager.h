@@ -14,10 +14,12 @@ namespace FG {
     public:
         RenderPass& SetShaderPath(const std::string &shaderPath);
 
+        RenderPass& SetCreateResource(uint32_t index);
+        std::unordered_set<uint32_t>& GetCreateResources();
         RenderPass& SetWriteResource(uint32_t index);
-        std::unordered_set<uint32_t>& GetWriteResource();
+        std::unordered_set<uint32_t>& GetWriteResources();
         RenderPass& SetReadResource(uint32_t index);
-        std::unordered_set<uint32_t>& GetReadResource();
+        std::unordered_set<uint32_t>& GetReadResources();
         RenderPass& SetResolvedWriteResource(uint32_t index);
         std::unordered_set<uint32_t>& GetResolvedWriteResource();
 
@@ -30,6 +32,7 @@ namespace FG {
         uint32_t shaderID{};
         std::string shaderPath{};
         VkRenderPass renderPass{};
+        std::unordered_set<uint32_t> createResources;
         std::unordered_set<uint32_t> writeResources;
         std::unordered_set<uint32_t> readResources;
         std::unordered_set<uint32_t> resolvedWriteResources; //用于MSAA

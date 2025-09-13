@@ -16,6 +16,13 @@ namespace FG {
         Proxy
     };
 
+    enum class ProxyType {
+        SwapChain,
+        ImportTexture,
+        ImportBuffer,
+        PersistentBuffer //跨帧资源
+    };
+
     // 基础描述接口
     struct BaseDescription {
         virtual ~BaseDescription() = default;
@@ -58,6 +65,15 @@ namespace FG {
         }
     };
 
+    struct ProxyDescription : public BaseDescription {
+        ProxyDescription() = default;
+        uint32_t vulkanIndex{};
+        ProxyType proxyType{};
+        ResourceType GetResourceType() const override {
+            return ResourceType::Proxy;
+        }
+    };
+
     class ResourceDescription {
     public:
         ResourceDescription() = default;
@@ -66,14 +82,24 @@ namespace FG {
 
         ResourceDescription& SetVulkanIndex(uint32_t index_) { vulkanResourceIndex = index_; return *this; }
         ResourceDescription& SetName(const std::string &name_) { name = name_; return *this; }
-        ResourceDescription& SetWriteRenderPass(uint32_t renderPass) { writeRenderPasses.insert(renderPass); return *this; }
-        ResourceDescription& SetReadRenderPass(uint32_t renderPass) { readRenderPasses.insert(renderPass); return *this; }
+        ResourceDescription& SetOutputRenderPass(uint32_t renderPass) {
+            if (inputRenderPasses.contains(renderPass)) {
+                LOG_ERROR("Input Render Pass : \" {} \" already exists! But you want to insert in output RenderPass !", renderPass);
+            }
+            outputRenderPasses.insert(renderPass); return *this;
+        }
+        ResourceDescription& SetInputRenderPass(uint32_t renderPass) {
+            if (outputRenderPasses.contains(renderPass)) {
+                LOG_ERROR("Output Render Pass : \" {} \" already exists! But you want to insert in input RenderPass !", renderPass);
+            }
+            inputRenderPasses.insert(renderPass); return *this;
+        }
 
         ResourceType GetType() const { return resourceType; }
         uint32_t GetVulkanIndex() const { return vulkanResourceIndex; }
         std::string GetName() const { return name; }
-        std::unordered_set<uint32_t> GetWriteRenderPass() const { return writeRenderPasses; }
-        std::unordered_set<uint32_t> GetReadRenderPass() const { return readRenderPasses; }
+        std::unordered_set<uint32_t> GetOutputRenderPass() const { return outputRenderPasses; }
+        std::unordered_set<uint32_t> GetInputRenderPass() const { return inputRenderPasses; }
 
         // 直接存储和访问具体类型
         template<typename T>
@@ -99,8 +125,8 @@ namespace FG {
     private:
         std::string name;
         uint32_t vulkanResourceIndex = -1;
-        std::unordered_set<uint32_t> writeRenderPasses;
-        std::unordered_set<uint32_t> readRenderPasses;
+        std::unordered_set<uint32_t> outputRenderPasses;
+        std::unordered_set<uint32_t> inputRenderPasses;
         uint32_t descriptorTypeID = -1; //维护类型安全的
 
         std::unique_ptr<BaseDescription> description{nullptr};

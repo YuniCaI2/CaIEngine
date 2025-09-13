@@ -8,6 +8,10 @@
 uint32_t FG::ResourceManager::RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>&)> &Func) {
     auto resourceDescription = std::make_unique<ResourceDescription>();
     Func(resourceDescription);
+    if (nameToResourceIndex.contains(resourceDescription->GetName())) {
+        LOG_WARNING("The name : {} has been existed", resourceDescription->GetName());
+        return nameToResourceIndex[resourceDescription->GetName()];
+    }
     resourceDescriptions.push_back(std::move(resourceDescription));
     nameToResourceIndex[resourceDescriptions.back()->GetName()] = resourceDescriptions.size() - 1;
     return resourceDescriptions.size() - 1;
