@@ -17,6 +17,7 @@ namespace FrameWork {
         static bool exist(uint32_t id);
 
         CaIShader(const std::string& shaderPath, RenderPassType renderPassType);
+        CaIShader(const std::string& shaderPath, VkRenderPass renderPass);
         ~CaIShader();
 
         CaIShader() = default;

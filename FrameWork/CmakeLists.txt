@@ -39,11 +39,22 @@ file(GLOB frameWorkPath
         "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 
-add_library(FrameWork ${frameWorkPath}
+file(GLOB frameGraphPath
+        "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/*.cpp"
+)
+
+add_library(FrameWork ${frameWorkPath} ${frameGraphPath}
         CaIMaterial.cpp
         CaIMaterial.h
         CaIShader.cpp
-        CaIShader.h)
+        CaIShader.h
+        FrameGraph/ResourceManager.cpp
+        FrameGraph/ResourceManager.h
+        FrameGraph/RenderPassManager.cpp
+        FrameGraph/RenderPassManager.h
+        FrameGraph/FrameGraph.cpp
+        FrameGraph/FrameGraph.h)
 
 # 基础库链接（所有平台共用）
 target_link_libraries(FrameWork PUBLIC

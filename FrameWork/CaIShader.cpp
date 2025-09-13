@@ -53,6 +53,10 @@ FrameWork::CaIShader::CaIShader(const std::string &shaderPath, RenderPassType re
     this->shaderPath = shaderPath;
 }
 
+FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkRenderPass renderPass) {
+
+}
+
 FrameWork::CaIShader::~CaIShader() {
     //释放的方式押入释放队列，因为多飞行帧的原因不能立刻释放资源，释放队列由vulkanRenderAPI管理
     if (pipelineID != UINT32_MAX)

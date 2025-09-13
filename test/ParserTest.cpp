@@ -123,6 +123,7 @@ int main(){
    std::stringstream ss;
    ss << testFile.rdbuf();
    std::string code = ss.str();
+   testGetShaderInfo(code);
    // testBlockGetter(code);
    // testFindWord(code);
    // testParserCode(code);
@@ -133,7 +134,7 @@ int main(){
    // testTranslate(code);
    // testGetShaderInfo(code);
    // testGetShaderModule();
-   testCreatePipeline();
+   // testCreatePipeline();
 
    vulkanRenderAPI.DestroyAll();
    LOG.Stop();

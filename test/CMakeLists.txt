@@ -9,3 +9,7 @@ add_test(NAME loggerTest COMMAND loggerTest)
 add_executable(parserTest parserTest.cpp)
 target_link_libraries(parserTest FrameWork)
 add_test(NAME parserTest COMMAND parserTest)
+
+add_executable(frameGraphTest frameGraphTest.cpp)
+target_link_libraries(frameGraphTest FrameWork)
+add_test(NAME frameGraphTest COMMAND frameGraphTest)

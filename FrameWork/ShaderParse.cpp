@@ -14,7 +14,12 @@ FrameWork::ShaderInfo FrameWork::ShaderParse::GetShaderInfo(const std::string &c
     ParseShaderCode(code, vertCode, fragCode);
     info.vertProperties = GetShaderProperties(vertCode);
     info.fragProperties = GetShaderProperties(fragCode);
-    info.shaderTypeFlags = ShaderType::Vertex | ShaderType::Frag;
+    if (! vertCode.empty()) {
+        info.shaderTypeFlags |= ShaderType::Vertex;
+    }
+    if (! fragCode.empty()) {
+        info.shaderTypeFlags |= ShaderType::Frag;
+    }
     SetUpPropertiesStd140(info);
     return info;
 }
@@ -120,11 +125,29 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
             }
             shaderStateSet.inputVertex = words[1] == "On";
             //  是否输入顶点
+        }else if (words[0] == "MSAA") {
+            if (words[1] != "Off" && words[1] != "On") {
+                LOG_WARNING("The MSAA is wrong, use default state set");
+                return shaderStateSet;
+            }
+            shaderStateSet.msaa = words[1] == "On";
         }
         else {
             LOG_WARNING("Can't find suitable operation for {}", words[0]);
         }
     }
+    //上面是Setting，但是我希望这个结构体可以存储更多信息，有些信息并不是手动填入的比如输出附件的数量
+    std::string vertCode, fragCode;
+    ParseShaderCode(code, vertCode, fragCode);
+    std::string outputBlock = GetCodeBlock(fragCode, "Output");
+    lines = SplitString(outputBlock, '\n');
+    for (auto& line : lines) {
+        auto words = ExtractWords(line);
+        if (words.size() >= 3 && words[0] != "//") {
+            shaderStateSet.outputNums++;
+        }
+    }
+
     return shaderStateSet;
 }
 

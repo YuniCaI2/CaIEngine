@@ -285,6 +285,7 @@ namespace FrameWork {
         uint32_t slotID{};
     };
 
+
     struct ShaderStateSet {
         BlendOption blendOp = BlendOption::ADD;
         BlendFactor srcBlendFactor = BlendFactor::SRC_ALPHA;
@@ -292,9 +293,14 @@ namespace FrameWork {
         FaceCullOption faceCullOp = FaceCullOption::Back;
         CompareOption depthCompareOp = CompareOption::LESS; //深度测试相关
         PolygonMode polygonMode = PolygonMode::Fill;//这里为了区分渲染是直线还是填充
+
         //渲染队列，这里先不加
         bool depthWrite = true;
         bool inputVertex = true;
+        bool msaa = false;
+
+        //输出附件的数量
+        uint32_t outputNums{};
     };
 
     struct ShaderProperty {
