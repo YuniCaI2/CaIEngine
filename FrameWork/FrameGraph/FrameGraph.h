@@ -21,11 +21,18 @@ namespace FG {
         FrameGraph& Compile();
         FrameGraph& Execute();
         void CullPassAndResource();
+        void CreateTimeline();
+        void CreateVulkanResources();
+        //根据图的拓扑结构创建图的结构
+        //为裁剪后的节点创建RenderPass
+        void InsertBarriers();
     private:
         std::vector<uint32_t> resourceNodes;
         std::vector<uint32_t> usingResourceNodes;
         std::vector<uint32_t> renderPassNodes;
         std::vector<uint32_t> usingPassNodes; //经过裁剪之后的Pass
+        using TimeLine = std::vector<std::vector<uint32_t>>;
+        TimeLine timeline;
         ResourceManager& resourceManager;
         RenderPassManager& renderPassManager;
     };

@@ -34,3 +34,66 @@ FG::ResourceDescription * FG::ResourceManager::FindResource(uint32_t index) {
     return resourceDescriptions[index].get();
 }
 
+uint32_t FG::ResourceManager::GetVulkanResourceID(const std::string &name) {
+    return aliasGroups[nameToResourceIndex[name]].vulkanIndex;
+}
+
+uint32_t FG::ResourceManager::GetVulkanResourceID(uint32_t index) {
+    return aliasGroups[index].vulkanIndex;
+}
+
+bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasIndex) {
+    auto resourceDesc = resourceDescriptions[resourceDescIndex].get();
+    auto group = aliasGroups[aliasIndex];
+    uint32_t newFirstTime = resourceDesc->GetFirstUseTime();
+    if (resourceDesc->GetType() != group.description->GetResourceType()) {
+        return false;
+    }
+    if (resourceDesc->GetType() == ResourceType::Texture) {
+        if (resourceDesc->GetDescription<TextureDescription>()->Equal(group.description)) {
+            for (auto& resourceIndex : group.sharedResourceIndices) {
+                auto resource = FindResource(resourceIndex);
+                auto existingLastTime = resource->GetLastUseTime();
+                if (newFirstTime <= existingLastTime) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    if (resourceDesc->GetType() == ResourceType::Buffer) {
+        if (resourceDesc->GetDescription<BufferDescription>()->Equal(group.description)) {
+            for (auto& resourceIndex : group.sharedResourceIndices) {
+                auto resource = FindResource(resourceIndex);
+                auto existingLastTime = resource->GetLastUseTime();
+                if (newFirstTime >= existingLastTime) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+uint32_t FG::ResourceManager::CreateVulkanResource(uint32_t index) {
+    //先不支持Buffer的创建，因为RenderAPI现无对应的接口
+    if (resourceDescriptions[index]->GetType() == ResourceType::Proxy) {
+        LOG_WARNING("Proxy resource : {} can't create", resourceDescriptions[index]->GetName());
+        //返回错误值
+        return -1;
+    }else if (resourceDescriptions[index]->GetType() == ResourceType::Texture) {
+        uint32_t rt = 0;
+        vulkanRenderAPI.CreateTexture(index,
+            resourceDescriptions[index]->GetDescription<TextureDescription>());
+        return rt;
+    }else {
+        LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
+        return -1;
+    }
+}
+
+std::vector<FG::AliasGroup> & FG::ResourceManager::GetAliasGroups() {
+    return aliasGroups;
+}
+

@@ -10,6 +10,10 @@
 #include <utility>
 
 namespace FG {
+    class FrameGraph;
+}
+
+namespace FG {
     enum class ResourceType {
         Texture,
         Buffer,
@@ -20,13 +24,12 @@ namespace FG {
         SwapChain,
         ImportTexture,
         ImportBuffer,
-        PersistentBuffer //跨帧资源
     };
 
     // 基础描述接口
     struct BaseDescription {
         virtual ~BaseDescription() = default;
-
+        virtual bool Equal(BaseDescription* description) = 0;
         virtual ResourceType GetResourceType() const = 0;
     };
     template<class T>
@@ -47,6 +50,13 @@ namespace FG {
         VkSampleCountFlagBits samples{};
         VkImageUsageFlags usages{};
 
+        bool Equal( BaseDescription *description) override {
+            if (description->GetResourceType() != GetResourceType()) return false;
+            auto texDesc = static_cast<TextureDescription*>(description);
+            return texDesc->width == width && texDesc->height == height && texDesc->mipLevels == mipLevels && texDesc->format == format
+            && texDesc->samples == samples && texDesc->usages == usages && texDesc->arrayLayers == arrayLayers;
+        }
+
         ResourceType GetResourceType() const override {
             return ResourceType::Texture;
         }
@@ -60,6 +70,12 @@ namespace FG {
             ) : size(size_), usages(usages_) {}
         uint32_t size{};
         VkBufferUsageFlags usages{};
+        bool Equal(BaseDescription *description) override {
+            if (description->GetResourceType() != GetResourceType()) return false;
+            auto bufferDesc = static_cast<BufferDescription*>(description);
+            return bufferDesc->usages == usages && bufferDesc->size == size;
+        }
+
         ResourceType GetResourceType() const override {
             return ResourceType::Buffer;
         }
@@ -69,9 +85,23 @@ namespace FG {
         ProxyDescription() = default;
         uint32_t vulkanIndex{};
         ProxyType proxyType{};
+        bool Equal(BaseDescription *description) override {
+            if (description->GetResourceType() != GetResourceType()) return false;
+            auto proxyDesc = static_cast<ProxyDescription*>(description);
+            return proxyDesc->vulkanIndex == vulkanIndex && proxyType == proxyDesc->proxyType;
+            //Proxy的等于大概率不会使用
+        }
         ResourceType GetResourceType() const override {
             return ResourceType::Proxy;
         }
+    };
+
+
+    //别名组资源，其直接对应Vulkan资源
+    struct AliasGroup {
+        std::vector<uint32_t> sharedResourceIndices;
+        uint32_t vulkanIndex{};
+        BaseDescription* description{}; //资源描述
     };
 
     class ResourceDescription {
@@ -80,7 +110,6 @@ namespace FG {
 
         virtual ~ResourceDescription() = default;
 
-        ResourceDescription& SetVulkanIndex(uint32_t index_) { vulkanResourceIndex = index_; return *this; }
         ResourceDescription& SetName(const std::string &name_) { name = name_; return *this; }
         ResourceDescription& SetOutputRenderPass(uint32_t renderPass) {
             if (inputRenderPasses.contains(renderPass)) {
@@ -94,9 +123,23 @@ namespace FG {
             }
             inputRenderPasses.insert(renderPass); return *this;
         }
+        ResourceDescription& SetFirstUseTime(uint32_t time) {
+            firstUseTime = time;
+            return *this;
+        }
+        ResourceDescription& SetLastUseTime(uint32_t time) {
+            lastUseTime = time;
+            return *this;
+        }
+        ResourceDescription& ResetUseTime() {
+            firstUseTime = UINT32_MAX;
+            lastUseTime = 0;
+            return *this;
+        }
 
+        uint32_t GetFirstUseTime() {return firstUseTime;}
+        uint32_t GetLastUseTime() {return lastUseTime;}
         ResourceType GetType() const { return resourceType; }
-        uint32_t GetVulkanIndex() const { return vulkanResourceIndex; }
         std::string GetName() const { return name; }
         std::unordered_set<uint32_t> GetOutputRenderPass() const { return outputRenderPasses; }
         std::unordered_set<uint32_t> GetInputRenderPass() const { return inputRenderPasses; }
@@ -121,16 +164,18 @@ namespace FG {
            }
         }
 
+
         ResourceType resourceType{};
     private:
         std::string name;
-        uint32_t vulkanResourceIndex = -1;
         std::unordered_set<uint32_t> outputRenderPasses;
         std::unordered_set<uint32_t> inputRenderPasses;
         uint32_t descriptorTypeID = -1; //维护类型安全的
-
         std::unique_ptr<BaseDescription> description{nullptr};
-        //如果没有描述就肯定是外部资源
+
+        uint32_t firstUseTime{UINT32_MAX};
+        uint32_t lastUseTime{0};
+
     };
 
     class ResourceManager {
@@ -138,9 +183,18 @@ namespace FG {
         uint32_t RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>& )>& Func);
         ResourceDescription* FindResource(const std::string& name);
         ResourceDescription* FindResource(uint32_t index);
+        uint32_t GetVulkanResourceID(const std::string& name); //通过名字获取Vulkan资源
+        uint32_t GetVulkanResourceID(uint32_t index); //通过ID获取Vulkan资源
     private:
+        friend FrameGraph;
+        bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
+        uint32_t CreateVulkanResource(uint32_t index);
+        std::vector<AliasGroup>& GetAliasGroups();
+
         std::unordered_map<std::string, uint32_t> nameToResourceIndex;
         std::vector<std::unique_ptr<ResourceDescription>> resourceDescriptions;
+        std::vector<AliasGroup> aliasGroups;
+        std::unordered_map<uint32_t, uint32_t> resourceDescriptionToAliasGroup;
     };
 }
 

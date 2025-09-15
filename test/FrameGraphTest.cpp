@@ -101,19 +101,19 @@ void TestCullPass() {
 
     auto GBufferPass = renderPassManager.RegisterRenderPass(
         [](std::unique_ptr<RenderPass>& desc) {
-            desc->SetName("GBufferPass").SetShaderPath("shaders/gbuffer.vert");
+            desc->SetName("GBufferPass");
         });
     frameGraph.AddRenderPassNode(GBufferPass);
 
     auto LightingPass = renderPassManager.RegisterRenderPass(
         [](std::unique_ptr<RenderPass>& desc) {
-            desc->SetName("LightingPass").SetShaderPath("shaders/lighting.frag");
+            desc->SetName("LightingPass");
         });
     frameGraph.AddRenderPassNode(LightingPass);
 
     auto PresentPass = renderPassManager.RegisterRenderPass(
         [](std::unique_ptr<RenderPass>& desc) {
-            desc->SetName("PresentPass").SetShaderPath("shaders/present.vert");
+            desc->SetName("PresentPass");
         });
     frameGraph.AddRenderPassNode(PresentPass);
 
@@ -126,6 +126,7 @@ void TestCullPass() {
         .SetCreateResource(GBuffer2);
 
     // 设置资源的生产者
+    resourceManager.FindResource(vertexBufferID)->SetInputRenderPass(GBufferPass);
     resourceManager.FindResource(GBuffer1)->SetOutputRenderPass(GBufferPass);
     resourceManager.FindResource(GBuffer2)->SetOutputRenderPass(GBufferPass);
 
@@ -162,11 +163,17 @@ void TestCullPass() {
     // 3. swapChainImage 作为 Proxy 应该是剔除的起点
 
     std::cout << "=== 剔除完成，检查结果 ===" << std::endl;
+    //测试TimeLine
+    frameGraph.CreateTimeline();
+    frameGraph.CreateVulkanResources();
+    LOG_TRACE("FrameGraph Created");
 }
 
 int main() {
     LOG.Run();
+    vulkanRenderAPI.initVulkan();
     // TestResourceManager();
     TestCullPass();
+    vulkanRenderAPI.DestroyAll();
     LOG.Stop();
 }

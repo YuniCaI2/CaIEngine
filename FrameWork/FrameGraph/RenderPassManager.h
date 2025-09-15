@@ -10,33 +10,49 @@
 //本FrameGraph现不支持RenderPass的Merge
 //这意味着不需要依赖
 namespace FG {
+    struct BarrierInfo {
+        uint32_t resourceID{};
+        VkImageMemoryBarrier imageMemoryBarrier{};
+        VkBufferMemoryBarrier bufferMemoryBarrier{};
+        VkPipelineStageFlags srcStageMask{};
+        VkPipelineStageFlags dstStageMask{};
+        bool isImage{};
+    };
+
     class RenderPass {
     public:
-        RenderPass& SetShaderPath(const std::string &shaderPath);
-
         RenderPass& SetCreateResource(uint32_t index);
-        std::unordered_set<uint32_t>& GetCreateResources();
-        RenderPass& SetWriteResource(uint32_t index);
-        std::unordered_set<uint32_t>& GetWriteResources();
+        std::vector<uint32_t>& GetCreateResources();
+
+        //input和output要求一一对应，简化优化
+        RenderPass& SetInputResource(uint32_t index);
+        std::vector<uint32_t>& GetInputResources();
+        RenderPass& SetOutputResource(uint32_t index);
+        std::vector<uint32_t>& GetOutputResources();
+
         RenderPass& SetReadResource(uint32_t index);
-        std::unordered_set<uint32_t>& GetReadResources();
-        RenderPass& SetResolvedWriteResource(uint32_t index);
-        std::unordered_set<uint32_t>& GetResolvedWriteResource();
+        std::vector<uint32_t>& GetReadResources();
+
+        RenderPass& AddRenderPassDependency(uint32_t index);
+        std::unordered_set<uint32_t>& GetRenderPassDependencies();
+
 
         RenderPass& SetName(const std::string &name);
+        std::string GetName() const;
 
-        RenderPass& CreateVkRenderPass();
+        VkRenderPass& GetVkRenderPass();
     private:
         friend class RenderPassManager;
         std::string name;
-        uint32_t shaderID{};
-        std::string shaderPath{};
         VkRenderPass renderPass{};
-        std::unordered_set<uint32_t> createResources;
-        std::unordered_set<uint32_t> writeResources;
-        std::unordered_set<uint32_t> readResources;
-        std::unordered_set<uint32_t> resolvedWriteResources; //用于MSAA
-        using RenderPassExcFunc = void(std::unique_ptr<RenderPass>& renderPass); //这里不使用std::function 包装器保证性能
+        std::unordered_set<uint32_t> renderPassDependencies;
+        std::vector<uint32_t> createResources;
+        std::vector<uint32_t> inputAttachmentResources;
+        std::vector<uint32_t> outputAttachmentResources;
+        std::vector<uint32_t> readResources;
+        std::vector<BarrierInfo> preBarriers;
+        std::vector<BarrierInfo> postBarriers;
+        using RenderPassExcFunc = std::function<void()>; //通过捕获
         RenderPassExcFunc renderPassExcFunc;
     };
 

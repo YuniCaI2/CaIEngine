@@ -16,6 +16,7 @@
 #include "VulkanDebug.h"
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
+#include "FrameGraph/ResourceManager.h"
 #define VOLK_IMPLEMENTATION
 #define _VALIDATION
 
@@ -738,6 +739,28 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
 
     texture->inUse = true;
     //使用
+}
+
+
+void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *description) {
+    if (description->GetResourceType() != FG::ResourceType::Texture) {
+        LOG_ERROR("Can't create resource which description is not texture type by create texture");
+    }
+    auto texDesc = static_cast<FG::TextureDescription*> (description);
+    textureId = getNextIndex<FrameWork::Texture>();
+    auto texture = getByIndex<FrameWork::Texture>(textureId);
+    vulkanDevice->createImage(&texture->image, VkExtent2D(texDesc->width, texDesc->height),
+        texDesc->mipLevels, texDesc->arrayLayers,texDesc->samples, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
+    texDesc->usages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+        CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+    }else {
+        CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+    }
+    texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    texture->sampler = CreateSampler(texDesc->mipLevels);
+    //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
+    texture->inUse = true;
 }
 
 void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView&imageView,

@@ -396,6 +396,8 @@ namespace VulkanTool {
         endSingleTimeCommands(device, queue, device.commandPool, cmd);
     }
 
+
+
     //类型Id获取器
     template<typename Category>
     struct IndexGetter {

@@ -23,6 +23,10 @@
 #define MAX_FRAME 2
 
 
+namespace FG {
+    struct BaseDescription;
+}
+
 class VulkanSwapChain;
 
 class vulkanFrameWork {
@@ -240,6 +244,10 @@ public:
 
     //将数据直接设置到GPU内存方便后续创建local 内存
     void CreateTexture(uint32_t &textureId, const FrameWork::TextureFullData &textureData);
+
+    //这个函数是用来创建FrameGraph中的临时资源，一般作为Attachment，这种资源一般不需要array和mipmap,且是2D资源，
+    //如果其他类型的资源直接作为Proxy导入为好，每一帧创建开销太大了
+    void CreateTexture(uint32_t & textureId, FG::BaseDescription* description);
 
     void CreateImageView(FrameWork::VulkanImage &image, VkImageView &imageView, VkImageAspectFlags aspectFlags,
                          VkImageViewType viewType);

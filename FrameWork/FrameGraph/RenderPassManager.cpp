@@ -4,22 +4,37 @@
 
 #include "RenderPassManager.h"
 
-FG::RenderPass & FG::RenderPass::SetShaderPath(const std::string &shaderPath) {
-    this->shaderPath = shaderPath;
-    return *this;
-}
+
 
 FG::RenderPass & FG::RenderPass::SetCreateResource(uint32_t index) {
-    createResources.insert(index);
+    if (std::ranges::find(inputAttachmentResources, index) != std::ranges::end(inputAttachmentResources)) {
+        LOG_ERROR("Trying to create resource with index {}, but it has been already in Write", index);
+        return *this;
+    }
+    createResources.push_back(index);
     return *this;
 }
 
-std::unordered_set<uint32_t> & FG::RenderPass::GetCreateResources() {
+std::vector<uint32_t> & FG::RenderPass::GetCreateResources() {
     return createResources;
 }
 
-FG::RenderPass & FG::RenderPass::CreateVkRenderPass() {
+FG::RenderPass & FG::RenderPass::SetInputResource(uint32_t index) {
+    inputAttachmentResources.push_back(index);
     return *this;
+}
+
+std::vector<uint32_t> & FG::RenderPass::GetInputResources() {
+    return inputAttachmentResources;
+}
+
+FG::RenderPass & FG::RenderPass::SetOutputResource(uint32_t index) {
+    outputAttachmentResources.push_back(index);
+    return *this;
+}
+
+std::vector<uint32_t> & FG::RenderPass::GetOutputResources() {
+    return outputAttachmentResources;
 }
 
 uint32_t FG::RenderPassManager::RegisterRenderPass(const std::function<void(std::unique_ptr<RenderPass> &)> &Func) {
@@ -47,36 +62,37 @@ FG::RenderPass * FG::RenderPassManager::FindRenderPass(uint32_t index) {
     return renderPasses[index].get();
 }
 
-FG::RenderPass & FG::RenderPass::SetWriteResource(uint32_t index) {
-    writeResources.insert(index);
-    return *this;
-}
-
-std::unordered_set<uint32_t> & FG::RenderPass::GetWriteResources() {
-    return writeResources;
-}
 
 FG::RenderPass & FG::RenderPass::SetReadResource(uint32_t index) {
-    readResources.insert(index);
+    readResources.push_back(index);
     return *this;
 }
 
-std::unordered_set<uint32_t> & FG::RenderPass::GetReadResources() {
+std::vector<uint32_t> & FG::RenderPass::GetReadResources() {
     return readResources;
 }
 
-FG::RenderPass & FG::RenderPass::SetResolvedWriteResource(uint32_t index) {
-    resolvedWriteResources.insert(index);
+FG::RenderPass & FG::RenderPass::AddRenderPassDependency(uint32_t index) {
+    renderPassDependencies.insert(index);
     return *this;
 }
 
-std::unordered_set<uint32_t> & FG::RenderPass::GetResolvedWriteResource() {
-    return resolvedWriteResources;
+std::unordered_set<uint32_t> & FG::RenderPass::GetRenderPassDependencies() {
+    return renderPassDependencies;
+}
+
+
+VkRenderPass& FG::RenderPass::GetVkRenderPass() {
+    return renderPass;
 }
 
 FG::RenderPass & FG::RenderPass::SetName(const std::string &name) {
     this->name = name;
     return *this;
+}
+
+std::string FG::RenderPass::GetName() const {
+    return name;
 }
 
 
