@@ -2257,9 +2257,14 @@ void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
     //AllocateDescriptorSet
     materialData->descriptorSets.resize(MAX_FRAME);
     std::vector<VkWriteDescriptorSet> descriptorWrites;
+    std::vector<VkDescriptorType> descriptorTypes;
+    descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    if (!shaderInfo.vertProperties.textureProperties.empty() || !shaderInfo.fragProperties.textureProperties.empty()) {
+        descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    }
     for (uint32_t i = 0; i < MAX_FRAME; i++) {
         vulkanDescriptorPool.AllocateDescriptorSet(pipeline->descriptorSetLayouts.back(),
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, materialData->descriptorSets[i]
+            descriptorTypes, materialData->descriptorSets[i]
             );
 
         if (!materialData->vertexUniformBuffers.empty()) {

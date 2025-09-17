@@ -25,10 +25,88 @@ VkDescriptorPool FrameWork::VulkanDescriptorPool::createDescriptorPool(VkDescrip
     return descriptorPool;
 }
 
+VkDescriptorPool FrameWork::VulkanDescriptorPool::createDescriptorPool(
+    const std::vector<VkDescriptorPoolSize> &poolSizes) const {
+    VkDescriptorPoolCreateInfo poolInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .maxSets = maxSets,
+        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+        .pPoolSizes = poolSizes.data()
+    };
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    VK_CHECK_RESULT(vkCreateDescriptorPool(vulkanDevice->logicalDevice, &poolInfo, nullptr, &descriptorPool));
+    return descriptorPool;
+}
+
+void FrameWork::VulkanDescriptorPool::AllocateDescriptorSet(VkDescriptorSetLayout descriptorSetLayout,
+    const std::vector<VkDescriptorType> &descriptorTypes, VkDescriptorSet&descriptorSet) {
+    std::lock_guard<std::mutex> lock(mutex);
+    //实现查找hashmap
+    if (unusedDescriptorSetMap.contains(descriptorSetLayout)) {
+        descriptorSet = unusedDescriptorSetMap[descriptorSetLayout].front();
+        unusedDescriptorSetMap[descriptorSetLayout].pop();
+        return;
+    }
+
+    std::vector<VkDescriptorPoolSize> poolSizes(descriptorTypes.size());
+    for (int i = 0; i < descriptorTypes.size(); ++i) {
+        poolSizes[i].type = descriptorTypes[i];
+        poolSizes[i].descriptorCount = maxSets;
+    }
+
+    if (! descriptorPoolMap.contains(descriptorSetLayout)) {
+        //不存在则需要创建
+
+        //此处一个Set对应一个bind，方便管理，也进一步减少descriptorSetLayout的种类使其通用
+        descriptorPoolMap[descriptorSetLayout].emplace_back(createDescriptorPool(poolSizes), 1);
+        auto& descriptorPool = descriptorPoolMap[descriptorSetLayout].back();
+        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext = 0,
+            .descriptorPool = descriptorPool.descriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &descriptorSetLayout,
+        };
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(vulkanDevice->logicalDevice, &descriptorSetAllocateInfo, &descriptorSet));
+    }else {
+        if (descriptorPoolMap[descriptorSetLayout].back().currentSetNum < maxSets) {
+            auto& descriptorPool = descriptorPoolMap[descriptorSetLayout].back();
+            descriptorPool.currentSetNum++;
+            VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .pNext = 0,
+                .descriptorPool = descriptorPool.descriptorPool,
+                .descriptorSetCount = 1,
+                .pSetLayouts = &descriptorSetLayout,
+            };
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(vulkanDevice->logicalDevice, &descriptorSetAllocateInfo, &descriptorSet));
+        }else {
+            //此处一个Set对应一个bind，方便管理，也进一步减少descriptorSetLayout的种类使其通用
+            descriptorPoolMap[descriptorSetLayout].emplace_back(createDescriptorPool(poolSizes), 1);
+            auto& descriptorPool = descriptorPoolMap[descriptorSetLayout].back();
+            VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .pNext = 0,
+                .descriptorPool = descriptorPool.descriptorPool,
+                .descriptorSetCount = 1,
+                .pSetLayouts = &descriptorSetLayout,
+            };
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(vulkanDevice->logicalDevice, &descriptorSetAllocateInfo, &descriptorSet));
+
+        }
+    }
+    if (descriptorSet == VK_NULL_HANDLE) {
+        throw std::runtime_error("failed to allocate descriptor set, the descriptor set is null");
+    }
+}
+
 FrameWork::VulkanDescriptorPool::VulkanDescriptorPool() {
 }
 
 FrameWork::VulkanDescriptorPool::~VulkanDescriptorPool() {
+
 }
 
 void FrameWork::VulkanDescriptorPool::InitDescriptorPool(FrameWork::VulkanDevice *vulkanDevice) {
