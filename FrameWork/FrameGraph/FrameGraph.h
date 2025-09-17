@@ -15,6 +15,7 @@ namespace FG {
     public:
         //依赖注入
         FrameGraph(ResourceManager& resourceManager ,RenderPassManager& renderPassManager);
+        ~FrameGraph();
         //仅仅只是将RenderPass和Resource注入给FrameGraph管理
         FrameGraph& AddResourceNode(uint32_t resourceNode);
         FrameGraph& AddRenderPassNode(uint32_t renderPassNode);
@@ -24,13 +25,13 @@ namespace FG {
         void CreateTimeline();
         void CreateAliasGroups();
         void CreateCommandPools();
-        void AllocateCommandBuffers();
         VkRenderingAttachmentInfo CreateCreateAttachmentInfo(uint32_t resourceIndex);
         VkRenderingAttachmentInfo CreateInputAttachmentInfo(uint32_t resourceIndex);
         //根据图的拓扑结构创建图的结构
         //为裁剪后的节点创建RenderPass
         void InsertBarriers();
     private:
+        void ResetCommandPool();
         void InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo& barrier);
         std::vector<uint32_t> resourceNodes;
         std::vector<uint32_t> usingResourceNodes;
@@ -41,10 +42,9 @@ namespace FG {
         ResourceManager& resourceManager;
         RenderPassManager& renderPassManager;
         ThreadPool threadPool;
-        std::unordered_map<uint32_t, VkCommandBuffer> renderPassCommandBuffer; 
 
         //单FrameGraph资源
-        std::vector<VkCommandPool> flightGraphicsCommandPools; //每个飞行帧对应一个commandPool来创建子command，多线程录制
+        std::unordered_map<uint32_t, VkCommandPool> renderPassCommandPools; //每个Pass对应一个commandPool来创建子command，多线程录制
     };
 }
 

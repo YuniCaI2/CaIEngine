@@ -12,6 +12,27 @@ uint32_t FG::ResourceManager::RegisterResource(const std::function<void(std::uni
         LOG_WARNING("The name : {} has been existed", resourceDescription->GetName());
         return nameToResourceIndex[resourceDescription->GetName()];
     }
+    //保证资源Description的完整性
+    if(resourceDescription->isExternal){
+        if(resourceDescription->isPresent){
+            resourceDescription->GetDescription<TextureDescription>()->width = vulkanRenderAPI.GetFrameWidth();
+            resourceDescription->GetDescription<TextureDescription>()->height = vulkanRenderAPI.GetFrameHeight();
+            resourceDescription->GetDescription<TextureDescription>()->format = vulkanRenderAPI.GetVulkanSwapChain().colorFormat;
+            resourceDescription->GetDescription<TextureDescription>()->mipLevels = 1;
+            resourceDescription->GetDescription<TextureDescription>()->arrayLayers = 1;
+            resourceDescription->GetDescription<TextureDescription>()->samples = VK_SAMPLE_COUNT_1_BIT;
+            resourceDescription->GetDescription<TextureDescription>()->usages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        }else{
+            auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceDescription->vulkanIndex);
+            resourceDescription->GetDescription<TextureDescription>()->width = texture->image.extent.width;
+            resourceDescription->GetDescription<TextureDescription>()->height = texture->image.extent.height;
+            resourceDescription->GetDescription<TextureDescription>()->format = texture->image.format;
+            resourceDescription->GetDescription<TextureDescription>()->mipLevels = texture->image.mipLevels;
+            resourceDescription->GetDescription<TextureDescription>()->arrayLayers = texture->image.arrayLayers;
+            resourceDescription->GetDescription<TextureDescription>()->samples = texture->image.samples;
+            resourceDescription->GetDescription<TextureDescription>()->usages = texture->image.usage;
+        }
+    }
     resourceDescriptions.push_back(std::move(resourceDescription));
     nameToResourceIndex[resourceDescriptions.back()->GetName()] = resourceDescriptions.size() - 1;
     return resourceDescriptions.size() - 1;
@@ -34,20 +55,9 @@ FG::ResourceDescription * FG::ResourceManager::FindResource(uint32_t index) {
     return resourceDescriptions[index].get();
 }
 
-uint32_t FG::ResourceManager::GetVulkanResourceID(const std::string &name) {
-    return GetVulkanResourceID(nameToResourceIndex[name]);
-}
-
-uint32_t FG::ResourceManager::GetVulkanResourceID(uint32_t index) {
-    if (index >= nameToResourceIndex.size()) {
-        LOG_ERROR("the index {} exceed the size of resourceManager", index);
-    }
-    if (resourceDescriptions[index]->GetType() == ResourceType::Proxy) {
-        auto description = resourceDescriptions[index]->GetDescription<ProxyDescription>();
-        return description->vulkanIndex;
-    }else {
-        return aliasGroups[resourceDescriptionToAliasGroup[index]].vulkanIndex;
-    }
+void FG::ResourceManager::ClearAliasGroups(){
+    aliasGroups.clear();
+    resourceDescriptionToAliasGroup.clear();
 }
 
 bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasIndex) {
@@ -87,11 +97,7 @@ bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasInd
 uint32_t FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     //先不支持Buffer的创建，因为RenderAPI现无对应的接口
     auto description = aliasGroups[index].description;
-    if (description->GetResourceType() == ResourceType::Proxy) {
-        LOG_WARNING("Proxy resource : {} can't create", resourceDescriptions[index]->GetName());
-        //返回错误值 ,此接口为创建
-        return -1;
-    }else if (description->GetResourceType() == ResourceType::Texture) {
+    if (description->GetResourceType() == ResourceType::Texture) {
         uint32_t rt = 0;
         vulkanRenderAPI.CreateTexture(index, description);
         return rt;
@@ -101,9 +107,13 @@ uint32_t FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     }
 }
 
+uint32_t FG::ResourceManager::GetVulkanResource(const std::string& name) {
+    return GetVulkanResource(nameToResourceIndex[name]);
+}
+
 uint32_t FG::ResourceManager::GetVulkanResource(uint32_t resourceIndex) {
-    if(resourceDescriptions[resourceIndex]->GetType() == ResourceType::Proxy){
-        return resourceDescriptions[resourceIndex]->GetDescription<ProxyDescription>()->vulkanIndex;
+    if(resourceDescriptions[resourceIndex]->isExternal){
+        return resourceDescriptions[resourceIndex]->vulkanIndex;
     }
 
     if(!resourceDescriptionToAliasGroup.contains(resourceIndex)){

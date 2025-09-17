@@ -253,6 +253,8 @@ public:
     //如果其他类型的资源直接作为Proxy导入为好，每一帧创建开销太大了
     void CreateTexture(uint32_t & textureId, FG::BaseDescription* description);
 
+    std::vector<uint32_t> CreateSwapChainTexture();
+
     void CreateImageView(FrameWork::VulkanImage &image, VkImageView &imageView, VkImageAspectFlags aspectFlags,
                          VkImageViewType viewType);
 
@@ -345,8 +347,7 @@ public:
     //先只支持多pass，如果支持subpass则在各种延迟渲染中需要使用InputAttachment来代替普通RenderPass使用纹理传入的Attachment需要分类讨论
 
     //支持Dynamic Rendering Pipeline
-    FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
-                                               const std::vector<VkFormat>& colorFormats, bool hasDepth, uint32_t width = -1,
+    FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath, uint32_t width = -1,
                                                uint32_t height = -1);
 
     //简单封装
@@ -540,6 +541,9 @@ public:
         if (std::is_same_v<T, FrameWork::Texture>) {
             auto texture = textures[index];
             texture->inUse = false;
+            if (texture->isSwapChainRef == true) {
+                return;
+            }
             if (texture->imageView != VK_NULL_HANDLE) {
                 vkDestroyImageView(device, texture->imageView, nullptr);
                 texture->imageView = VK_NULL_HANDLE;

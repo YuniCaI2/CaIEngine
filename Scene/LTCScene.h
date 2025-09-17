@@ -60,7 +60,8 @@ private:
         alignas(16) glm::vec3 color{1.0f, 1.0f, 1.0f};
         alignas(16) glm::vec3 cameraPosition{0.0f, 0.0f, 0.0f};
 
-        void Update(const glm::vec3* position, const float* lightRotateY, const float* lightRotateX, const float* lightScaleY, const float* lightScaleX, const float* intensity, const glm::vec3* lightColor, const FrameWork::Camera* camera) {
+        void Update(const glm::vec3* position, const float* lightRotateY, 
+            const float* lightRotateX, const float* lightScaleY, const float* lightScaleX, const float* intensity, const glm::vec3* lightColor, const FrameWork::Camera* camera) {
             auto rotateY = glm::rotate(glm::mat4(1.0f), glm::radians(*lightRotateY
         ), glm::vec3(0.0f, 1.0f, 0.0f));
             // std::cout << "intensity:" << *intensity << std::endl;

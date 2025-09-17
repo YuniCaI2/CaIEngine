@@ -39,10 +39,14 @@ namespace FG {
         RenderPass& AddRenderPassDependency(uint32_t index);
         std::unordered_set<uint32_t>& GetRenderPassDependencies();
 
+
+
         RenderPass& AddPreBarrier(const BarrierInfo& barrierInfo);
         RenderPass& AddPostBarrier(const BarrierInfo& barrierInfo);
         std::vector<BarrierInfo>& GetPreBarriers();
         std::vector<BarrierInfo>& GetPostBarriers();
+
+        void ClearBarriers();
 
         RenderPass& SetExec(const std::function<void(VkCommandBuffer)>& );
         std::function<void(VkCommandBuffer)>& GetExec();
@@ -64,6 +68,8 @@ namespace FG {
         std::vector<BarrierInfo> postBarriers;
         using RenderPassExcFunc = std::function<void(VkCommandBuffer)>; //通过捕获
         RenderPassExcFunc renderPassExcFunc;
+
+
     };
 
     class RenderPassManager {

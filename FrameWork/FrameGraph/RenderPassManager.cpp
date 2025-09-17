@@ -99,6 +99,11 @@ std::vector<FG::BarrierInfo> & FG::RenderPass::GetPostBarriers() {
     return postBarriers;
 }
 
+void FG::RenderPass::ClearBarriers(){
+    preBarriers.clear();
+    postBarriers.clear();
+}
+
 FG::RenderPass & FG::RenderPass::SetExec(const std::function<void(VkCommandBuffer)> & Func) {
     renderPassExcFunc = Func;
     return *this;

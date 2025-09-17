@@ -207,9 +207,8 @@ namespace FrameWork {
         VulkanImage image{};
         VkImageView imageView{VK_NULL_HANDLE};
         VkSampler sampler{VK_NULL_HANDLE}; //optional
-
+        bool isSwapChainRef{false}; //这里用来适配FrameGraph的资源导入
         TextureTypeFlagBits textureType;//这个先没使用
-
         bool inUse = false;
     };
 

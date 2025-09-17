@@ -307,7 +307,9 @@ bool vulkanFrameWork::initVulkan() {
 
     //留给派生类的接口可以添加扩展
     getEnabledExtensions();
-
+    enabledDeviceExtensions = {
+        "VK_KHR_dynamic_rendering"
+    };
 
     VkPhysicalDeviceDynamicRenderingFeatures enabledDynamicRenderingFeatures = {};
     enabledDynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
@@ -774,7 +776,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *de
     vulkanDevice->createImage(&texture->image, VkExtent2D(texDesc->width, texDesc->height),
         texDesc->mipLevels, texDesc->arrayLayers,texDesc->samples, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
     texDesc->usages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+    if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
     }else {
         CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
@@ -784,6 +786,19 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *de
     //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
     texture->inUse = true;
 }
+
+std::vector<uint32_t> vulkanFrameWork::CreateSwapChainTexture() {
+    std::vector<uint32_t> swapChainTextures(swapChain.images.size());
+    for (int i = 0; i < swapChain.images.size(); i++) {
+        swapChainTextures[i] = getNextIndex<FrameWork::Texture>();
+        auto texture = getByIndex<FrameWork::Texture>(swapChainTextures[i]);
+        texture->imageView = swapChain.imageViews[i];
+        texture->isSwapChainRef = true;
+        texture->inUse = true;
+    }
+    return swapChainTextures;
+}
+
 
 void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView&imageView,
                                       VkImageAspectFlags aspectFlags, VkImageViewType viewType) {
@@ -1829,7 +1844,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
 }
 
 FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
-    const std::vector<VkFormat> &colorFormats, bool hasDepth, uint32_t width, uint32_t height) {
+     uint32_t width, uint32_t height) {
         FrameWork::ShaderInfo shaderInfo = {};
     auto shaderModulePackages = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
@@ -2002,12 +2017,15 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .pAttachments = blendAttachments.data(),
     };
 
+    std::vector colorFormats(shaderInfo.shaderState.outputNums, swapChain.colorFormat);
+
     //Dynamic Rendering设置
     VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
     pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
     pipelineRenderingCreateInfo.colorAttachmentCount = static_cast<uint32_t>(colorFormats.size());
     pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
-    pipelineRenderingCreateInfo.depthAttachmentFormat = depthFormat;
+    pipelineRenderingCreateInfo.depthAttachmentFormat = shaderInfo.shaderState.depthWrite ? depthFormat : VK_FORMAT_UNDEFINED;
+
 
     VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,

@@ -16,14 +16,7 @@ namespace FG {
 namespace FG {
     enum class ResourceType {
         Texture,
-        Buffer,
-        Proxy
-    };
-
-    enum class ProxyType {
-        SwapChain,
-        ImportTexture,
-        ImportBuffer,
+        Buffer
     };
 
     // 基础描述接口
@@ -80,22 +73,6 @@ namespace FG {
             return ResourceType::Buffer;
         }
     };
-
-    struct ProxyDescription : public BaseDescription {
-        ProxyDescription() = default;
-        uint32_t vulkanIndex{};
-        ProxyType proxyType{};
-        bool Equal(BaseDescription *description) override {
-            if (description->GetResourceType() != GetResourceType()) return false;
-            auto proxyDesc = static_cast<ProxyDescription*>(description);
-            return proxyDesc->vulkanIndex == vulkanIndex && proxyType == proxyDesc->proxyType;
-            //Proxy的等于大概率不会使用
-        }
-        ResourceType GetResourceType() const override {
-            return ResourceType::Proxy;
-        }
-    };
-
 
     //别名组资源，其直接对应Vulkan资源
     struct AliasGroup {
@@ -166,12 +143,16 @@ namespace FG {
 
 
         ResourceType resourceType{};
+        bool isExternal = false; //是否是外部导入的资源
+        bool isPresent = false; //是否是交换链的资源---交换链的资源不参与别名化
+        uint32_t vulkanIndex = -1; //对应的Vulkan资源Index
     private:
         std::string name;
         std::unordered_set<uint32_t> outputRenderPasses;
         std::unordered_set<uint32_t> inputRenderPasses;
         uint32_t descriptorTypeID = -1; //维护类型安全的
         std::unique_ptr<BaseDescription> description{nullptr};
+
 
         uint32_t firstUseTime{UINT32_MAX};
         uint32_t lastUseTime{0};
@@ -183,15 +164,15 @@ namespace FG {
         uint32_t RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>& )>& Func);
         ResourceDescription* FindResource(const std::string& name);
         ResourceDescription* FindResource(uint32_t index);
-        uint32_t GetVulkanResourceID(const std::string& name); //通过名字获取Vulkan资源
-        uint32_t GetVulkanResourceID(uint32_t index); //通过ID获取Vulkan资源
+        uint32_t GetVulkanResource(const std::string& name);
+        uint32_t GetVulkanResource(uint32_t resourceIndex);
+        void ClearAliasGroups();
+        std::vector<AliasGroup>& GetAliasGroups();
     private:
         friend FrameGraph;
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
         //aliasGroup Index创建
         uint32_t CreateVulkanResource(uint32_t index);
-        uint32_t GetVulkanResource(uint32_t resourceIndex);
-        std::vector<AliasGroup>& GetAliasGroups();
 
         std::unordered_map<std::string, uint32_t> nameToResourceIndex;
         std::vector<std::unique_ptr<ResourceDescription>> resourceDescriptions;
