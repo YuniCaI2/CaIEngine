@@ -18,6 +18,7 @@ namespace FrameWork {
 
         CaIShader(const std::string& shaderPath, RenderPassType renderPassType);
         CaIShader(const std::string& shaderPath, VkRenderPass renderPass);
+        CaIShader(const std::string& shaderPath, const std::vector<VkFormat>& colorFormats, bool hasDepth);
         ~CaIShader();
 
         CaIShader() = default;

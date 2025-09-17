@@ -188,7 +188,9 @@ namespace FG {
     private:
         friend FrameGraph;
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
+        //aliasGroup Index创建
         uint32_t CreateVulkanResource(uint32_t index);
+        uint32_t GetVulkanResource(uint32_t resourceIndex);
         std::vector<AliasGroup>& GetAliasGroups();
 
         std::unordered_map<std::string, uint32_t> nameToResourceIndex;

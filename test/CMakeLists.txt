@@ -13,3 +13,7 @@ add_test(NAME parserTest COMMAND parserTest)
 add_executable(frameGraphTest frameGraphTest.cpp)
 target_link_libraries(frameGraphTest FrameWork)
 add_test(NAME frameGraphTest COMMAND frameGraphTest)
+
+add_executable(threadPoolTest threadPoolTest.cpp)
+target_link_libraries(threadPoolTest FrameWork)
+add_test(NAME threadPoolTest COMMAND threadPoolTest)

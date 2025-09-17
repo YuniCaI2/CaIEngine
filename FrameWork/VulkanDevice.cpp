@@ -178,9 +178,6 @@ VkResult FrameWork::VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures e
         deviceExtensions.push_back("VK_KHR_portability_subset");
 #endif
 
-
-
-
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());

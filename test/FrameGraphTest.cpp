@@ -165,7 +165,7 @@ void TestCullPass() {
     std::cout << "=== 剔除完成，检查结果 ===" << std::endl;
     //测试TimeLine
     frameGraph.CreateTimeline();
-    frameGraph.CreateVulkanResources();
+    frameGraph.CreateAliasGroups();
     LOG_TRACE("FrameGraph Created");
 }
 

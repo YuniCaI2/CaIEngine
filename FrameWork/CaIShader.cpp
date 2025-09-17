@@ -54,7 +54,15 @@ FrameWork::CaIShader::CaIShader(const std::string &shaderPath, RenderPassType re
 }
 
 FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkRenderPass renderPass) {
+    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, renderPass);
+    this->shaderPath = shaderPath;
+}
 
+//支持Dynamic Rendering
+FrameWork::CaIShader::CaIShader(const std::string &shaderPath, const std::vector<VkFormat> &colorFormats,
+    bool hasDepth) {
+    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, colorFormats, hasDepth);
+    this->shaderPath = shaderPath;
 }
 
 FrameWork::CaIShader::~CaIShader() {

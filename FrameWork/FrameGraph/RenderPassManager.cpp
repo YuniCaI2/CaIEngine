@@ -81,6 +81,33 @@ std::unordered_set<uint32_t> & FG::RenderPass::GetRenderPassDependencies() {
     return renderPassDependencies;
 }
 
+FG::RenderPass & FG::RenderPass::AddPreBarrier(const BarrierInfo &barrierInfo) {
+    preBarriers.push_back(barrierInfo);
+    return *this;
+}
+
+FG::RenderPass & FG::RenderPass::AddPostBarrier(const BarrierInfo &barrierInfo) {
+    postBarriers.push_back(barrierInfo);
+    return *this;
+}
+
+std::vector<FG::BarrierInfo> & FG::RenderPass::GetPreBarriers() {
+    return preBarriers;
+}
+
+std::vector<FG::BarrierInfo> & FG::RenderPass::GetPostBarriers() {
+    return postBarriers;
+}
+
+FG::RenderPass & FG::RenderPass::SetExec(const std::function<void(VkCommandBuffer)> & Func) {
+    renderPassExcFunc = Func;
+    return *this;
+}
+
+std::function<void(VkCommandBuffer)> & FG::RenderPass::GetExec() {
+    return renderPassExcFunc;
+}
+
 
 VkRenderPass& FG::RenderPass::GetVkRenderPass() {
     return renderPass;

@@ -11,9 +11,12 @@
 //这意味着不需要依赖
 namespace FG {
     struct BarrierInfo {
+        //不考虑family，过于复杂了
         uint32_t resourceID{};
-        VkImageMemoryBarrier imageMemoryBarrier{};
-        VkBufferMemoryBarrier bufferMemoryBarrier{};
+        VkAccessFlags      srcAccessMask{};
+        VkAccessFlags      dstAccessMask{};
+        VkImageLayout              oldLayout{};
+        VkImageLayout              newLayout{};
         VkPipelineStageFlags srcStageMask{};
         VkPipelineStageFlags dstStageMask{};
         bool isImage{};
@@ -36,6 +39,13 @@ namespace FG {
         RenderPass& AddRenderPassDependency(uint32_t index);
         std::unordered_set<uint32_t>& GetRenderPassDependencies();
 
+        RenderPass& AddPreBarrier(const BarrierInfo& barrierInfo);
+        RenderPass& AddPostBarrier(const BarrierInfo& barrierInfo);
+        std::vector<BarrierInfo>& GetPreBarriers();
+        std::vector<BarrierInfo>& GetPostBarriers();
+
+        RenderPass& SetExec(const std::function<void(VkCommandBuffer)>& );
+        std::function<void(VkCommandBuffer)>& GetExec();
 
         RenderPass& SetName(const std::string &name);
         std::string GetName() const;
@@ -52,7 +62,7 @@ namespace FG {
         std::vector<uint32_t> readResources;
         std::vector<BarrierInfo> preBarriers;
         std::vector<BarrierInfo> postBarriers;
-        using RenderPassExcFunc = std::function<void()>; //通过捕获
+        using RenderPassExcFunc = std::function<void(VkCommandBuffer)>; //通过捕获
         RenderPassExcFunc renderPassExcFunc;
     };
 

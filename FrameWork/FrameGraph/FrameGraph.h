@@ -4,9 +4,9 @@
 
 #ifndef CAIENGINE_FRAMEGRAPH_H
 #define CAIENGINE_FRAMEGRAPH_H
-#include<iostream>
 #include<vector>
 
+#include "ThreadPool.h"
 #include "RenderPassManager.h"
 #include "ResourceManager.h"
 
@@ -19,14 +19,19 @@ namespace FG {
         FrameGraph& AddResourceNode(uint32_t resourceNode);
         FrameGraph& AddRenderPassNode(uint32_t renderPassNode);
         FrameGraph& Compile();
-        FrameGraph& Execute();
+        FrameGraph& Execute(VkCommandBuffer commandBuffer);
         void CullPassAndResource();
         void CreateTimeline();
-        void CreateVulkanResources();
+        void CreateAliasGroups();
+        void CreateCommandPools();
+        void AllocateCommandBuffers();
+        VkRenderingAttachmentInfo CreateCreateAttachmentInfo(uint32_t resourceIndex);
+        VkRenderingAttachmentInfo CreateInputAttachmentInfo(uint32_t resourceIndex);
         //根据图的拓扑结构创建图的结构
         //为裁剪后的节点创建RenderPass
         void InsertBarriers();
     private:
+        void InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo& barrier);
         std::vector<uint32_t> resourceNodes;
         std::vector<uint32_t> usingResourceNodes;
         std::vector<uint32_t> renderPassNodes;
@@ -35,6 +40,11 @@ namespace FG {
         TimeLine timeline;
         ResourceManager& resourceManager;
         RenderPassManager& renderPassManager;
+        ThreadPool threadPool;
+        std::unordered_map<uint32_t, VkCommandBuffer> renderPassCommandBuffer; 
+
+        //单FrameGraph资源
+        std::vector<VkCommandPool> flightGraphicsCommandPools; //每个飞行帧对应一个commandPool来创建子command，多线程录制
     };
 }
 

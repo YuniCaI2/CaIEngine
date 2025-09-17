@@ -35,11 +35,19 @@ FG::ResourceDescription * FG::ResourceManager::FindResource(uint32_t index) {
 }
 
 uint32_t FG::ResourceManager::GetVulkanResourceID(const std::string &name) {
-    return aliasGroups[nameToResourceIndex[name]].vulkanIndex;
+    return GetVulkanResourceID(nameToResourceIndex[name]);
 }
 
 uint32_t FG::ResourceManager::GetVulkanResourceID(uint32_t index) {
-    return aliasGroups[index].vulkanIndex;
+    if (index >= nameToResourceIndex.size()) {
+        LOG_ERROR("the index {} exceed the size of resourceManager", index);
+    }
+    if (resourceDescriptions[index]->GetType() == ResourceType::Proxy) {
+        auto description = resourceDescriptions[index]->GetDescription<ProxyDescription>();
+        return description->vulkanIndex;
+    }else {
+        return aliasGroups[resourceDescriptionToAliasGroup[index]].vulkanIndex;
+    }
 }
 
 bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasIndex) {
@@ -78,19 +86,32 @@ bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasInd
 
 uint32_t FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     //先不支持Buffer的创建，因为RenderAPI现无对应的接口
-    if (resourceDescriptions[index]->GetType() == ResourceType::Proxy) {
+    auto description = aliasGroups[index].description;
+    if (description->GetResourceType() == ResourceType::Proxy) {
         LOG_WARNING("Proxy resource : {} can't create", resourceDescriptions[index]->GetName());
-        //返回错误值
+        //返回错误值 ,此接口为创建
         return -1;
-    }else if (resourceDescriptions[index]->GetType() == ResourceType::Texture) {
+    }else if (description->GetResourceType() == ResourceType::Texture) {
         uint32_t rt = 0;
-        vulkanRenderAPI.CreateTexture(index,
-            resourceDescriptions[index]->GetDescription<TextureDescription>());
+        vulkanRenderAPI.CreateTexture(index, description);
         return rt;
     }else {
         LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
         return -1;
     }
+}
+
+uint32_t FG::ResourceManager::GetVulkanResource(uint32_t resourceIndex) {
+    if(resourceDescriptions[resourceIndex]->GetType() == ResourceType::Proxy){
+        return resourceDescriptions[resourceIndex]->GetDescription<ProxyDescription>()->vulkanIndex;
+    }
+
+    if(!resourceDescriptionToAliasGroup.contains(resourceIndex)){
+        LOG_ERROR("The resourceIndex : {} didn't create vulkan resource !", 
+            resourceDescriptions[resourceIndex]->GetName());
+        return -1;
+    }
+    return aliasGroups[resourceDescriptionToAliasGroup[resourceIndex]].vulkanIndex;
 }
 
 std::vector<FG::AliasGroup> & FG::ResourceManager::GetAliasGroups() {
