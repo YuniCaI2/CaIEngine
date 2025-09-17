@@ -34,29 +34,29 @@ FG::FrameGraph& FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
 }
 
 FG::FrameGraph& FG::FrameGraph::Compile() {
-    timeline.clear();
-    usingPassNodes.clear();
-    usingResourceNodes.clear();
-    
-    // 清理command pools
-    for (auto& [passIndex, pool] : renderPassCommandPools) {
-        if(pool != VK_NULL_HANDLE)
-        vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, 
-                            pool, nullptr);
-        pool = VK_NULL_HANDLE;
-    }
-    renderPassCommandPools.clear();
-    
-    // 清理资源的alias信息
-    resourceManager.ClearAliasGroups();
-    
-    // 清理每个pass的barriers
-    for (auto& passIndex : renderPassNodes) {
-        auto pass = renderPassManager.FindRenderPass(passIndex);
-        if (pass) {
-            pass->ClearBarriers();
-        }
-    }
+    // timeline.clear();
+    // usingPassNodes.clear();
+    // usingResourceNodes.clear();
+    //
+    // // 清理command pools
+    // for (auto& [passIndex, pool] : renderPassCommandPools) {
+    //     if(pool != VK_NULL_HANDLE)
+    //     vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+    //                         pool, nullptr);
+    //     pool = VK_NULL_HANDLE;
+    // }
+    // renderPassCommandPools.clear();
+    //
+    // // 清理资源的alias信息
+    // resourceManager.ClearAliasGroups();
+    //
+    // // 清理每个pass的barriers
+    // for (auto& passIndex : renderPassNodes) {
+    //     auto pass = renderPassManager.FindRenderPass(passIndex);
+    //     if (pass) {
+    //         pass->ClearBarriers();
+    //     }
+    // }
 
     CullPassAndResource();
     CreateTimeline();
@@ -137,6 +137,11 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 auto& resourceInputIndices = renderPass->GetInputResources();
                 colorFormats.reserve(resourceCreateIndices.size() + resourceInputIndices.size());
 
+                std::vector<VkRenderingAttachmentInfo> colorAttachmentInfos;
+                colorAttachmentInfos.reserve(resourceCreateIndices.size() + resourceInputIndices.size());
+                VkRenderingAttachmentInfo depthAttachmentInfo;
+                uint32_t width{}, height{};
+
                 VkFormat depthFormat = VK_FORMAT_UNDEFINED;
                 for(auto& resourceIndex : resourceCreateIndices){
                     auto resource = resourceManager.FindResource(resourceIndex);
@@ -144,10 +149,15 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                         auto description = resource->GetDescription<TextureDescription>();
                         //记录采样
                         sampleCount = description->samples;
+                        //理论上所有附件都是一致的
+                        width = description->width;
+                        height = description->height;
                         if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
                             colorFormats.push_back(description->format);
+                            colorAttachmentInfos.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
                         } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
                             depthFormat = description->format;
+                            depthAttachmentInfo = this->CreateCreateAttachmentInfo(resourceIndex);
                         }
                     }
                 }
@@ -157,8 +167,10 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                         auto description = resource->GetDescription<TextureDescription>();
                         if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
                             colorFormats.push_back(description->format);
+                            colorAttachmentInfos.push_back(this->CreateInputAttachmentInfo(resourceIndex));
                         } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
                             depthFormat = description->format;
+                            depthAttachmentInfo = this->CreateInputAttachmentInfo(resourceIndex);
                         }
                     }
                 }
@@ -186,7 +198,32 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
                 cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
 
+
+
                 vkBeginCommandBuffer(commandBuffer, &cmdBufInfo);
+
+                VkRenderingInfo renderingInfo = {};
+                renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+                renderingInfo.renderArea = {{0, 0}, {vulkanRenderAPI.windowWidth, vulkanRenderAPI.windowHeight}};
+                renderingInfo.layerCount = 1;
+                renderingInfo.colorAttachmentCount = (uint32_t)colorAttachmentInfos.size();
+                renderingInfo.pColorAttachments = colorAttachmentInfos.data();
+                renderingInfo.pDepthAttachment = &depthAttachmentInfo;
+
+                vkCmdBeginRendering(commandBuffer, &renderingInfo);
+                VkViewport viewport = {};
+                viewport.width = (float) width;
+                viewport.height = (float) height;
+                viewport.minDepth = 0.0f;
+                viewport.maxDepth = 1.0f;
+                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+                VkRect2D scissor = {};
+                scissor.extent.width = width;
+                scissor.extent.height = height;
+                scissor.offset.x = 0;
+                scissor.offset.y = 0;
+                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
                 auto& preBarriers = renderPass->GetPreBarriers();
                 for (auto& barrier : preBarriers) {
@@ -199,6 +236,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 for (auto& barrier : postBarriers) {
                     InsertImageBarrier(commandBuffer , barrier);
                 }
+                vkCmdEndRendering(commandBuffer);
                 vkEndCommandBuffer(commandBuffer);
 
                 return commandBuffer;
@@ -244,6 +282,7 @@ void FG::FrameGraph::CullPassAndResource() {
                 auto resource = resourceManager.FindResource(writeResourceIndex);
                 if (resource) {
                     if (resource->isExternal) {
+                        usePassNode.insert(renderPassIndex);
                         startPassNodes.push_back(renderPassIndex);
                         break;
                     }

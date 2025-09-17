@@ -27,24 +27,17 @@ Vertex {
     Program{
         void main()
         {
-            // 1. 计算顶点在世界空间中的位置
-            //    vec4(inPos, 1.0) 将三维位置转为四维其次坐标
             vec4 worldPos = modelMatrix * vec4(inPos, 1.0);
             outWorldPos = worldPos.xyz;
 
-            // 2. 计算最终在屏幕上的位置 (MVP变换)
             gl_Position = projectionMatrix * viewMatrix * worldPos;
 
-            // 3. 将法线、切线从模型空间变换到世界空间
             outWorldNormal = normalize(transpose(inverse(mat3(modelMatrix))) * inNormal);
             vec3 worldTangent = normalize(mat3(modelMatrix) * inTangent);
 
-            // 4. 计算副切线 (Bitangent) 并构建 TBN 矩阵
-            //    TBN 矩阵用于将法线贴图中的法线从切线空间转换到世界空间
             vec3 worldBitangent = cross(outWorldNormal, worldTangent);
             outTBN = mat3(worldTangent, worldBitangent, outWorldNormal);
 
-            // 5. 直接传递纹理坐标到片段着色器
             outTexCoord = inTexCoord;
         }
     }
@@ -67,7 +60,6 @@ Fragment{
         void main()
         {
             outColor = texture(colorSampler, inTexCoord) * 0.9;
-            // outColor = vec4(1, 1, 1, 1);
         }
     }
 }

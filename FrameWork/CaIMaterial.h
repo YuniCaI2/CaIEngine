@@ -18,15 +18,10 @@ namespace FrameWork {
         static bool exist(uint32_t id);
         static void PendingSetAttachments(); //帧头执行，意思是等待前面的实现完成
 
-        explicit CaIMaterial(uint32_t shaderRef); //保证不发生隐式转换
         ~CaIMaterial();
 
         //因为其构造的原因我这边不允许移动
-        CaIMaterial() = default;
-        CaIMaterial(const CaIMaterial&) = delete;
-        CaIMaterial& operator=(const CaIMaterial&) = delete;
-        CaIMaterial(CaIMaterial&&) = default;
-        CaIMaterial& operator=(CaIMaterial&&) = default;
+
 
 
         template<typename Param>
@@ -50,6 +45,12 @@ namespace FrameWork {
 
         uint32_t dataID {UINT32_MAX}; //对应VulkanMaterialData
     private:
+        CaIMaterial() = default;
+        explicit CaIMaterial(uint32_t shaderRef); //保证不发生隐式转换
+        CaIMaterial(const CaIMaterial&) = delete;
+        CaIMaterial& operator=(const CaIMaterial&) = delete;
+        CaIMaterial(CaIMaterial&&) = default;
+        CaIMaterial& operator=(CaIMaterial&&) = default;
         void PendingSetAttachment_(); //在帧头部之执行
         inline static std::vector<CaIMaterial*> caiMaterialPools{};
         uint32_t shaderRef {UINT32_MAX};

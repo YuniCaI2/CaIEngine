@@ -33,10 +33,10 @@ namespace FG {
     private:
         void ResetCommandPool();
         void InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo& barrier);
-        std::vector<uint32_t> resourceNodes;
-        std::vector<uint32_t> usingResourceNodes;
-        std::vector<uint32_t> renderPassNodes;
-        std::vector<uint32_t> usingPassNodes; //经过裁剪之后的Pass
+        std::vector<uint32_t> resourceNodes{};
+        std::vector<uint32_t> usingResourceNodes{};
+        std::vector<uint32_t> renderPassNodes{};
+        std::vector<uint32_t> usingPassNodes{}; //经过裁剪之后的Pass
         using TimeLine = std::vector<std::vector<uint32_t>>;
         TimeLine timeline;
         ResourceManager& resourceManager;

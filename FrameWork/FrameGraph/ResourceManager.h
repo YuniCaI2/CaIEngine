@@ -158,6 +158,7 @@ namespace FG {
         uint32_t lastUseTime{0};
 
     };
+    using RegisterFunc = std::function<void(std::unique_ptr<ResourceDescription>&)>;
 
     class ResourceManager {
     public:

@@ -13,7 +13,7 @@ uint32_t FG::ResourceManager::RegisterResource(const std::function<void(std::uni
         return nameToResourceIndex[resourceDescription->GetName()];
     }
     //保证资源Description的完整性
-    if(resourceDescription->isExternal){
+    if(resourceDescription->isExternal && resourceDescription->GetType() == ResourceType::Texture){
         if(resourceDescription->isPresent){
             resourceDescription->GetDescription<TextureDescription>()->width = vulkanRenderAPI.GetFrameWidth();
             resourceDescription->GetDescription<TextureDescription>()->height = vulkanRenderAPI.GetFrameHeight();

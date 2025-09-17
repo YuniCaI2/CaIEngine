@@ -1,0 +1,71 @@
+Settings {
+    Blend SrcAlpha OneMinusSrcAlpha
+    BlendOp Add
+    Cull None
+    ZTest LessOrEqual
+    ZWrite On
+    InputVertex Off
+}
+
+Vertex{
+    Output{
+        0 vec2 fragTexCoord
+    }
+    Program{
+    vec2 positions[6] = vec2[](
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 0.0),  // 右下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 1.0)   // 左上
+    );
+
+    // 对应的纹理坐标
+    vec2 texCoords[6] = vec2[](
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 0.0),  // 右下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 0.0),  // 左下
+    vec2(1.0, 1.0),  // 右上
+    vec2(0.0, 1.0)   // 左上
+    );
+
+
+        void main(){
+            // 获取当前顶点索引
+            int vertexIndex = gl_VertexIndex;
+
+            // 获取顶点位置（范围 [0,1]）
+            vec2 pos = positions[vertexIndex];
+
+            // 转换到NDC坐标系 (范围 [-1,1])
+            vec2 ndcPos = pos * 2.0 - 1.0;
+
+            // 设置输出位置
+            gl_Position = vec4(ndcPos, 0.0, 1.0);
+
+            // 传递纹理坐标到片段着色器
+            fragTexCoord = texCoords[vertexIndex];
+
+        }
+    }
+}
+
+Fragment{
+    Input{
+        0 vec2 fragTexCoord
+    }
+    Output{
+        0 vec4 fragColor
+    }
+    Properties{
+        sampler2D colorTexture
+    }
+    Program{
+        void main() {
+            // 采样上一个pass的颜色
+            fragColor = texture(colorTexture, fragTexCoord);
+        }
+    }
+}

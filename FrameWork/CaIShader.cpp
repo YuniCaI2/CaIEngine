@@ -16,6 +16,18 @@ FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::stri
     return caiShaderPool.back();
 }
 
+FrameWork::CaIShader * FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath) {
+    for (int i = 0; i < caiShaderPool.size(); i++) {
+        if (caiShaderPool[i] == nullptr) {
+            id = i;
+            return new FrameWork::CaIShader(shaderPath);
+        }
+    }
+    caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath));
+    id = caiShaderPool.size() - 1;
+    return caiShaderPool.back();
+}
+
 
 void FrameWork::CaIShader::Destroy(uint32_t &id) {
     if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
