@@ -28,7 +28,6 @@ void TestFrameGraph() {
     FrameGraph frameGraph(resourceManager, renderPassManager);
     std::string ForwardPath = "../../resources/CaIShaders/TestFrameGraph/forward.caishader";
     std::string PresentPath = "../../resources/CaIShaders/TestFrameGraph/present.caishader";
-    FrameWork::Camera camera{};
     uint32_t forwardShader = -1;
     uint32_t presentShader = -1;
     FrameWork::CaIShader::Create(forwardShader, ForwardPath);
@@ -75,7 +74,6 @@ void TestFrameGraph() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             resourceManager.FindResource(swapChainAttachment)->vulkanIndex = vulkanRenderAPI.GetCurrentImageIndex();
-            LOG_DEBUG("the image index : {}", vulkanRenderAPI.GetCurrentImageIndex());
             FrameWork::CaIShader::Get(presentShader)->Bind(cmdBuffer);
             FrameWork::CaIMaterial::Get(presentMaterial)->SetTexture("colorTexture", resourceManager.GetVulkanResource(colorAttachment));
             FrameWork::CaIMaterial::Get(presentMaterial)->Bind(cmdBuffer);

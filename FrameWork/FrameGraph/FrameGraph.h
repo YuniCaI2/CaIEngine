@@ -20,7 +20,7 @@ namespace FG {
         FrameGraph& AddResourceNode(uint32_t resourceNode);
         FrameGraph& AddRenderPassNode(uint32_t renderPassNode);
         FrameGraph& Compile();
-        FrameGraph& Execute(VkCommandBuffer commandBuffer);
+        FrameGraph& Execute(const VkCommandBuffer& commandBuffer);
         void CullPassAndResource();
         void CreateTimeline();
         void CreateAliasGroups();

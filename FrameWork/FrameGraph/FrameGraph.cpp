@@ -77,6 +77,8 @@ void FG::FrameGraph::ResetCommandPool(){
 void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo &barrier){
     if (!barrier.isImage) return;
 
+
+
     auto resource = resourceManager.FindResource(barrier.resourceID);
     auto description = resource->GetDescription<TextureDescription>();
 
@@ -109,15 +111,18 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
         1, &vkBarrier);
 }
 
-FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
+FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
     struct RenderPassData {
         VkCommandBuffer secondaryCmd;
         std::vector<VkRenderingAttachmentInfo> colorAttachments;
         VkRenderingAttachmentInfo depthAttachment;
+        std::vector<VkFormat> colorFormats;
+        VkFormat depthFormat{VK_FORMAT_UNDEFINED};
         bool hasDepth;
         uint32_t width;
         uint32_t height;
         uint32_t passIndex;
+        uint32_t arrayLayer{1};
     };
 
     std::vector<std::future<RenderPassData>> futures;
@@ -144,14 +149,10 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
                 allocInfo.commandBufferCount = 1;
 
-                LOG_DEBUG("Render Pass Index: {}", passIndex);
-
                 vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
                     &allocInfo, &data.secondaryCmd);
 
                 // 收集附件格式信息
-                std::vector<VkFormat> colorFormats;
-                VkFormat depthFormat = VK_FORMAT_UNDEFINED;
                 VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
                 auto& resourceCreateIndices = renderPass->GetCreateResources();
@@ -165,12 +166,13 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                         sampleCount = description->samples;
                         data.width = description->width;
                         data.height = description->height;
+                        data.arrayLayer = description->arrayLayers;
 
                         if((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
-                            colorFormats.push_back(description->format);
+                            data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
                         } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
-                            depthFormat = description->format;
+                            data.depthFormat = description->format;
                             data.depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
                             data.hasDepth = true;
                         }
@@ -183,10 +185,10 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                     if(resource && resource->GetType() == ResourceType::Texture){
                         auto description = resource->GetDescription<TextureDescription>();
                         if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
-                            colorFormats.push_back(description->format);
+                            data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
                         } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
-                            depthFormat = description->format;
+                            data.depthFormat = description->format;
                             data.depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
                             data.hasDepth = true;
                         }
@@ -196,9 +198,9 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 // 设置继承信息
                 VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo{};
                 inheritanceRenderingInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
-                inheritanceRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorFormats.size());
-                inheritanceRenderingInfo.pColorAttachmentFormats = colorFormats.empty() ? nullptr : colorFormats.data();
-                inheritanceRenderingInfo.depthAttachmentFormat = depthFormat;
+                inheritanceRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorFormats.size());
+                inheritanceRenderingInfo.pColorAttachmentFormats = data.colorFormats.empty() ? nullptr : data.colorFormats.data();
+                inheritanceRenderingInfo.depthAttachmentFormat = data.depthFormat;
                 inheritanceRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
                 inheritanceRenderingInfo.rasterizationSamples = sampleCount;
                 inheritanceRenderingInfo.viewMask = 0;
@@ -249,20 +251,19 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
         for (auto& passIndex : t) {
             auto renderPass = renderPassManager.FindRenderPass(passIndex);
             RenderPassData data = futures[futureIndex++].get();
-
+            VkRenderingInfo renderingInfo = {};
             auto& preBarriers = renderPass->GetPreBarriers();
             for (auto& barrier : preBarriers) {
                 InsertImageBarrier(commandBuffer, barrier);
             }
 
             if (!data.colorAttachments.empty() || data.hasDepth) {
-                VkRenderingInfo renderingInfo{};
                 renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
                 renderingInfo.pNext = nullptr;
                 renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT; //告訴他在二級緩衝區錄製
                 renderingInfo.renderArea.offset = {0, 0};
                 renderingInfo.renderArea.extent = {data.width, data.height};
-                renderingInfo.layerCount = 1;
+                renderingInfo.layerCount = data.arrayLayer;
                 renderingInfo.viewMask = 0;
                 renderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorAttachments.size());
                 renderingInfo.pColorAttachments = data.colorAttachments.empty() ? nullptr : data.colorAttachments.data();
@@ -270,9 +271,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 renderingInfo.pStencilAttachment = nullptr;
 
                 vkCmdBeginRendering(commandBuffer, &renderingInfo);
-
                 vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
-
                 vkCmdEndRendering(commandBuffer);
             }
 
@@ -578,11 +577,9 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        texture->image.layout = attachmentInfo.imageLayout;
     }else if((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        texture->image.layout = attachmentInfo.imageLayout;
     }
     return attachmentInfo;
 }
@@ -597,11 +594,9 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
     if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        texture->image.layout = attachmentInfo.imageLayout;
     }else if((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        texture->image.layout = attachmentInfo.imageLayout;
     }
     return attachmentInfo;
 }
@@ -650,58 +645,56 @@ void FG::FrameGraph::InsertBarriers() {
                     if(resource->isPresent){
                         LOG_ERROR("The resource name : {} is SwapChain, can't be used as Input Attachment !", resource->GetName());
                     }
-                    if (resource) {
-                        //资源状态，得知其之前的修改情况
-                        auto resourceState = resourceStates[resourceIndex];
-                        BarrierInfo newBarrier = {};
-                        newBarrier.resourceID = resourceIndex;
-                        if (resource->GetType() == ResourceType::Texture) {
-                            newBarrier.isImage = true;
-                            auto description = resource->GetDescription<TextureDescription>();
-                            if (resourceState.readable == false && resourceState.writable == true) {
-                                if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-                                    == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                                }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                                }
+                    //资源状态，得知其之前的修改情况
+                    auto resourceState = resourceStates[resourceIndex];
+                    BarrierInfo newBarrier = {};
+                    newBarrier.resourceID = resourceIndex;
+                    if (resource->GetType() == ResourceType::Texture) {
+                        newBarrier.isImage = true;
+                        auto description = resource->GetDescription<TextureDescription>();
+                        if (resourceState.readable == false && resourceState.writable == true) {
+                            if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                            }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                newBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                             }
-                            if (resourceState.readable == true && resourceState.writable == false) {
-                                if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-                                    == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                                }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
-                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                                }
-                            }
-                            resourceStates[resourceIndex].writable = true;
-                            resourceStates[resourceIndex].readable = false;
-                            renderPass->AddPreBarrier(newBarrier);
-                            auto index = (&resourceIndex - renderPass->GetInputResources().data());
-                            auto outputResourceIndex = renderPass->GetOutputResources()[index];
-                            resourceStates[outputResourceIndex].writable = true;
-                            resourceStates[outputResourceIndex].readable = false;
                         }
+                        if (resourceState.readable == true && resourceState.writable == false) {
+                            if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                                newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                            }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                                newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                            }
+                        }
+                        resourceStates[resourceIndex].writable = true;
+                        resourceStates[resourceIndex].readable = false;
+                        renderPass->AddPreBarrier(newBarrier);
+                        auto index = (&resourceIndex - renderPass->GetInputResources().data());
+                        auto outputResourceIndex = renderPass->GetOutputResources()[index];
+                        resourceStates[outputResourceIndex].writable = true;
+                        resourceStates[outputResourceIndex].readable = false;
                     }
                 }
                 for (auto& resourceIndex : renderPass->GetReadResources()) {

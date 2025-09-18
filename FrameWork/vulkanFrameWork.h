@@ -141,6 +141,7 @@ protected:
     std::vector<FrameWork::Slot *> slots_;
     std::vector<FrameWork::MaterialData*> materialDatas_;
 
+
     using ReleaseContainer = std::pair<uint32_t, uint32_t>; //后者是释放计数器
     std::deque<ReleaseContainer> textureReleaseQueue;
     std::deque<ReleaseContainer> meshReleaseQueue;
@@ -148,6 +149,13 @@ protected:
     std::deque<ReleaseContainer> fboReleaseQueue;
     std::deque<ReleaseContainer> pipelineReleaseQueue;
     std::deque<ReleaseContainer> materialDataReleaseQueue;
+    //多线程安全，上锁
+    std::mutex texDeleteMutex;
+    std::mutex meshDeleteMutex;
+    std::mutex attachmentDeleteMutex;
+    std::mutex fboDeleteMutex;
+    std::mutex pipelineDeleteMutex;
+    std::mutex materialDeleteMutex;
 
 
     std::string title = "Vulkan FrameWork";

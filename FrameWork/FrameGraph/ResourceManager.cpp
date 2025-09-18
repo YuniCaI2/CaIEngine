@@ -111,7 +111,7 @@ void FG::ResourceManager::ResetVulkanResource() {
         auto description = aliasGroups[index].description;
         if (description->GetResourceType() == ResourceType::Texture) {
             if (aliasGroups[index].vulkanIndex != UINT32_MAX) {
-                vulkanRenderAPI.destroyByIndex<FrameWork::Texture>(aliasGroups[index].vulkanIndex);
+                vulkanRenderAPI.DeleteTexture(aliasGroups[index].vulkanIndex);
             }
         }else {
             LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");

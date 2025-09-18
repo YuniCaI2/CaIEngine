@@ -307,9 +307,15 @@ bool vulkanFrameWork::initVulkan() {
 
     //留给派生类的接口可以添加扩展
     getEnabledExtensions();
-    enabledDeviceExtensions = {
-        "VK_KHR_dynamic_rendering"
-    };
+    // enabledDeviceExtensions = {
+    //     "VK_KHR_dynamic_rendering"
+    // };
+
+    VkPhysicalDeviceVulkan13Features v13 = {};
+    v13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    v13.dynamicRendering = VK_TRUE;
+
+    deviceCreatepNextChain = &v13;
 
     VkPhysicalDeviceDynamicRenderingFeatures enabledDynamicRenderingFeatures = {};
     enabledDynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
@@ -2691,36 +2697,42 @@ VkSampleCountFlagBits vulkanFrameWork::GetSampleCount() const {
 }
 
 void vulkanFrameWork::DeleteTexture(uint32_t id) {
+    std::lock_guard<std::mutex> lock(texDeleteMutex);
     if (id < textures.size() && textures[id]->inUse) {
         textureReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteMesh(uint32_t id) {
+    std::lock_guard<std::mutex> lock(meshDeleteMutex);
     if (id < meshes.size() && meshes[id]->inUse) {
         meshReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteAttachment(uint32_t id) {
+    std::lock_guard<std::mutex> lock(attachmentDeleteMutex);
     if (id < attachmentBuffers.size() && attachmentBuffers[id]->inUse) {
         attachmentReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteFBO(uint32_t id) {
+    std::lock_guard<std::mutex> lock(fboDeleteMutex);
     if (id < vulkanFBOs.size() && vulkanFBOs[id]->inUse) {
         fboReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeletePipeline(uint32_t id) {
+    std::lock_guard<std::mutex> lock(pipelineDeleteMutex);
     if (id < vulkanPipelines.size() && vulkanPipelines[id]->inUse) {
         pipelineReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
 }
 
 void vulkanFrameWork::DeleteMaterialData(uint32_t id) {
+    std::lock_guard<std::mutex> lock(materialDeleteMutex);
     if (id < materialDatas_.size() && materialDatas_[id]->inUse) {
         materialDataReleaseQueue.emplace_back(id, MAX_FRAME + 1);
     }
@@ -3098,7 +3110,6 @@ void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
         frameCountTimeStamp = 0;
     }
     VkResult result = swapChain.acquireNextImage(semaphores.presentComplete[currentFrame], imageIndex);
-    LOG_DEBUG("Swap chain Next image Index : {}", imageIndex);
     // 如果交换链与表面不再兼容（OUT_OF_DATE），则重新创建交换链
     // SRS - 如果不再是最优状态（VK_SUBOPTIMAL_KHR），等到 submitFrame() 中再处理，
     // 以防调整大小时交换链图像数量发生变化
