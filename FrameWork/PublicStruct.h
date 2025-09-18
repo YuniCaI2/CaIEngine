@@ -279,6 +279,21 @@ namespace FrameWork {
 
     };
 
+    //这个ModelData的Vulkan资源话，
+    //尽可能的浅封装,不将我的Material封装进去
+    //现在的model还是static
+    struct VulkanModelData {
+        std::vector<uint32_t> textureID{}; //texture一一对应
+        std::vector<uint32_t> meshID{}; //网格ID
+
+        glm::vec3 position{0,0,0}; //初始位置
+        using TriangleBoundingBoxPtr = std::unique_ptr<std::vector<AABB>>;
+        AABB aabb;
+        TriangleBoundingBoxPtr triangleBoundingBoxs;
+
+        bool inUse = false;
+    };
+
     struct RenderObject {
         uint32_t meshID{};
         uint32_t slotID{};
@@ -325,14 +340,6 @@ namespace FrameWork {
         ShaderPropertiesInfo vertProperties;
         ShaderPropertiesInfo fragProperties;
         //这里先省略几何着色器，后面在加
-    };
-
-    struct ShaderReference {
-        std::string path;
-        uint32_t pipelineID = 0;
-        int referenceCount = 1;
-        RenderPassType renderPassType{RenderPassType::Color};
-        ShaderInfo shaderInfo;
     };
 
     struct MaterialData { //用来存储Vulkan中的资源

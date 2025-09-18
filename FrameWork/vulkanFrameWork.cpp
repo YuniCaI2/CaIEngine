@@ -392,6 +392,14 @@ void vulkanFrameWork::DestroyAll() {
     FrameWork::CaIShader::DestroyAll();
     FrameWork::CaIMaterial::DestroyAll();
 
+    for (int i = 0; i < modelDatas_.size(); i++) {
+        if (modelDatas_[i] != nullptr) {
+            destroyByIndex<FrameWork::VulkanModelData>(i);
+            delete modelDatas_[i];
+            modelDatas_[i] = nullptr;
+        }
+    }
+
     for (int i = 0; i < vulkanPipelineInfos.size(); i++) {
         if (vulkanPipelineInfos[i] != nullptr) {
             destroyByIndex<FrameWork::VulkanPipelineInfo>(i);
@@ -2440,6 +2448,48 @@ void vulkanFrameWork::LoadModel(uint32_t &modelID, const std::string &fileName, 
     }
 }
 
+void vulkanFrameWork::LoadVulkanModel(uint32_t &modelDataID, const std::string &fileName, ModelType modelType,
+    TextureTypeFlags textureTypeFlags, glm::vec3 position, float scale) {
+    modelDataID = getNextIndex<FrameWork::VulkanModelData>();
+    auto vulkanModelData = getByIndex<FrameWork::VulkanModelData>(modelDataID);
+    FrameWork::ModelData modelData = {};
+    modelData.meshDatas = resourceManager.LoadMesh(fileName, modelType, textureTypeFlags, scale);
+    vulkanModelData->inUse = true;
+    vulkanModelData->position = position;
+    //两者大小对应保证模型材质正常
+    vulkanModelData->meshID.resize(modelData.meshDatas.size());
+    vulkanModelData->textureID.resize(modelData.meshDatas.size());
+    //构建包围盒子
+    std::vector<FrameWork::AABB> triangleBoundingBoxes;
+    bool firstTriangle = true;
+    for (auto& m : modelData.meshDatas) {
+        for (int i = 0; i < m.indices.size(); i += 3) {
+            glm::vec3 v1 = m.vertices[m.indices[i]].position;
+            glm::vec3 v2 = m.vertices[m.indices[i + 1]].position;
+            glm::vec3 v3 = m.vertices[m.indices[i + 2]].position;
+
+            FrameWork::AABB triangleAABB;
+            triangleAABB.max = glm::max(glm::max(v1, v2), v3);
+            triangleAABB.min = glm::min(glm::min(v1, v2), v3);
+
+            if (firstTriangle) {
+                vulkanModelData->aabb = triangleAABB;
+                firstTriangle = false;
+            } else {
+                vulkanModelData->aabb.max = glm::max(vulkanModelData->aabb.max, triangleAABB.max);
+                vulkanModelData->aabb.min = glm::min(vulkanModelData->aabb.min, triangleAABB.min);
+            }
+
+            triangleBoundingBoxes.push_back(std::move(triangleAABB));
+        }
+    }
+    vulkanModelData->triangleBoundingBoxs = std::make_unique<std::vector<FrameWork::AABB>>(std::move(triangleBoundingBoxes));
+    //构建包围盒
+
+
+
+}
+
 
 void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet) {
     auto model = getByIndex<FrameWork::Model>(modelID);
@@ -2460,16 +2510,6 @@ void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer,
     }
 }
 
-void vulkanFrameWork::DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer) {
-    auto mesh = getByIndex<FrameWork::Mesh>(meshID);
-    VkDeviceSize offset[] = {0};
-    std::vector vertexBuffer = {
-        mesh->VertexBuffer.buffer,
-    };
-    vkCmdBindVertexBuffers(commandBuffer, 0, (uint32_t)vertexBuffer.size(), vertexBuffer.data(), offset);
-    vkCmdBindIndexBuffer(commandBuffer, mesh->IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdDrawIndexed(commandBuffer, mesh->indexCount, 1, 0, 0, 0);
-}
 
 
 void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, const glm::vec3& normal, float width, float height, std::string filePath) {
@@ -2738,6 +2778,13 @@ void vulkanFrameWork::DeleteMaterialData(uint32_t id) {
     }
 }
 
+void vulkanFrameWork::DeleteModelData(uint32_t id) {
+    std::lock_guard<std::mutex> lock(modelDataDeleteMutex);
+    if (id < modelDatas_.size() && modelDatas_[id]->inUse) {
+        modelDataReleaseQueue.emplace_back(id, MAX_FRAME + 1);
+    }
+}
+
 void vulkanFrameWork::CheckDelete() {
     processReleaseQueue<FrameWork::Texture>(textureReleaseQueue);
     processReleaseQueue<FrameWork::Mesh>(meshReleaseQueue);
@@ -2745,6 +2792,7 @@ void vulkanFrameWork::CheckDelete() {
     processReleaseQueue<FrameWork::VulkanFBO>(fboReleaseQueue);
     processReleaseQueue<FrameWork::VulkanPipeline>(pipelineReleaseQueue);
     processReleaseQueue<FrameWork::MaterialData>(materialDataReleaseQueue);
+    processReleaseQueue<FrameWork::VulkanModelData>(modelDataReleaseQueue);
 }
 
 void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {

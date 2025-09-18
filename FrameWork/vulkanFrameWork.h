@@ -140,7 +140,9 @@ protected:
     std::vector<FrameWork::StorageBuffer *> storageBuffers;
     std::vector<FrameWork::Slot *> slots_;
     std::vector<FrameWork::MaterialData*> materialDatas_;
+    std::vector<FrameWork::VulkanModelData*> modelDatas_; //更浅
 
+    std::mutex modelDatasMutex;
 
     using ReleaseContainer = std::pair<uint32_t, uint32_t>; //后者是释放计数器
     std::deque<ReleaseContainer> textureReleaseQueue;
@@ -149,6 +151,7 @@ protected:
     std::deque<ReleaseContainer> fboReleaseQueue;
     std::deque<ReleaseContainer> pipelineReleaseQueue;
     std::deque<ReleaseContainer> materialDataReleaseQueue;
+    std::deque<ReleaseContainer> modelDataReleaseQueue;
     //多线程安全，上锁
     std::mutex texDeleteMutex;
     std::mutex meshDeleteMutex;
@@ -156,6 +159,7 @@ protected:
     std::mutex fboDeleteMutex;
     std::mutex pipelineDeleteMutex;
     std::mutex materialDeleteMutex;
+    std::mutex modelDataDeleteMutex;
 
 
     std::string title = "Vulkan FrameWork";
@@ -399,9 +403,12 @@ public:
     void LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType,
                    TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
 
+    void LoadVulkanModel(uint32_t& modelDataID, const std::string &fileName, ModelType modelType,
+                    TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
+
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
 
-    void DrawMesh(uint32_t meshID, VkCommandBuffer commandBuffer);
+
 
     FrameWork::Slot *CreateSlot(uint32_t &slotID);
 
@@ -479,6 +486,8 @@ public:
 
     void DeleteMaterialData(uint32_t id);
 
+    void DeleteModelData(uint32_t id);
+
     void CheckDelete(); //每帧进行清理资源,在帧尾清理
 
 
@@ -509,6 +518,8 @@ public:
             return reinterpret_cast<std::vector<T *> &>(slots_);
         } else if constexpr (std::is_same_v<T, FrameWork::MaterialData>) {
             return reinterpret_cast<std::vector<T*>& >(materialDatas_);
+        } else if constexpr (std::is_same_v<T, FrameWork::VulkanModelData>) {
+            return reinterpret_cast<std::vector<T*>&> (modelDatas_);
         }
         else {
             std::cerr << "Unknown type in getNextIndex!" << std::endl;
@@ -632,6 +643,16 @@ public:
                 //删除一一对应的buffer
                 materialData->vertexUniformBuffers[i].destroy();
                 materialData->fragmentUniformBuffers[i].destroy();
+            }
+        } else if (std::is_same_v<T, FrameWork::VulkanModelData>) {
+            auto modelData = getByIndex<FrameWork::VulkanModelData>(index);
+            modelData->inUse = false;
+
+            for (auto& textureID : modelData->textureID) {
+                destroyByIndex<FrameWork::Texture>(textureID);
+            }
+            for (auto& meshID : modelData->meshID) {
+                destroyByIndex<FrameWork::Mesh>(meshID);
             }
         }
     }
