@@ -3098,6 +3098,7 @@ void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
         frameCountTimeStamp = 0;
     }
     VkResult result = swapChain.acquireNextImage(semaphores.presentComplete[currentFrame], imageIndex);
+    LOG_DEBUG("Swap chain Next image Index : {}", imageIndex);
     // 如果交换链与表面不再兼容（OUT_OF_DATE），则重新创建交换链
     // SRS - 如果不再是最优状态（VK_SUBOPTIMAL_KHR），等到 submitFrame() 中再处理，
     // 以防调整大小时交换链图像数量发生变化

@@ -75,6 +75,7 @@ void TestFrameGraph() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             resourceManager.FindResource(swapChainAttachment)->vulkanIndex = vulkanRenderAPI.GetCurrentImageIndex();
+            LOG_DEBUG("the image index : {}", vulkanRenderAPI.GetCurrentImageIndex());
             FrameWork::CaIShader::Get(presentShader)->Bind(cmdBuffer);
             FrameWork::CaIMaterial::Get(presentMaterial)->SetTexture("colorTexture", resourceManager.GetVulkanResource(colorAttachment));
             FrameWork::CaIMaterial::Get(presentMaterial)->Bind(cmdBuffer);
@@ -96,16 +97,15 @@ void TestFrameGraph() {
 
     //创建简单的前向渲染
     FrameWork::Timer timer;
-    auto render = [&]() {
+    auto &inputManager = FrameWork::InputManager::GetInstance();
+    WINDOW_LOOP(
+        inputManager.update();
         vulkanRenderAPI.prepareFrame(timer.GetElapsedMilliTime());
         auto commandBuffer = api.BeginCommandBuffer();
         frameGraph.Execute(commandBuffer);
         api.EndCommandBuffer();
         vulkanRenderAPI.submitFrame();
         timer.Restart();
-    };
-    WINDOW_LOOP(
-        render();
         );
 }
 

@@ -144,6 +144,8 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
                 allocInfo.commandBufferCount = 1;
 
+                LOG_DEBUG("Render Pass Index: {}", passIndex);
+
                 vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
                     &allocInfo, &data.secondaryCmd);
 
@@ -241,6 +243,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
         }
     }
 
+
     int futureIndex = 0;
     for (auto& t : timeline) {
         for (auto& passIndex : t) {
@@ -271,8 +274,6 @@ FG::FrameGraph& FG::FrameGraph::Execute(VkCommandBuffer commandBuffer) {
                 vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
 
                 vkCmdEndRendering(commandBuffer);
-            } else {
-                vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
             }
 
             auto& postBarriers = renderPass->GetPostBarriers();
