@@ -82,7 +82,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
 
     VkImageSubresourceRange subresourceRange{};
     subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+        ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     subresourceRange.layerCount = description->arrayLayers;
     subresourceRange.levelCount = description->mipLevels;
     subresourceRange.baseMipLevel = 0;
