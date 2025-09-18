@@ -21,6 +21,7 @@ namespace FG {
         FrameGraph& AddRenderPassNode(uint32_t renderPassNode);
         FrameGraph& Compile();
         FrameGraph& Execute(const VkCommandBuffer& commandBuffer);
+        FrameGraph& SetUpdateBeforeRendering(const std::function<void()>& callback);
         void CullPassAndResource();
         void CreateTimeline();
         void CreateAliasGroups();
@@ -42,9 +43,10 @@ namespace FG {
         ResourceManager& resourceManager;
         RenderPassManager& renderPassManager;
         ThreadPool threadPool;
+        std::function<void()> updateBeforeRendering{};
 
         //单FrameGraph资源
-        std::unordered_map<uint32_t, VkCommandPool> renderPassCommandPools; //每个Pass对应一个commandPool来创建子command，多线程录制
+        std::unordered_map<uint32_t, std::vector<VkCommandPool>> renderPassCommandPools; //每个Pass对应一个commandPool来创建子command，多线程录制
     };
 }
 

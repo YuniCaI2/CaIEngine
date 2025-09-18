@@ -14,11 +14,13 @@ resourceManager(resourceManager), renderPassManager(renderPassManager), threadPo
 
 FG::FrameGraph::~FrameGraph() {
     // 清理command pools
-    for (auto& [passIndex, pool] : renderPassCommandPools) {
-        if(pool != VK_NULL_HANDLE)
-        vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, 
-                            pool, nullptr);
-        pool = VK_NULL_HANDLE;
+    for (auto& [passIndex, pools] : renderPassCommandPools) {
+        for (auto& pool : pools) {
+            if(pool != VK_NULL_HANDLE)
+            vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+                                pool, nullptr);
+            pool = VK_NULL_HANDLE;
+        }
     }
     renderPassCommandPools.clear();
 }
@@ -67,9 +69,9 @@ FG::FrameGraph& FG::FrameGraph::Compile() {
 }
 
 void FG::FrameGraph::ResetCommandPool(){
-    for(auto& [passIndex, pool] : renderPassCommandPools){
-        if(pool != VK_NULL_HANDLE){
-            vkResetCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, pool, 0);
+    for(auto& [passIndex, pools] : renderPassCommandPools){
+        if(pools[vulkanRenderAPI.currentFrame] != VK_NULL_HANDLE){
+            vkResetCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, pools[vulkanRenderAPI.currentFrame], 0);
         }
     }
 }
@@ -125,6 +127,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
         uint32_t arrayLayer{1};
     };
 
+    updateBeforeRendering();
     std::vector<std::future<RenderPassData>> futures;
     futures.reserve(usingPassNodes.size());
     ResetCommandPool();
@@ -145,7 +148,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 // 分配 Secondary Command Buffer
                 VkCommandBufferAllocateInfo allocInfo{};
                 allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-                allocInfo.commandPool = renderPassCommandPools[passIndex];
+                allocInfo.commandPool = renderPassCommandPools[passIndex][vulkanRenderAPI.currentFrame];
                 allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
                 allocInfo.commandBufferCount = 1;
 
@@ -161,6 +164,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 // 处理创建的资源
                 for(auto& resourceIndex : resourceCreateIndices){
                     auto resource = resourceManager.FindResource(resourceIndex);
+
                     if(resource && resource->GetType() == ResourceType::Texture){
                         auto description = resource->GetDescription<TextureDescription>();
                         sampleCount = description->samples;
@@ -282,6 +286,137 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
         }
     }
 
+    return *this;
+}
+
+//保留因为验证层不会输出在secondary的报错
+// FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
+//     updateBeforeRendering();
+//
+//     // 注意: 您可能需要检查 ResetCommandPool 的实现。
+//     // 如果它专门为二级命令缓冲池设计，现在可能需要调整或暂时禁用。
+//     ResetCommandPool();
+//
+//     resourceManager.ResetVulkanResource();
+//     resourceManager.CreateVulkanResource();
+//
+//     // 串行处理每个pass
+//     for (auto& t : timeline) {
+//         for (auto& passIndex : t) {
+//             auto renderPass = renderPassManager.FindRenderPass(passIndex);
+//
+//             // --- 数据准备：直接使用局部变量，不再需要 RenderPassData 结构体 ---
+//             std::vector<VkRenderingAttachmentInfo> colorAttachments;
+//             VkRenderingAttachmentInfo depthAttachment{}; // 使用 {} 初始化
+//             bool hasDepth = false;
+//             uint32_t width = vulkanRenderAPI.windowWidth;
+//             uint32_t height = vulkanRenderAPI.windowHeight;
+//             uint32_t arrayLayer = 1;
+//
+//             // --- 收集附件信息 ---
+//             auto& resourceCreateIndices = renderPass->GetCreateResources();
+//             auto& resourceInputIndices = renderPass->GetInputResources();
+//
+//             // 处理创建的资源
+//             for(auto& resourceIndex : resourceCreateIndices){
+//                 auto resource = resourceManager.FindResource(resourceIndex);
+//                 if(resource && resource->GetType() == ResourceType::Texture){
+//                     auto description = resource->GetDescription<TextureDescription>();
+//                     width = description->width;
+//                     height = description->height;
+//                     arrayLayer = description->arrayLayers;
+//
+//                     if((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
+//                         colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
+//                     } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+//                         depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
+//                         hasDepth = true;
+//                     }
+//                 }
+//             }
+//
+//             // 处理输入资源
+//             for(auto& resourceIndex : resourceInputIndices){
+//                 auto resource = resourceManager.FindResource(resourceIndex);
+//                 if(resource && resource->GetType() == ResourceType::Texture){
+//                     auto description = resource->GetDescription<TextureDescription>();
+//                     if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
+//                         colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
+//                     } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+//                         depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
+//                         hasDepth = true;
+//                     }
+//                 }
+//             }
+//
+//             // --- 移除了二级命令缓冲区的分配、继承信息设置和 Begin/End 逻辑 ---
+//
+//             // 1. 插入 Pass 执行前的内存屏障
+//             auto& preBarriers = renderPass->GetPreBarriers();
+//             for (auto& barrier : preBarriers) {
+//                 InsertImageBarrier(commandBuffer, barrier);
+//             }
+//
+//             // 2. 根据有无附件，决定是开始动态渲染还是直接执行命令
+//             if (!colorAttachments.empty() || hasDepth) {
+//                 // 对于图形 Pass，开始动态渲染
+//                 VkRenderingInfo renderingInfo{};
+//                 renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+//                 renderingInfo.pNext = nullptr;
+//                 // [修改] flags 设置为 0，因为命令直接录制在主命令缓冲区
+//                 renderingInfo.flags = 0;
+//                 renderingInfo.renderArea.offset = {0, 0};
+//                 renderingInfo.renderArea.extent = {width, height};
+//                 renderingInfo.layerCount = arrayLayer;
+//                 renderingInfo.viewMask = 0;
+//                 renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+//                 renderingInfo.pColorAttachments = colorAttachments.empty() ? nullptr : colorAttachments.data();
+//                 renderingInfo.pDepthAttachment = hasDepth ? &depthAttachment : nullptr;
+//                 renderingInfo.pStencilAttachment = nullptr;
+//
+//                 vkCmdBeginRendering(commandBuffer, &renderingInfo);
+//
+//                 // [修改] 直接在主命令缓冲区中设置视口和裁剪矩形
+//                 VkViewport viewport{};
+//                 viewport.x = 0.0f;
+//                 viewport.y = 0.0f;
+//                 viewport.width = static_cast<float>(width);
+//                 viewport.height = static_cast<float>(height);
+//                 viewport.minDepth = 0.0f;
+//                 viewport.maxDepth = 1.0f;
+//                 vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+//
+//                 VkRect2D scissor{};
+//                 scissor.offset = {0, 0};
+//                 scissor.extent.width = width;
+//                 scissor.extent.height = height;
+//                 vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+//
+//                 // [修改] 直接在主命令缓冲区中执行 Pass 的渲染命令
+//                 renderPass->GetExec()(commandBuffer);
+//
+//                 vkCmdEndRendering(commandBuffer);
+//
+//                 // [删除] vkCmdExecuteCommands 调用被移除
+//
+//             } else {
+//                 // 对于没有附件的 Pass (例如纯计算或传输)，直接执行其命令
+//                 renderPass->GetExec()(commandBuffer);
+//             }
+//
+//             // 3. 插入 Pass 执行后的内存屏障
+//             auto& postBarriers = renderPass->GetPostBarriers();
+//             for (auto& barrier : postBarriers) {
+//                 InsertImageBarrier(commandBuffer, barrier);
+//             }
+//         }
+//     }
+//
+//     return *this;
+// }
+
+FG::FrameGraph & FG::FrameGraph::SetUpdateBeforeRendering(const std::function<void()> &callback) {
+    updateBeforeRendering = callback;
     return *this;
 }
 
@@ -552,13 +687,16 @@ void FG::FrameGraph::CreateCommandPools(){
     //这里先不考虑compute，计算着色器需要不同queue
     renderPassCommandPools.clear();
     for(auto& renderPassIndex : usingPassNodes){
-        VkCommandPoolCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
-        VK_CHECK_RESULT(
-            vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
-                                &renderPassCommandPools[renderPassIndex])
-        );
+        renderPassCommandPools[renderPassIndex].resize(MAX_FRAME);
+        for (int f = 0; f < MAX_FRAME; f++) {
+            VkCommandPoolCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
+            VK_CHECK_RESULT(
+                vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
+                                    &renderPassCommandPools[renderPassIndex][f])
+            );
+        }
     }
 }
 
@@ -568,12 +706,26 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     if(resourceDesc->GetType() == ResourceType::Buffer){
         LOG_ERROR("the resource name: {} is not attachment !", resourceDesc->GetName());
     }
+
     VkRenderingAttachmentInfo attachmentInfo = {};
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    attachmentInfo.pNext = nullptr; // 重要：明确设置为 nullptr
+
     auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResource(resourceIndex));
+
+    if (!texture || texture->imageView == VK_NULL_HANDLE) {
+        LOG_ERROR("Invalid texture or imageView for resource index: {}", resourceIndex);
+        return attachmentInfo;
+    }
+
     attachmentInfo.imageView = texture->imageView;
     attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    attachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+    attachmentInfo.resolveImageView = VK_NULL_HANDLE;
+    attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
     if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -581,16 +733,32 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
     }
+
     return attachmentInfo;
 }
 
-VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t resourceIndex ){
+VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t resourceIndex){
     VkRenderingAttachmentInfo attachmentInfo = {};
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    attachmentInfo.pNext = nullptr; // 重要：明确设置为 nullptr
+
     auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResource(resourceIndex));
+
+    // 添加安全检查
+    if (!texture || texture->imageView == VK_NULL_HANDLE) {
+        LOG_ERROR("Invalid texture or imageView for resource index: {}", resourceIndex);
+        return attachmentInfo; // 返回无效的 attachment
+    }
+
     attachmentInfo.imageView = texture->imageView;
     attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    // 重要：初始化 resolve 相关字段
+    attachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+    attachmentInfo.resolveImageView = VK_NULL_HANDLE;
+    attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
     if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -598,8 +766,10 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
     }
+
     return attachmentInfo;
 }
+
 
 void FG::FrameGraph::InsertBarriers() {
     struct ResourceState {
@@ -625,7 +795,7 @@ void FG::FrameGraph::InsertBarriers() {
                             newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                             newBarrier.srcAccessMask = 0;
                             if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                                newBarrier.newLayout = resource->isPresent ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                                 newBarrier.dstStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                                 newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
                             }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
@@ -636,6 +806,21 @@ void FG::FrameGraph::InsertBarriers() {
                             resourceStates[resourceIndex].writable = true;
                             resourceStates[resourceIndex].readable = false;
                             renderPass->AddPreBarrier(newBarrier);
+
+                            if (resource->isPresent) {
+                                newBarrier.isImage = true;
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                                    newBarrier.dstStageMask =  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                                    newBarrier.dstAccessMask = 0;
+                                }
+                                resourceStates[resourceIndex].writable = false;
+                                resourceStates[resourceIndex].readable = false;
+                                renderPass->AddPostBarrier(newBarrier);
+                            }
                         }
                     }
                 }

@@ -1,16 +1,3 @@
-// FrameGraph 综合测试：
-// 目标：
-// 1. 注册一组外部与内部纹理资源（含交换链、导入纹理、内部中间RT、深度）。
-// 2. 构建四个 RenderPass：
-//    P0: 创建 ColorA (内部) + Depth；
-//    P1: 输入 ColorA -> 输出 ColorB；
-//    P2: 读取 ColorB (只读) -> 输出 ColorC；
-//    P3: 输入 ColorC -> 输出 SwapChain(展示)；
-// 3. 调用 Compile() 验证：
-//    - 能生成正确拓扑 timeline (无环)
-//    - 为各 Pass 生成 command pool 与预/后 barrier（这里只做数量与关键字段的日志检查）
-// 4. 调用 Execute() 录制次级命令缓冲（不真正提交，只做函数调用路径覆盖）。
-
 #include <FrameGraph/FrameGraph.h>
 #include <FrameGraph/ResourceManager.h>
 #include <FrameGraph/RenderPassManager.h>
@@ -73,7 +60,6 @@ void TestFrameGraph() {
         renderPass->SetName("presentPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
-            resourceManager.FindResource(swapChainAttachment)->vulkanIndex = vulkanRenderAPI.GetCurrentImageIndex();
             FrameWork::CaIShader::Get(presentShader)->Bind(cmdBuffer);
             FrameWork::CaIMaterial::Get(presentMaterial)->SetTexture("colorTexture", resourceManager.GetVulkanResource(colorAttachment));
             FrameWork::CaIMaterial::Get(presentMaterial)->Bind(cmdBuffer);
@@ -83,6 +69,9 @@ void TestFrameGraph() {
     //构建图
     frameGraph.AddResourceNode(colorAttachment).AddResourceNode(swapChainAttachment)
             .AddRenderPassNode(forwardPass).AddRenderPassNode(presentPass);
+    frameGraph.SetUpdateBeforeRendering([&]() {
+        resourceManager.FindResource(swapChainAttachment)->vulkanIndex = swapChainTex[vulkanRenderAPI.GetCurrentImageIndex()];
+    });
 
     renderPassManager.FindRenderPass(forwardPass)->SetCreateResource(colorAttachment);
     renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(

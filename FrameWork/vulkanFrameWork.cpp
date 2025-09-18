@@ -2018,7 +2018,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .rasterizationSamples = (shaderInfo.shaderState.msaa) ? VK_SAMPLE_COUNT_1_BIT : msaaSamples,
+        .rasterizationSamples = (!shaderInfo.shaderState.msaa) ? VK_SAMPLE_COUNT_1_BIT : msaaSamples,
         .sampleShadingEnable = VK_FALSE,
         .minSampleShading = 0,
     };

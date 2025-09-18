@@ -1,0 +1,1785 @@
+[Warn] [2025-09-18 14:22:39.7295023] : "the property is empty!" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\ShaderParse.cpp line: 36] 
+
+[Debug] [2025-09-18 14:22:40.2124775] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2216270] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2294859] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2324288] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2355459] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2373540] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2410263] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2429344] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2447404] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2483868] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2500724] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2515702] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2747411] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2774578] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2870263] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.2895301] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3021782] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3086863] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3143872] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3203217] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3285494] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3322483] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3386561] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3472984] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3507451] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3567833] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3627690] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3688740] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3750270] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3810960] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3884237] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3930742] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.3994162] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4052481] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4111670] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4175777] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4266912] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4293604] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4357377] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4417935] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4485772] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4538981] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4601318] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4676748] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4720133] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4783018] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4869551] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4904392] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.4964882] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5024375] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5084438] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5146322] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5205569] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5266556] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5329090] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5384609] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5473006] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5509041] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5571707] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5630400] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5690758] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5756238] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5812934] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5883005] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5934296] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.5996964] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6056912] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6114138] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6178900] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6267558] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6299213] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6360897] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6420219] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6483701] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6543744] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6603909] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6679022] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6723721] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6786270] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6867454] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6902273] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.6968290] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7027094] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7087800] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7149636] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7209098] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7269866] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7332187] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7388329] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7478270] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7509027] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7574965] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7666529] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7692642] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7758433] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7818359] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7881384] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7940480] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.7998999] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8091972] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8119479] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8182323] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8241913] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8304354] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8364598] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8423475] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8484252] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8547970] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8606641] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8682529] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8727536] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8790078] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8870490] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8908035] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.8972981] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9031801] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9091528] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9153284] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9212481] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9273677] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9335712] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9396484] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9465575] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9518298] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9578610] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9667468] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9696200] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9762873] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9821351] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9879562] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:40.9944902] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0002212] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0065945] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0120397] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0186317] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0265299] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0304820] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0369511] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0428737] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0484608] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0549233] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0608408] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0669112] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0734850] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0795075] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0851591] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0915108] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.0975690] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1036398] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1095092] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1154216] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1217036] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1277800] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1340540] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1400614] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1457731] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1520630] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1582631] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1667222] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1699898] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1766457] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1824826] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1883786] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.1949072] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2006184] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2067425] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2128019] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2188240] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2247401] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2311114] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2373259] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2432978] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2488512] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2552857] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2613828] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2673968] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2736490] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2798313] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2858561] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2918642] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.2981594] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3039959] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3101007] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3163263] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3222419] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3279457] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3344189] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3404738] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3472091] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3525346] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3587067] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3662957] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3708360] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3770295] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3829003] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3885605] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.3953049] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4012158] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4086887] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4134023] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4194565] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4263608] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4315322] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4375744] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4466090] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4493420] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4560107] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4617426] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4676072] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4740805] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4802035] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4858257] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4923217] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.4984900] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5046182] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5103110] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5163704] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5226141] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5282818] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5348223] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5407271] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5467876] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5527669] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5590817] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5663653] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5712045] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5774265] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5865588] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5891423] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.5956994] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6014414] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6090119] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6137796] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6197778] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6254833] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6319610] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6381652] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6467243] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6497642] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6562784] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6621763] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6681150] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6744996] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6804595] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6865284] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6925417] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.6989295] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7048129] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7107326] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7168247] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7229629] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7286522] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7352097] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7413343] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7471518] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7532286] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7594510] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7662352] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7716080] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7776942] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7865757] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7894754] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.7960223] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8018984] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8080181] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8141351] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8202319] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8262301] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8323676] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8384374] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8466977] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8501635] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8567087] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8626918] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8682915] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8748721] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8807041] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8868557] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8931364] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.8992617] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9050205] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9111575] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9171913] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9264050] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9290703] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9355563] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9414387] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9475725] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9537803] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9599893] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9655467] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9720804] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9781512] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9864140] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9897968] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:41.9964498] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0022465] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0086337] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0146235] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0204618] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0263580] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0324903] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0389176] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0463085] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0509805] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0570319] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0629554] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0686886] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0752508] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0811588] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0872644] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0935812] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.0995970] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1055690] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1113001] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1178065] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1264847] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1295085] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1359923] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1419727] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1476853] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1542148] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1602622] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1659399] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1724250] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1785263] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1863470] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1905108] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.1966805] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2026503] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2088425] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2150161] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2207879] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2269685] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2331183] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2393942] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2463306] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2513709] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2574771] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2664338] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2691591] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2756481] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2814427] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2873170] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2938555] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.2998253] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3057569] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3115490] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3178733] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3262250] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3300635] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3363552] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3424318] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3480792] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3546072] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3604564] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3663421] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3725860] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3788733] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3864209] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3908386] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.3972949] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4030764] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4091818] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4153570] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4213922] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4275298] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4335496] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4396550] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4452872] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4514742] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4578613] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4665515] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4695674] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4759775] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4819736] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4877319] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.4942362] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5001161] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5064791] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5121316] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5184229] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5267802] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5305375] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5367578] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5426452] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5484262] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5547854] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5611430] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5669022] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5731826] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5792624] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5859796] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5913993] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.5976735] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6035043] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6093052] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6158921] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6219779] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6275422] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6339602] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6399974] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6456962] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6521501] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6581894] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6661738] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6700788] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6762234] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6824279] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6881065] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.6946887] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7006244] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7069671] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7124987] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7190522] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7260398] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7311264] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7371378] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7462704] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7488905] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7554164] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7613698] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7672807] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7735807] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7796664] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7862231] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7919158] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.7979020] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8039963] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8096585] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8162090] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8220364] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8280685] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8344161] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8402024] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8462800] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8523730] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8585855] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8659621] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8707258] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8767886] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8857960] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8886609] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.8950148] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9009125] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9071860] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9130356] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9188552] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9266817] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9315523] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9375793] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9463882] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9492920] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9557771] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9616812] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9674481] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9740020] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9800929] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9857100] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9922144] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:42.9982910] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0041901] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0100271] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0164874] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0224547] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0281479] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0346903] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0405908] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0465890] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0529486] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0590019] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0661493] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0711028] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0772010] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0861775] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0890710] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.0954509] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1014717] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1076918] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1135761] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1197436] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1262665] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1320154] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1379833] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1462724] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1498914] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1561823] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1621970] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1677576] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1743921] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1802503] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1862069] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1923502] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.1986272] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2046402] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2103975] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2169738] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2261477] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2287254] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2351997] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2410067] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2470262] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2530882] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2593974] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2650413] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2715224] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2775902] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2861353] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2893084] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.2957764] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3017507] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3078678] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3137483] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3200256] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3262020] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3321650] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3383580] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3460893] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3505345] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3565398] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3625114] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3683145] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3748531] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3809590] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3866806] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3930081] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.3990361] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4049088] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4107214] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4173235] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4262512] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4293718] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4356121] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4414241] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4477122] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4538165] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4598312] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4654360] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4719637] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4780151] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4860028] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4900706] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.4962221] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5021565] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5084090] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5140095] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5202995] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5263502] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5327138] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5387320] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5461345] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5508885] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5569359] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5660323] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5687029] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5752551] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5812210] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5871426] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5934519] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.5993312] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6057269] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6111192] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6176636] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6261715] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6293611] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6359167] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6419009] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6475578] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6541690] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6599769] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6660831] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6721191] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6784357] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6858349] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6905770] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.6968221] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7025387] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7085805] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7145332] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7210890] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7268603] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7330627] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7393063] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7449744] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7512423] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7574877] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7659086] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7691017] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7756081] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7815028] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7872131] : "Swap chain Next image Index : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7937835] : "Swap chain Next image Index : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.7996078] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
+[Debug] [2025-09-18 14:22:43.9745737] : "Swap chain Next image Index : 0" 
+ from [file: D:\Visual Studio Project\CaIEngine\FrameWork\vulkanFrameWork.cpp line: 3101] 
+
