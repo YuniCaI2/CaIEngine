@@ -793,6 +793,10 @@ std::vector<uint32_t> vulkanFrameWork::CreateSwapChainTexture() {
         swapChainTextures[i] = getNextIndex<FrameWork::Texture>();
         auto texture = getByIndex<FrameWork::Texture>(swapChainTextures[i]);
         texture->imageView = swapChain.imageViews[i];
+        texture->image.image = swapChain.images[i];
+        texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        texture->image.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        texture->image.format = swapChain.colorFormat;
         texture->isSwapChainRef = true;
         texture->inUse = true;
     }
@@ -2024,8 +2028,10 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
     pipelineRenderingCreateInfo.colorAttachmentCount = static_cast<uint32_t>(colorFormats.size());
     pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
-    pipelineRenderingCreateInfo.depthAttachmentFormat = shaderInfo.shaderState.depthWrite ? depthFormat : VK_FORMAT_UNDEFINED;
-
+    if (shaderInfo.shaderState.depthWrite)
+        pipelineRenderingCreateInfo.depthAttachmentFormat = depthFormat;
+    else
+        pipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
 
     VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -3118,7 +3124,7 @@ void vulkanFrameWork::submitFrame() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &drawCmdBuffers[currentFrame];
     VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFences[currentFrame]));
-    auto result = swapChain.queuePresent(graphicsQueue, imageIndex, semaphores.renderComplete[currentFrame]);
+    auto result = swapChain.queuePresent(graphicsQueue, imageIndex, semaphores.renderComplete[currentFrame]);//渲染完成在呈现
     // Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or \
     // no longer optimal for presentation (SUBOPTIMAL)
     if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {

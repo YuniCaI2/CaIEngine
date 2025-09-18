@@ -3,7 +3,7 @@
 //
 
 #include "Resource.h"
-
+#include "Logger.h"
 #include "VulkanTool.h"
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
@@ -228,8 +228,8 @@ void FrameWork::Resource::CompileShaderModify() const {
     std::string compspvExtension = ".comp.spv";
     std::filesystem::path allShaderPath = generalShaderPath;
     if (!std::filesystem::exists(allShaderPath) || !std::filesystem::is_directory(allShaderPath)) {
-        std::cerr << "Error loading shader: " << allShaderPath << std::endl;
-        throw std::runtime_error("Error loading shader: " + generalShaderPath);
+        LOG_ERROR("Can't Open {}", allShaderPath.string());
+        return;
     }
     auto GetExtension = [](const std::string &path) {
         auto start = path.find_last_of("/\\");

@@ -94,16 +94,28 @@ bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasInd
     return false;
 }
 
-uint32_t FG::ResourceManager::CreateVulkanResource(uint32_t index) {
+void FG::ResourceManager::CreateVulkanResource() {
     //先不支持Buffer的创建，因为RenderAPI现无对应的接口
-    auto description = aliasGroups[index].description;
-    if (description->GetResourceType() == ResourceType::Texture) {
-        uint32_t rt = 0;
-        vulkanRenderAPI.CreateTexture(index, description);
-        return rt;
-    }else {
-        LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
-        return -1;
+    for (uint32_t index = 0; index < aliasGroups.size(); index++) {
+        auto description = aliasGroups[index].description;
+        if (description->GetResourceType() == ResourceType::Texture) {
+            vulkanRenderAPI.CreateTexture(aliasGroups[index].vulkanIndex , description);
+        }else {
+            LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
+        }
+    }
+}
+
+void FG::ResourceManager::ResetVulkanResource() {
+    for (uint32_t index = 0; index < aliasGroups.size(); index++) {
+        auto description = aliasGroups[index].description;
+        if (description->GetResourceType() == ResourceType::Texture) {
+            if (aliasGroups[index].vulkanIndex != UINT32_MAX) {
+                vulkanRenderAPI.destroyByIndex<FrameWork::Texture>(aliasGroups[index].vulkanIndex);
+            }
+        }else {
+            LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
+        }
     }
 }
 

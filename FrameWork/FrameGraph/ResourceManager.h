@@ -77,7 +77,7 @@ namespace FG {
     //别名组资源，其直接对应Vulkan资源
     struct AliasGroup {
         std::vector<uint32_t> sharedResourceIndices;
-        uint32_t vulkanIndex{};
+        uint32_t vulkanIndex{UINT32_MAX};
         BaseDescription* description{}; //资源描述
     };
 
@@ -173,7 +173,9 @@ namespace FG {
         friend FrameGraph;
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
         //aliasGroup Index创建
-        uint32_t CreateVulkanResource(uint32_t index);
+        void CreateVulkanResource();//生成Alias Group
+        void ResetVulkanResource();
+
 
         std::unordered_map<std::string, uint32_t> nameToResourceIndex;
         std::vector<std::unique_ptr<ResourceDescription>> resourceDescriptions;

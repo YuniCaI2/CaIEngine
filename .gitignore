@@ -138,3 +138,5 @@ cmake-build-debug
 cmake-build-release
 build
 CLAUDE.md
+.vs
+out

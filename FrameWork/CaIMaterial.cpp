@@ -9,7 +9,8 @@ FrameWork::CaIMaterial *FrameWork::CaIMaterial::Create(uint32_t &id, uint32_t sh
     for (int i = 0; i < caiMaterialPools.size(); i++) {
         if (caiMaterialPools[i] == nullptr) {
             id = i;
-            return new CaIMaterial(shaderRef);
+            caiMaterialPools[i] = new FrameWork::CaIMaterial(shaderRef);
+            return caiMaterialPools[i];
         }
     }
     id = caiMaterialPools.size();
