@@ -36,30 +36,6 @@ FG::FrameGraph& FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
 }
 
 FG::FrameGraph& FG::FrameGraph::Compile() {
-    // timeline.clear();
-    // usingPassNodes.clear();
-    // usingResourceNodes.clear();
-    //
-    // // 清理command pools
-    // for (auto& [passIndex, pool] : renderPassCommandPools) {
-    //     if(pool != VK_NULL_HANDLE)
-    //     vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-    //                         pool, nullptr);
-    //     pool = VK_NULL_HANDLE;
-    // }
-    // renderPassCommandPools.clear();
-    //
-    // // 清理资源的alias信息
-    // resourceManager.ClearAliasGroups();
-    //
-    // // 清理每个pass的barriers
-    // for (auto& passIndex : renderPassNodes) {
-    //     auto pass = renderPassManager.FindRenderPass(passIndex);
-    //     if (pass) {
-    //         pass->ClearBarriers();
-    //     }
-    // }
-
     CullPassAndResource();
     CreateTimeline();
     CreateAliasGroups();

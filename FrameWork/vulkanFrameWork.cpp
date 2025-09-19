@@ -57,6 +57,25 @@ void vulkanFrameWork::createSwapChain() {
     //这是为了解决Mac的Retina屏幕问题
     glfwGetFramebufferSize(window, reinterpret_cast<int*>(&windowWidth), reinterpret_cast<int*>(&windowHeight));
     swapChain.create(windowWidth, windowHeight, settings.vsync, settings.fullscreen);
+
+
+
+}
+
+void vulkanFrameWork::CreateSwapChainTex() {
+    //准备swapchainTex
+    swapChainTextures.resize(swapChain.images.size());
+    for (int i = 0; i < swapChain.images.size(); i++) {
+        swapChainTextures[i] = getNextIndex<FrameWork::Texture>();
+        auto texture = getByIndex<FrameWork::Texture>(swapChainTextures[i]);
+        texture->imageView = swapChain.imageViews[i];
+        texture->image.image = swapChain.images[i];
+        texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        texture->image.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        texture->image.format = swapChain.colorFormat;
+        texture->isSwapChainRef = true;
+        texture->inUse = true;
+    }
 }
 
 void vulkanFrameWork::createCommandBuffers() {
@@ -366,7 +385,6 @@ bool vulkanFrameWork::initVulkan() {
     assert(validFormat);
 
     swapChain.setContext(instance, physicalDevice, device);
-
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -802,18 +820,6 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *de
 }
 
 std::vector<uint32_t> vulkanFrameWork::CreateSwapChainTexture() {
-    std::vector<uint32_t> swapChainTextures(swapChain.images.size());
-    for (int i = 0; i < swapChain.images.size(); i++) {
-        swapChainTextures[i] = getNextIndex<FrameWork::Texture>();
-        auto texture = getByIndex<FrameWork::Texture>(swapChainTextures[i]);
-        texture->imageView = swapChain.imageViews[i];
-        texture->image.image = swapChain.images[i];
-        texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
-        texture->image.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        texture->image.format = swapChain.colorFormat;
-        texture->isSwapChainRef = true;
-        texture->inUse = true;
-    }
     return swapChainTextures;
 }
 
@@ -1861,9 +1867,13 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     return shaderInfo;
 }
 
-FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
+FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath, VkFormat colorFormat,
      uint32_t width, uint32_t height) {
-        FrameWork::ShaderInfo shaderInfo = {};
+    if (colorFormat == VK_FORMAT_UNDEFINED) {
+        colorFormat = swapChain.colorFormat;
+    }
+
+    FrameWork::ShaderInfo shaderInfo = {};
     auto shaderModulePackages = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
         LOG_ERROR("The CreateVulkanPipeline Func can't create computer Shader Pipeline !");
@@ -2035,7 +2045,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .pAttachments = blendAttachments.data(),
     };
 
-    std::vector colorFormats(shaderInfo.shaderState.outputNums, swapChain.colorFormat);
+    std::vector colorFormats(shaderInfo.shaderState.outputNums, colorFormat);
 
     //Dynamic Rendering设置
     VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
@@ -3088,6 +3098,7 @@ void vulkanFrameWork::getEnabledExtensions() {
 void vulkanFrameWork::prepare() {
     createSurface();
     createSwapChain();
+    CreateSwapChainTex();
     createCommandBuffers();
     createSynchronizationPrimitives();
     setupRenderPass();
@@ -3124,8 +3135,20 @@ void vulkanFrameWork::windowResize() {
     //重建交换链
     createSwapChain();
 
-    RecreateAllWindowFrameBuffers();
-    SwitchPresentColorAttachment(presentColorAttachmentID);
+    // RecreateAllWindowFrameBuffers();
+    // SwitchPresentColorAttachment(presentColorAttachmentID);
+
+    //RecreateSwapchianTexture
+    for (int i = 0; i < swapChain.images.size(); i++) {
+        auto texture = getByIndex<FrameWork::Texture>(swapChainTextures[i]);
+        texture->imageView = swapChain.imageViews[i];
+        texture->image.image = swapChain.images[i];
+        texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        texture->image.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        texture->image.format = swapChain.colorFormat;
+        texture->isSwapChainRef = true;
+        texture->inUse = true;
+    }
 
 
 

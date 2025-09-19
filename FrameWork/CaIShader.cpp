@@ -17,15 +17,15 @@ FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::stri
     return caiShaderPool.back();
 }
 
-FrameWork::CaIShader * FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath) {
+FrameWork::CaIShader * FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
     for (int i = 0; i < caiShaderPool.size(); i++) {
         if (caiShaderPool[i] == nullptr) {
             id = i;
-            caiShaderPool[i] = new FrameWork::CaIShader(shaderPath);
+            caiShaderPool[i] = new FrameWork::CaIShader(shaderPath, colorFormat);
             return caiShaderPool[i];
         }
     }
-    caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath));
+    caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath, colorFormat));
     id = caiShaderPool.size() - 1;
     return caiShaderPool.back();
 }
@@ -73,8 +73,8 @@ FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkRenderPass rend
 }
 
 //支持Dynamic Rendering
-FrameWork::CaIShader::CaIShader(const std::string &shaderPath) {
-    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath);
+FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkFormat colorFormat) {
+    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, colorFormat);
     this->shaderPath = shaderPath;
 }
 

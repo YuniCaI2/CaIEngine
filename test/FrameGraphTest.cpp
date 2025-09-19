@@ -69,8 +69,13 @@ void TestFrameGraph() {
     //构建图
     frameGraph.AddResourceNode(colorAttachment).AddResourceNode(swapChainAttachment)
             .AddRenderPassNode(forwardPass).AddRenderPassNode(presentPass);
+
+    //设置每帧资源更新
     frameGraph.SetUpdateBeforeRendering([&]() {
-        resourceManager.FindResource(swapChainAttachment)->vulkanIndex = swapChainTex[vulkanRenderAPI.GetCurrentImageIndex()];
+        auto swapChainDesc = resourceManager.FindResource(swapChainAttachment);
+        swapChainDesc->vulkanIndex = swapChainTex[vulkanRenderAPI.GetCurrentImageIndex()];
+        swapChainDesc->GetDescription<TextureDescription>()->width = vulkanRenderAPI.windowWidth;
+        swapChainDesc->GetDescription<TextureDescription>()->height = vulkanRenderAPI.windowHeight;
     });
 
     renderPassManager.FindRenderPass(forwardPass)->SetCreateResource(colorAttachment);
