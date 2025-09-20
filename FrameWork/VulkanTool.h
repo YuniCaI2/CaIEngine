@@ -82,10 +82,10 @@ namespace VulkanTool {
     inline VkBool32 getSupportDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat) {
         //模板是可选的
         std::vector<VkFormat> formatList = {
-            VK_FORMAT_D32_SFLOAT_S8_UINT,
+            // VK_FORMAT_D32_SFLOAT_S8_UINT,
             VK_FORMAT_D32_SFLOAT,
-            VK_FORMAT_D24_UNORM_S8_UINT,
-            VK_FORMAT_D16_UNORM_S8_UINT,
+            // VK_FORMAT_D24_UNORM_S8_UINT,
+            // VK_FORMAT_D16_UNORM_S8_UINT,
             VK_FORMAT_D16_UNORM
         };
 

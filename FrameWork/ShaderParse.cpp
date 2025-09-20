@@ -188,30 +188,23 @@ std::string FrameWork::ShaderParse::GetCodeBlock(const std::string &code, const 
 }
 
 void FrameWork::ShaderParse::SetUpPropertiesStd140(ShaderInfo &shaderInfo) {
-    uint32_t binding = 0;//这里的思路是binding用来绑定单帧之内的所有资源，所以每帧使用一个set
+    uint32_t binding = 0;
 
     if (!shaderInfo.vertProperties.baseProperties.empty()) {
         uint32_t offset = 0;
         for (auto& property : shaderInfo.vertProperties.baseProperties) {
             auto alignInfo = GetPropertyAlignInfoStd140(property.type, property.arrayLength);
+            property.size = alignInfo.size;
             property.binding = binding;
             property.align = alignInfo.alignment;
             property.arrayOffset = alignInfo.arrayOffset;
-            uint32_t padding = offset % alignInfo.alignment;
-            if (padding == 0) {
-                property.offset = offset;
-            }else {
-                property.offset = offset - padding + alignInfo.alignment; //这里是offset的开头
-            }
 
-            //现在的offset是当前轮property的结尾
-            offset += property.offset + property.size;
+            // 正确的对齐计算
+            property.offset = (offset + alignInfo.alignment - 1) / alignInfo.alignment * alignInfo.alignment;
+
+            // 更新 offset 到下一个位置
+            offset = property.offset + property.size;
         }
-        binding++;
-    }
-    for (auto& property : shaderInfo.vertProperties.textureProperties)
-    {
-        property.binding = binding; //这边一个texture绑定在一个binding //我的代码可以以set为单位，这个没区别
         binding++;
     }
 
@@ -219,83 +212,93 @@ void FrameWork::ShaderParse::SetUpPropertiesStd140(ShaderInfo &shaderInfo) {
         uint32_t offset = 0;
         for (auto& property : shaderInfo.fragProperties.baseProperties) {
             auto alignInfo = GetPropertyAlignInfoStd140(property.type, property.arrayLength);
+            property.size = alignInfo.size;
             property.binding = binding;
-            property.offset = offset;
             property.align = alignInfo.alignment;
             property.arrayOffset = alignInfo.arrayOffset;
-            uint32_t padding = offset % alignInfo.alignment;
-            if (padding == 0) {
-                property.offset = offset;
-            }else {
-                property.offset = offset - padding + alignInfo.alignment; //offset + align  然后按align取整
-            }
-            offset += property.offset + property.size;
+
+            // 正确的对齐计算
+            property.offset = (offset + alignInfo.alignment - 1) / alignInfo.alignment * alignInfo.alignment;
+
+            // 更新 offset
+            offset = property.offset + property.size;
         }
         binding++;
     }
-    for (auto& property : shaderInfo.fragProperties.textureProperties)
-    {
-        property.binding = binding; //这边一个texture绑定在一个binding //我的代码可以以set为单位，这个没区别
+
+    for (auto& property : shaderInfo.vertProperties.textureProperties) {
+        property.binding = binding;
         binding++;
     }
 
+    for (auto& property : shaderInfo.fragProperties.textureProperties) {
+        property.binding = binding;
+        binding++;
+    }
 }
 
-FrameWork::PropertyAlignInfo FrameWork::ShaderParse::GetPropertyAlignInfoStd140(ShaderPropertyType type,
-    uint32_t arrayLength) {
+FrameWork::PropertyAlignInfo FrameWork::ShaderParse::GetPropertyAlignInfoStd140(ShaderPropertyType type, uint32_t arrayLength) {
     uint32_t std_size = sizeof(float);
-    if (type == ShaderPropertyType::BOOL || type == ShaderPropertyType::INT || type == ShaderPropertyType::UINT
-        || type == ShaderPropertyType::FLOAT) {
+
+    if (type == ShaderPropertyType::BOOL || type == ShaderPropertyType::INT ||
+        type == ShaderPropertyType::UINT || type == ShaderPropertyType::FLOAT) {
         if (arrayLength == 0) {
-           return {.size = std_size, .alignment = std_size };
-        }else {
-            return { .size = (std_size * 4) * (arrayLength - 1) + std_size,
-                .alignment = std_size * 4, .arrayOffset = std_size * 4 };//最后一个元素无需padding
+            return {.size = std_size, .alignment = std_size};
+        } else {
+            // 标量数组：每个元素按 vec4 对齐
+            return {.size = std_size * 4 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4};
         }
-    }else if (type == ShaderPropertyType::VEC2) {
+    } else if (type == ShaderPropertyType::VEC2) {
         if (arrayLength == 0) {
             return {.size = std_size * 2, .alignment = std_size * 2};
+        } else {
+            return {.size = std_size * 4 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4};
         }
-        else
-            return { .size = (std_size * 4) * (arrayLength - 1) + std_size * 2,
-                .alignment = std_size * 4, .arrayOffset = std_size * 4 };
-    }else if (type == ShaderPropertyType::VEC3) {
-        if (arrayLength == 0)
-            return { .size = std_size * 3, .alignment = std_size * 4 };
-        else
-            return { .size = (std_size * 4) * (arrayLength - 1) + std_size * 3,
-                .alignment = std_size * 4, .arrayOffset = std_size * 4 };
-
-    }else if (type == ShaderPropertyType::VEC4) {
-        if (arrayLength == 0)
-            return { .size = std_size * 4, .alignment = std_size * 4 };
-        else
-            return { .size = (std_size * 4) * arrayLength, .alignment = std_size * 4,
-                .arrayOffset = std_size * 4 };
-
-    }else if (type == ShaderPropertyType::MAT2) {
-        if (arrayLength == 0)
-            return { .size = std_size * (4 + 2), .alignment = std_size * 4 };
-        else
-            return { .size = std_size * ((arrayLength * 2 - 1) * 4 + 2),
-                .alignment = std_size * 4, .arrayOffset = std_size * 4 * 2 };
-
-    }else if (type == ShaderPropertyType::MAT3) {
-        if (arrayLength == 0)
-            return { .size = std_size * (4 * 2 + 3),
-                .alignment = std_size * 4 };
-        else
-            return { .size = std_size * ((arrayLength * 3 - 1) * 4 + 3),
-                .alignment = std_size * 4, .arrayOffset = std_size * 4 * 3 };
-
-    }else if (type == ShaderPropertyType::MAT4) {
-        if (arrayLength == 0)
-            return { .size = std_size * 16,
-                .alignment = std_size * 4 };
-        else
-            return { .size = std_size * ((arrayLength * 4) * 4),
-                .alignment = std_size * 4, .arrayOffset = std_size * 4 * 4 };
-    }else {
+    } else if (type == ShaderPropertyType::VEC3) {
+        if (arrayLength == 0) {
+            return {.size = std_size * 3, .alignment = std_size * 4};
+        } else {
+            return {.size = std_size * 4 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4};
+        }
+    } else if (type == ShaderPropertyType::VEC4) {
+        if (arrayLength == 0) {
+            return {.size = std_size * 4, .alignment = std_size * 4};
+        } else {
+            return {.size = std_size * 4 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4};
+        }
+    } else if (type == ShaderPropertyType::MAT2) {
+        if (arrayLength == 0) {
+            return {.size = std_size * 4 * 2, .alignment = std_size * 4}; // 2列，每列vec4
+        } else {
+            return {.size = std_size * 4 * 2 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4 * 2};
+        }
+    } else if (type == ShaderPropertyType::MAT3) {
+        if (arrayLength == 0) {
+            return {.size = std_size * 4 * 3, .alignment = std_size * 4}; // 3列，每列vec4
+        } else {
+            return {.size = std_size * 4 * 3 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4 * 3};
+        }
+    } else if (type == ShaderPropertyType::MAT4) {
+        if (arrayLength == 0) {
+            return {.size = std_size * 4 * 4, .alignment = std_size * 4}; // 4列，每列vec4
+        } else {
+            return {.size = std_size * 4 * 4 * arrayLength,
+                    .alignment = std_size * 4,
+                    .arrayOffset = std_size * 4 * 4};
+        }
+    } else {
         LOG_ERROR("Invalid shader property type!");
         return {};
     }

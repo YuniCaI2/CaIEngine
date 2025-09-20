@@ -19,13 +19,15 @@ void TestFrameGraph() {
     uint32_t presentShader = -1;
     FrameWork::CaIShader::Create(forwardShader, ForwardPath);
     FrameWork::CaIShader::Create(presentShader, PresentPath);
+    uint32_t mer = -1;
+    FrameWork::CaIMaterial::Create(mer, forwardShader);
 
 
     // 创建Vulkan资源
     auto &api = vulkanRenderAPI;
     uint32_t presentMaterial = -1;
     FrameWork::CaIMaterial::Create(presentMaterial, presentShader);
-    auto swapChainTex = api.CreateSwapChainTexture();
+    auto swapChainTex = api.GetSwapChainTextures();
 
     //注册资源
     auto colorAttachment = resourceManager.RegisterResource([&](std::unique_ptr<ResourceDescription> &desc) {
@@ -51,6 +53,8 @@ void TestFrameGraph() {
     auto forwardPass = renderPassManager.RegisterRenderPass([&](std::unique_ptr<RenderPass> &renderPass) {
         renderPass->SetName("forwardPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
+            FrameWork::CaIMaterial::Get(mer)->SetParam("color0", glm::vec3(1, 0, 1), 0);
+            FrameWork::CaIMaterial::Get(mer)->Bind(cmdBuffer);
             FrameWork::CaIShader::Get(forwardShader)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
         });

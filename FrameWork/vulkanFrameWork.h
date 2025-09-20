@@ -205,11 +205,7 @@ public:
     uint32_t apiVersion = VK_API_VERSION_1_3;
 
     //默认的renderpass使用的深度模板附件
-    struct {
-        VkImage image;
-        VkDeviceMemory memory;
-        VkImageView view;
-    } depthStencil;
+
 
     //GLFW Window
     GLFWwindow *window{nullptr};
@@ -233,8 +229,6 @@ public:
 
     virtual void render();
 
-    virtual void setupDepthStencil();
-
     virtual void setupRenderPass();
 
     virtual void getEnabledFeatures();
@@ -254,7 +248,6 @@ public:
 
     void submitFrame();
 
-    void finishRender();
 
 
     void CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer, void *data);
@@ -268,7 +261,7 @@ public:
     //如果其他类型的资源直接作为Proxy导入为好，每一帧创建开销太大了
     void CreateTexture(uint32_t & textureId, FG::BaseDescription* description);
 
-    std::vector<uint32_t> CreateSwapChainTexture();
+    std::vector<uint32_t>& GetSwapChainTextures();
 
     void CreateImageView(FrameWork::VulkanImage &image, VkImageView &imageView, VkImageAspectFlags aspectFlags,
                          VkImageViewType viewType);
@@ -651,10 +644,11 @@ public:
             auto modelData = getByIndex<FrameWork::VulkanModelData>(index);
             modelData->inUse = false;
 
-            for (auto& textureID : modelData->textureID) {
-                destroyByIndex<FrameWork::Texture>(textureID);
+            for (auto& textureIDarray : modelData->textures) {
+                for(auto& [_, textureID] : textureIDarray)
+                    destroyByIndex<FrameWork::Texture>(textureID);
             }
-            for (auto& meshID : modelData->meshID) {
+            for (auto& meshID : modelData->meshIDs) {
                 destroyByIndex<FrameWork::Mesh>(meshID);
             }
         }

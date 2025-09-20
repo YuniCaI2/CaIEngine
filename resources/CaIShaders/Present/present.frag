@@ -10,5 +10,6 @@ layout (binding = 0) uniform sampler2D colorTexture;
         void main() {
             // 采样上一个pass的颜色
             fragColor = texture(colorTexture, fragTexCoord);
+             // fragColor = vec4(1.0, 0.0, 0.0, 1.0);
         }
     

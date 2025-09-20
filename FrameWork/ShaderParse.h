@@ -158,6 +158,7 @@ namespace FrameWork {
             {CompareOption::GREATER, VK_COMPARE_OP_GREATER},
             {CompareOption::NOT_EQUAL, VK_COMPARE_OP_NOT_EQUAL},
             {CompareOption::GREATER_OR_EQUAL, VK_COMPARE_OP_GREATER_OR_EQUAL},
+            {CompareOption::LESS_OR_EQUAL, VK_COMPARE_OP_LESS_OR_EQUAL},
         };
     };
 }

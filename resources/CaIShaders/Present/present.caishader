@@ -3,7 +3,7 @@ Settings {
     BlendOp Add
     Cull None
     ZTest LessOrEqual
-    ZWrite On
+    ZWrite Off
     InputVertex Off
 }
 
@@ -30,6 +30,7 @@ Vertex{
     vec2(1.0, 1.0),  // 右上
     vec2(0.0, 1.0)   // 左上
     );
+
 
 
         void main(){
@@ -66,6 +67,7 @@ Fragment{
         void main() {
             // 采样上一个pass的颜色
             fragColor = texture(colorTexture, fragTexCoord);
+             // fragColor = vec4(1.0, 0.0, 0.0, 1.0);
         }
     }
 }

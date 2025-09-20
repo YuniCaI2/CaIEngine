@@ -278,6 +278,10 @@ VkResult FrameWork::VulkanDevice::createBuffer(VkBufferUsageFlags usageFlags, Vk
                                                Buffer *buffer, VkDeviceSize size, void *data) {
     buffer->device = logicalDevice;
 
+    if (size == 0) {
+        LOG_ERROR("Buffer size is zero!");
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;

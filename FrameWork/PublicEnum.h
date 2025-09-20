@@ -106,7 +106,7 @@ enum TextureTypeFlagBits : uint32_t{
     Occlusion = 1 << 4,
     Ambient = 1 << 5,
     BaseColor = 1 << 6,
-    SFLOAT16 = 1 << 7,
+    SFLOAT16 = 1 << 7, //对应有负数的纹理
     SFLOAT32 = 1 << 8,
     None = 1 << 9,
 };

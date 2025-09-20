@@ -25,6 +25,7 @@ layout(location = 0) out vec2 fragTexCoord;
     );
 
 
+
         void main(){
             // 获取当前顶点索引
             int vertexIndex = gl_VertexIndex;

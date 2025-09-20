@@ -1,7 +1,7 @@
-﻿Settings {
+Settings {
     Blend SrcAlpha OneMinusSrcAlpha
     BlendOp Add
-    Cull Back
+    Cull On
     ZTest LessOrEqual
     ZWrite On
 }

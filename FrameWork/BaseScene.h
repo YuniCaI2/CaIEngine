@@ -10,6 +10,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
 #include "VulkanDebug.h"
+#include "FrameGraph/RenderPassManager.h"
+#include "FrameGraph/ResourceManager.h"
 
 class BaseScene : public FrameWork::Scene{
 public:
@@ -26,6 +28,8 @@ private:
     void CreateDescriptorSetLayout();
     void CreateGraphicsPipeline();
     void PrepareResources(FrameWork::Camera& camera);
+
+    void CreateFrameGraphResource();
 
     std::string sceneName{};
 
@@ -55,8 +59,26 @@ private:
     FrameWork::AABBDeBugging aabbDeBugging{};
     bool displayAABB = false;
 
+
     std::function<void()> GUIFunc;//设置GUI函数，在Renderer中与GUI对象交互
 
+    //FrameGraph设置
+    uint32_t vulkanModelDataIndex = -1;
+    FG::ResourceManager resourceManager;
+    FG::RenderPassManager renderPassManager;
+    std::unique_ptr<FG::FrameGraph> frameGraph;
+    //持久资源
+    uint32_t vulkanModelID = -1;
+    uint32_t presentMaterialID = -1;
+    //这边是一个模型对应一个Material
+    uint32_t caiShaderID = -1;
+    std::vector<uint32_t> materials; //这个对应每个mesh
+    uint32_t presentShaderID = -1;
+    uint32_t testShader = -1;
+
+    uint32_t colorAttachment = 0;
+    uint32_t depthAttachment = 0;
+    uint32_t swapChainAttachment = 0;
 };
 
 

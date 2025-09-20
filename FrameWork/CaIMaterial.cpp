@@ -77,7 +77,7 @@ void FrameWork::CaIMaterial::SetTexture(const std::string &name, uint32_t id) co
     uint32_t binding = -1;
     for (int i = 0; i < shaderInfo.vertProperties.textureProperties.size(); i++) {
         if (name == shaderInfo.vertProperties.textureProperties[i].name) {
-            binding = i;
+            binding = shaderInfo.vertProperties.textureProperties[i].binding;
             break;
         }
     }
@@ -85,7 +85,7 @@ void FrameWork::CaIMaterial::SetTexture(const std::string &name, uint32_t id) co
     if (binding == -1)
         for (int i = 0; i < shaderInfo.fragProperties.textureProperties.size(); i++) {
             if (name == shaderInfo.fragProperties.textureProperties[i].name) {
-                binding = i;
+                binding = shaderInfo.fragProperties.textureProperties[i].binding;
                 break;
             }
         }

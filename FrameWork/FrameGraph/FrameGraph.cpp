@@ -62,7 +62,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
 
     VkImageSubresourceRange subresourceRange{};
     subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+        ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
     subresourceRange.layerCount = description->arrayLayers;
     subresourceRange.levelCount = description->mipLevels;
     subresourceRange.baseMipLevel = 0;
@@ -151,7 +151,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                         if((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
                             data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
-                        } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+                        } else if((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
                             data.depthFormat = description->format;
                             data.depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
                             data.hasDepth = true;
@@ -167,7 +167,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                         if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
                             data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
-                        } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+                        } else if((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
                             data.depthFormat = description->format;
                             data.depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
                             data.hasDepth = true;
@@ -456,6 +456,13 @@ void FG::FrameGraph::CullPassAndResource() {
     //获得工作resource
     for (auto resourceIndex : resourceNodes) {
         auto resource = resourceManager.FindResource(resourceIndex);
+        bool isDepth = false;
+        if (resource->GetType() == ResourceType::Texture) {
+            auto desc = resource->GetDescription<TextureDescription>();
+            if (desc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                isDepth = true;
+            }
+        }
         if (resource->isExternal) {
             usingResourceNodes.push_back(resourceIndex);
         } else {
@@ -464,6 +471,12 @@ void FG::FrameGraph::CullPassAndResource() {
                     usingResourceNodes.push_back(resourceIndex);
                 }
             }
+            if (isDepth)
+                for (auto& renderPassIndex : resource->GetOutputRenderPass()) {
+                    if (usePassNode.contains(renderPassIndex)) {
+                        usingResourceNodes.push_back(resourceIndex);
+                    }
+                }
         }
     }
 
@@ -571,8 +584,13 @@ void FG::FrameGraph::CreateTimeline() {
             }
         }
         if (!last && resource->isExternal == false) {
-            LOG_ERROR("the resource : {} don't have input RenderPass", resource->GetName());
-            return;
+            if (resource->GetType() == ResourceType::Texture) {
+                auto desc = resource->GetDescription<TextureDescription>();
+                if (!(desc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+                    LOG_ERROR("the resource : {} don't have input RenderPass", resource->GetName());
+                    return;
+                }
+            }
         }
     }
 }

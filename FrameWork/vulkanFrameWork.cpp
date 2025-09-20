@@ -688,12 +688,7 @@ void vulkanFrameWork::render() {
 
 }
 
-void vulkanFrameWork::finishRender() {
-    //保证渲染资源退出后同步，可以一起删除
-    if (device != VK_NULL_HANDLE) {
-        vkDeviceWaitIdle(device);
-    }
-}
+
 
 void vulkanFrameWork::CreateGPUBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer,
     void *data) {
@@ -790,9 +785,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
 
     CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
     texture->sampler = CreateSampler(mipmapLevels);
-    texture->textureType = data.type;
     texturePathMap[data.path] = textureId;
-
     texture->inUse = true;
     //使用
 }
@@ -819,7 +812,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *de
     texture->inUse = true;
 }
 
-std::vector<uint32_t> vulkanFrameWork::CreateSwapChainTexture() {
+std::vector<uint32_t>& vulkanFrameWork::GetSwapChainTextures() {
     return swapChainTextures;
 }
 
@@ -2467,8 +2460,8 @@ void vulkanFrameWork::LoadVulkanModel(uint32_t &modelDataID, const std::string &
     vulkanModelData->inUse = true;
     vulkanModelData->position = position;
     //两者大小对应保证模型材质正常
-    vulkanModelData->meshID.resize(modelData.meshDatas.size());
-    vulkanModelData->textureID.resize(modelData.meshDatas.size());
+    vulkanModelData->meshIDs.resize(modelData.meshDatas.size());
+    vulkanModelData->textures.resize(modelData.meshDatas.size());
     //构建包围盒子
     std::vector<FrameWork::AABB> triangleBoundingBoxes;
     bool firstTriangle = true;
@@ -2496,8 +2489,15 @@ void vulkanFrameWork::LoadVulkanModel(uint32_t &modelDataID, const std::string &
     vulkanModelData->triangleBoundingBoxs = std::make_unique<std::vector<FrameWork::AABB>>(std::move(triangleBoundingBoxes));
     //构建包围盒
 
-
-
+    for (int i = 0; i < modelData.meshDatas.size(); i++) {
+        //创建顶点信息
+        SetUpStaticMesh(vulkanModelData->meshIDs[i], modelData.meshDatas[i].vertices, modelData.meshDatas[i].indices, false);
+        for (int j = 0; j < modelData.meshDatas[i].texData.size(); j++) {
+            //创建对应Mesh对应的纹理,type是纹理类型
+            auto type = modelData.meshDatas[i].texData[j].type;
+            CreateTexture(vulkanModelData->textures[i][type] , modelData.meshDatas[i].texData[j]);
+        }
+    }
 }
 
 
@@ -2810,48 +2810,6 @@ void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &call
 }
 
 
-void vulkanFrameWork::setupDepthStencil() {
-    VkImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.extent.width = windowWidth;
-    imageCreateInfo.extent.height = windowHeight;
-    imageCreateInfo.extent.depth = 1;
-    imageCreateInfo.mipLevels = 1;
-    imageCreateInfo.arrayLayers = 1;
-    imageCreateInfo.format = depthFormat;
-    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    //设置采样数
-
-    VK_CHECK_RESULT(vkCreateImage(device, &imageCreateInfo, nullptr, &depthStencil.image));
-    VkMemoryRequirements memRequirements{};
-    vkGetImageMemoryRequirements(device, depthStencil.image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = vulkanDevice->getMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    VK_CHECK_RESULT(vkAllocateMemory(device, &allocInfo, nullptr, &depthStencil.memory));
-    VK_CHECK_RESULT(vkBindImageMemory(device, depthStencil.image, depthStencil.memory, 0));
-
-    VkImageViewCreateInfo viewCreateInfo{};
-    viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewCreateInfo.image = depthStencil.image;
-    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewCreateInfo.format = depthFormat;
-    viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    viewCreateInfo.subresourceRange.baseMipLevel = 0;
-    viewCreateInfo.subresourceRange.levelCount = 1;
-    viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    viewCreateInfo.subresourceRange.layerCount = 1;
-    if (depthFormat >= VK_FORMAT_D16_UNORM_S8_UINT) {
-        //将模板的aspectMask也加入
-        viewCreateInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-    }
-    VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &depthStencil.view));
-}
 
 void vulkanFrameWork::setupRenderPass() {
 

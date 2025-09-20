@@ -208,7 +208,6 @@ namespace FrameWork {
         VkImageView imageView{VK_NULL_HANDLE};
         VkSampler sampler{VK_NULL_HANDLE}; //optional
         bool isSwapChainRef{false}; //这里用来适配FrameGraph的资源导入
-        TextureTypeFlagBits textureType;//这个先没使用
         bool inUse = false;
     };
 
@@ -276,21 +275,19 @@ namespace FrameWork {
 
     struct ModelData {
         std::vector<MeshData> meshDatas;
-
     };
 
     //这个ModelData的Vulkan资源话，
     //尽可能的浅封装,不将我的Material封装进去
     //现在的model还是static
     struct VulkanModelData {
-        std::vector<uint32_t> textureID{}; //texture一一对应
-        std::vector<uint32_t> meshID{}; //网格ID
-
+        using TextureMap = std::unordered_map<TextureTypeFlagBits, uint32_t>;
+        std::vector<TextureMap> textures;
+        std::vector<uint32_t> meshIDs{}; //网格ID
         glm::vec3 position{0,0,0}; //初始位置
         using TriangleBoundingBoxPtr = std::unique_ptr<std::vector<AABB>>;
         AABB aabb;
         TriangleBoundingBoxPtr triangleBoundingBoxs;
-
         bool inUse = false;
     };
 

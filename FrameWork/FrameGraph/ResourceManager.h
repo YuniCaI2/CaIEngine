@@ -100,22 +100,7 @@ namespace FG {
             }
             inputRenderPasses.insert(renderPass); return *this;
         }
-        ResourceDescription& SetFirstUseTime(uint32_t time) {
-            firstUseTime = time;
-            return *this;
-        }
-        ResourceDescription& SetLastUseTime(uint32_t time) {
-            lastUseTime = time;
-            return *this;
-        }
-        ResourceDescription& ResetUseTime() {
-            firstUseTime = UINT32_MAX;
-            lastUseTime = 0;
-            return *this;
-        }
 
-        uint32_t GetFirstUseTime() {return firstUseTime;}
-        uint32_t GetLastUseTime() {return lastUseTime;}
         ResourceType GetType() const { return resourceType; }
         std::string GetName() const { return name; }
         std::unordered_set<uint32_t> GetOutputRenderPass() const { return outputRenderPasses; }
@@ -147,6 +132,23 @@ namespace FG {
         bool isPresent = false; //是否是交换链的资源---交换链的资源不参与别名化
         uint32_t vulkanIndex = -1; //对应的Vulkan资源Index
     private:
+        friend class FrameGraph;
+        friend class ResourceManager;
+        ResourceDescription& SetFirstUseTime(uint32_t time) {
+            firstUseTime = time;
+            return *this;
+        }
+        ResourceDescription& SetLastUseTime(uint32_t time) {
+            lastUseTime = time;
+            return *this;
+        }
+        ResourceDescription& ResetUseTime() {
+            firstUseTime = UINT32_MAX;
+            lastUseTime = 0;
+            return *this;
+        }
+        uint32_t GetFirstUseTime() {return firstUseTime;}
+        uint32_t GetLastUseTime() {return lastUseTime;}
         std::string name;
         std::unordered_set<uint32_t> outputRenderPasses;
         std::unordered_set<uint32_t> inputRenderPasses;
