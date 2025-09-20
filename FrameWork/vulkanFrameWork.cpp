@@ -409,6 +409,11 @@ void vulkanFrameWork::DestroyAll() {
     //手动释放智能指针，因为API是手动释放的
     FrameWork::CaIShader::DestroyAll();
     FrameWork::CaIMaterial::DestroyAll();
+    for (int i = 0; i < materialDatas_.size(); i++) {
+        destroyByIndex<FrameWork::MaterialData>(i);
+        delete materialDatas_[i];
+        materialDatas_[i] = nullptr;
+    }
 
     for (int i = 0; i < modelDatas_.size(); i++) {
         if (modelDatas_[i] != nullptr) {

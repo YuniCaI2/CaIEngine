@@ -636,9 +636,12 @@ public:
             for (int i = 0; i < materialData->descriptorSetLayouts.size(); ++i) {
                 vulkanDescriptorPool.RegisterUnusedDescriptorSet(materialData->descriptorSetLayouts[i],
                     materialData->descriptorSets[i]);
-                //删除一一对应的buffer
-                materialData->vertexUniformBuffers[i].destroy();
-                materialData->fragmentUniformBuffers[i].destroy();
+            }
+            for (auto& buffer : materialData->vertexUniformBuffers) {
+                buffer.destroy();
+            }
+            for (auto& buffer : materialData->fragmentUniformBuffers) {
+                buffer.destroy();
             }
         } else if (std::is_same_v<T, FrameWork::VulkanModelData>) {
             auto modelData = getByIndex<FrameWork::VulkanModelData>(index);

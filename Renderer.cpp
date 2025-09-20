@@ -15,7 +15,8 @@
 class Renderer {
 private:
     FrameWork::Camera camera{};
-    FrameWork::Timer timer;
+    FrameWork::Timer frameTimer;
+    FrameWork::Timer cameraTimer;
     FrameWork::FrameWorkGUI GUI{};
     std::vector<std::unique_ptr<FrameWork::Scene> > scenes{};
     uint32_t currentSceneIndex = 0;
@@ -58,12 +59,14 @@ public:
     }
 
     void render() {
-        camera.update(timer.GetElapsedSeconds());
+        // LOG_DEBUG("Elapsed Time : {}", timer.GetElapsedSeconds());
+        camera.update(cameraTimer.GetElapsedSeconds());
+        cameraTimer.Restart();
         // vulkanRenderAPI.UpdateAllSlots();
-        vulkanRenderAPI.prepareFrame(timer.GetElapsedMilliTime());
+        vulkanRenderAPI.prepareFrame(frameTimer.GetElapsedMilliTime());
+        frameTimer.Restart();
         buildCommandBuffers();
         vulkanRenderAPI.submitFrame();
-        timer.Restart();
     }
 
     void SetGUI() {

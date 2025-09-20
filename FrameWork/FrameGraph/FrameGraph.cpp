@@ -14,13 +14,11 @@ resourceManager(resourceManager), renderPassManager(renderPassManager), threadPo
 
 FG::FrameGraph::~FrameGraph() {
     // 清理command pools
-    for (auto& [passIndex, pools] : renderPassCommandPools) {
-        for (auto& pool : pools) {
+    for (auto& [passIndex, pool] : renderPassCommandPools) {
             if(pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
                                 pool, nullptr);
             pool = VK_NULL_HANDLE;
-        }
     }
     renderPassCommandPools.clear();
 }
@@ -44,13 +42,7 @@ FG::FrameGraph& FG::FrameGraph::Compile() {
     return *this;
 }
 
-void FG::FrameGraph::ResetCommandPool(){
-    for(auto& [passIndex, pools] : renderPassCommandPools){
-        if(pools[vulkanRenderAPI.currentFrame] != VK_NULL_HANDLE){
-            vkResetCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, pools[vulkanRenderAPI.currentFrame], 0);
-        }
-    }
-}
+
 
 void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo &barrier){
     if (!barrier.isImage) return;
@@ -106,7 +98,6 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
     updateBeforeRendering();
     std::vector<std::future<RenderPassData>> futures;
     futures.reserve(usingPassNodes.size());
-    ResetCommandPool();
     resourceManager.ResetVulkanResource();
     resourceManager.CreateVulkanResource();
 
@@ -120,17 +111,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 data.hasDepth = false;
                 data.width = vulkanRenderAPI.windowWidth;
                 data.height = vulkanRenderAPI.windowHeight;
-
-                // 分配 Secondary Command Buffer
-                VkCommandBufferAllocateInfo allocInfo{};
-                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-                allocInfo.commandPool = renderPassCommandPools[passIndex][vulkanRenderAPI.currentFrame];
-                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-                allocInfo.commandBufferCount = 1;
-
-                vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                    &allocInfo, &data.secondaryCmd);
-
+                data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
                 // 收集附件格式信息
                 VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
@@ -681,15 +662,24 @@ void FG::FrameGraph::CreateCommandPools(){
     //这里先不考虑compute，计算着色器需要不同queue
     renderPassCommandPools.clear();
     for(auto& renderPassIndex : usingPassNodes){
-        renderPassCommandPools[renderPassIndex].resize(MAX_FRAME);
-        for (int f = 0; f < MAX_FRAME; f++) {
             VkCommandPoolCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
+            info.flags =VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             VK_CHECK_RESULT(
                 vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
-                                    &renderPassCommandPools[renderPassIndex][f])
+                                    &renderPassCommandPools[renderPassIndex])
             );
+            commandBuffers[renderPassIndex].resize(MAX_FRAME);
+            for (int i = 0; i < MAX_FRAME; i++) {
+                VkCommandBufferAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+                allocInfo.commandPool = renderPassCommandPools[renderPassIndex];
+                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+                allocInfo.commandBufferCount = 1;
+
+                vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+                    &allocInfo, &commandBuffers[renderPassIndex][i]);
         }
     }
 }

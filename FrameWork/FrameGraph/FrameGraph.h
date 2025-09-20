@@ -32,7 +32,6 @@ namespace FG {
         //为裁剪后的节点创建RenderPass
         void InsertBarriers();
     private:
-        void ResetCommandPool();
         void InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo& barrier);
         std::vector<uint32_t> resourceNodes{};
         std::vector<uint32_t> usingResourceNodes{};
@@ -46,7 +45,8 @@ namespace FG {
         std::function<void()> updateBeforeRendering{};
 
         //单FrameGraph资源
-        std::unordered_map<uint32_t, std::vector<VkCommandPool>> renderPassCommandPools; //每个Pass对应一个commandPool来创建子command，多线程录制
+        std::unordered_map<uint32_t, VkCommandPool> renderPassCommandPools; //每个Pass对应一个commandPool来创建子command，多线程录制
+        std::unordered_map<uint32_t, std::vector<VkCommandBuffer>> commandBuffers; //这里是每个飞行帧一个commandBuffer
     };
 }
 
