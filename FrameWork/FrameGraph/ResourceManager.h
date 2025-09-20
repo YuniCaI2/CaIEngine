@@ -8,6 +8,7 @@
 #include"../vulkanFrameWork.h"
 #include<concepts>
 #include <utility>
+#include<shared_mutex>
 
 namespace FG {
     class FrameGraph;
@@ -78,7 +79,9 @@ namespace FG {
     struct AliasGroup {
         std::vector<uint32_t> sharedResourceIndices;
         uint32_t vulkanIndex{UINT32_MAX};
+        bool isReset = true;
         BaseDescription* description{}; //资源描述
+        std::unique_ptr<std::mutex> mutexPtr;//实现对AliasGroup访问的异步
     };
 
     class ResourceDescription {
@@ -175,7 +178,7 @@ namespace FG {
         friend FrameGraph;
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
         //aliasGroup Index创建
-        void CreateVulkanResource();//生成Alias Group
+        void CreateVulkanResource(uint32_t index);//生成Alias Group
         void ResetVulkanResource();
 
 

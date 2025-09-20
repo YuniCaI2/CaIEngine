@@ -5,6 +5,7 @@
 #include "ResourceManager.h"
 
 
+
 uint32_t FG::ResourceManager::RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>&)> &Func) {
     auto resourceDescription = std::make_unique<ResourceDescription>();
     Func(resourceDescription);
@@ -62,7 +63,7 @@ void FG::ResourceManager::ClearAliasGroups(){
 
 bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasIndex) {
     auto resourceDesc = resourceDescriptions[resourceDescIndex].get();
-    auto group = aliasGroups[aliasIndex];
+    auto& group = aliasGroups[aliasIndex];
     uint32_t newFirstTime = resourceDesc->GetFirstUseTime();
     if (resourceDesc->GetType() != group.description->GetResourceType()) {
         return false;
@@ -94,21 +95,21 @@ bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasInd
     return false;
 }
 
-void FG::ResourceManager::CreateVulkanResource() {
+void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     //先不支持Buffer的创建，因为RenderAPI现无对应的接口
-    for (uint32_t index = 0; index < aliasGroups.size(); index++) {
-        auto description = aliasGroups[index].description;
-        if (description->GetResourceType() == ResourceType::Texture) {
-            vulkanRenderAPI.CreateTexture(aliasGroups[index].vulkanIndex , description);
-        }else {
-            LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
-        }
+    auto description = aliasGroups[index].description;
+    if (description->GetResourceType() == ResourceType::Texture) {
+        vulkanRenderAPI.CreateTexture(aliasGroups[index].vulkanIndex , description);
+    }else {
+        LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
     }
+    aliasGroups[index].isReset = false;
 }
 
 void FG::ResourceManager::ResetVulkanResource() {
     for (uint32_t index = 0; index < aliasGroups.size(); index++) {
         auto description = aliasGroups[index].description;
+        aliasGroups[index].isReset = true;
         if (description->GetResourceType() == ResourceType::Texture) {
             if (aliasGroups[index].vulkanIndex != UINT32_MAX) {
                 vulkanRenderAPI.DeleteTexture(aliasGroups[index].vulkanIndex);
@@ -124,16 +125,34 @@ uint32_t FG::ResourceManager::GetVulkanResource(const std::string& name) {
 }
 
 uint32_t FG::ResourceManager::GetVulkanResource(uint32_t resourceIndex) {
-    if(resourceDescriptions[resourceIndex]->isExternal){
-        return resourceDescriptions[resourceIndex]->vulkanIndex;
+    {
+        if(resourceDescriptions[resourceIndex]->isExternal){
+            return resourceDescriptions[resourceIndex]->vulkanIndex;
+        }
+
+        if(!resourceDescriptionToAliasGroup.contains(resourceIndex)){
+            LOG_ERROR("The resourceIndex : {} didn't create vulkan resource !",
+                resourceDescriptions[resourceIndex]->GetName());
+            return -1;
+        }
+
+        auto aliasGroupIndex = resourceDescriptionToAliasGroup[resourceIndex];
+        auto& alias = aliasGroups[aliasGroupIndex];
+
+        // 如果不需要重置，直接返回
+        if (!alias.isReset) {
+            return alias.vulkanIndex;
+        }
     }
 
-    if(!resourceDescriptionToAliasGroup.contains(resourceIndex)){
-        LOG_ERROR("The resourceIndex : {} didn't create vulkan resource !", 
-            resourceDescriptions[resourceIndex]->GetName());
-        return -1;
+    auto aliasGroupIndex = resourceDescriptionToAliasGroup[resourceIndex];
+    auto& alias = aliasGroups[aliasGroupIndex];
+
+    std::lock_guard lock(*alias.mutexPtr);
+    if (alias.isReset) {
+        CreateVulkanResource(aliasGroupIndex);
     }
-    return aliasGroups[resourceDescriptionToAliasGroup[resourceIndex]].vulkanIndex;
+    return alias.vulkanIndex;
 }
 
 std::vector<FG::AliasGroup> & FG::ResourceManager::GetAliasGroups() {

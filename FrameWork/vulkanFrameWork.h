@@ -135,9 +135,6 @@ protected:
     std::vector<FrameWork::VulkanFBO *> vulkanFBOs;
     std::vector<FrameWork::VulkanPipeline *> vulkanPipelines;
     std::vector<FrameWork::VulkanPipelineInfo *> vulkanPipelineInfos;
-    std::unordered_map<std::string, VkRenderPass> renderPasses; //记录renderpass
-    std::unordered_map<RenderPassType, VkRenderPass> renderPassTable;
-    std::unordered_map<std::string, VkDescriptorSetLayout> descriptorSetLayouts;
     std::vector<FrameWork::Material *> materials;
     std::vector<FrameWork::Model *> models;
     std::vector<FrameWork::StorageBuffer *> storageBuffers;
@@ -145,7 +142,23 @@ protected:
     std::vector<FrameWork::MaterialData*> materialDatas_;
     std::vector<FrameWork::VulkanModelData*> modelDatas_; //更浅
 
+    // 对象池的锁声明
+    std::mutex texturesMutex;
+    std::mutex meshesMutex;
+    std::mutex attachmentBuffersMutex;
+    std::mutex vulkanFBOsMutex;
+    std::mutex vulkanPipelinesMutex;
+    std::mutex vulkanPipelineInfosMutex;
+    std::mutex materialsMutex;
+    std::mutex modelsMutex;
+    std::mutex storageBuffersMutex;
+    std::mutex slotsMutex;
+    std::mutex materialDatasMutex;
     std::mutex modelDatasMutex;
+
+    std::unordered_map<std::string, VkRenderPass> renderPasses; //记录renderpass
+    std::unordered_map<RenderPassType, VkRenderPass> renderPassTable;
+    std::unordered_map<std::string, VkDescriptorSetLayout> descriptorSetLayouts;
 
     using ReleaseContainer = std::pair<uint32_t, uint32_t>; //后者是释放计数器
     std::deque<ReleaseContainer> textureReleaseQueue;
@@ -524,7 +537,41 @@ public:
     }
 
     template<class T>
+    std::mutex& getMutex() {
+        if constexpr (std::is_same_v<T, FrameWork::Texture>) {
+            return texturesMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::Mesh>) {
+            return meshesMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::VulkanAttachment>) {
+            return attachmentBuffersMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::VulkanFBO>) {
+            return vulkanFBOsMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::VulkanPipelineInfo>) {
+            return vulkanPipelineInfosMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::VulkanPipeline>) {
+            return vulkanPipelinesMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::Material>) {
+            return materialsMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::Model>) {
+            return modelsMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::StorageBuffer>) {
+            return storageBuffersMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::Slot>) {
+            return slotsMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::MaterialData>) {
+            return materialDatasMutex;
+        } else if constexpr (std::is_same_v<T, FrameWork::VulkanModelData>) {
+            return modelDatasMutex;
+        } else {
+            static std::mutex dummy_mutex;
+            return dummy_mutex;
+        }
+    }
+
+
+    template<class T>
     uint32_t inline getNextIndex() {
+        std::lock_guard<std::mutex> lock(getMutex<T>());
         auto &vec = getVectorRef<T>();
         auto len = vec.size();
         for (uint32_t i = 0; i < vec.size(); i++) {
@@ -539,17 +586,19 @@ public:
 
     template<class T>
     auto inline getByIndex(uint32_t index) -> T * {
+        std::lock_guard<std::mutex> lock(getMutex<T>());
         return getVectorRef<T>()[index];
     }
 
     template<typename T>
     auto getSize() -> uint32_t {
+        std::lock_guard<std::mutex> lock(getMutex<T>());
         return getVectorRef<T>().size();
     }
 
     template<class T>
     void inline destroyByIndex(uint32_t index) {
-        auto obj = getByIndex<T>(index);
+        auto obj = getByIndex<T>(index);//这里已经上锁
         if (obj == nullptr || obj->inUse == false) {
             return;
         }

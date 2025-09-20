@@ -99,7 +99,6 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
     std::vector<std::future<RenderPassData>> futures;
     futures.reserve(usingPassNodes.size());
     resourceManager.ResetVulkanResource();
-    resourceManager.CreateVulkanResource();
 
     // 为每个 pass 创建 secondary command buffer
     for (auto& t : timeline) {
@@ -649,13 +648,15 @@ void FG::FrameGraph::CreateAliasGroups() {
                 }else {
                     newGroup.description = resource->GetDescription<BufferDescription>();
                 }
+                newGroup.mutexPtr = std::make_unique<std::mutex>();
                 newGroup.vulkanIndex = -1; //在运行时创建资源
-                resourceManager.GetAliasGroups().push_back(newGroup);
+                resourceManager.GetAliasGroups().push_back(std::move(newGroup));
                 resourceManager.resourceDescriptionToAliasGroup[resIndex] =
                     resourceManager.GetAliasGroups().size() - 1;
             }
         }
     }
+
 }
 
 void FG::FrameGraph::CreateCommandPools(){
