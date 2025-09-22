@@ -272,7 +272,7 @@ public:
 
     //这个函数是用来创建FrameGraph中的临时资源，一般作为Attachment，这种资源一般不需要array和mipmap,且是2D资源，
     //如果其他类型的资源直接作为Proxy导入为好，每一帧创建开销太大了
-    void CreateTexture(uint32_t & textureId, FG::BaseDescription* description);
+    void CreateTexture(uint32_t & textureId, uint32_t& resolveID, FG::BaseDescription* description);
 
     std::vector<uint32_t>& GetSwapChainTextures();
 

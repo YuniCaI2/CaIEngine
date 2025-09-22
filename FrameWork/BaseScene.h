@@ -25,10 +25,7 @@ public:
     virtual uint32_t GetPresentColorAttachment() override;
 
 private:
-    void CreateDescriptorSetLayout();
-    void CreateGraphicsPipeline();
     void PrepareResources(FrameWork::Camera& camera);
-
     void CreateFrameGraphResource();
 
     std::string sceneName{};
@@ -44,6 +41,9 @@ private:
     //MSAA Resource
     uint32_t msaaPipelineID = -1;
     uint32_t msaaFrameBufferID = -1;
+
+    //SSAA Resource
+    float ssaa = 1.0f;
 
     // Vulkan对象
     VkDescriptorSetLayout dynamicDescriptorSetLayout = VK_NULL_HANDLE;

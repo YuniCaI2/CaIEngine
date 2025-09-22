@@ -10,6 +10,7 @@
 #include "RenderPassManager.h"
 #include "ResourceManager.h"
 
+//FrameGraph性能瓶颈在于创建帧间资源，这是重开销
 namespace FG {
     class FrameGraph {
     public:

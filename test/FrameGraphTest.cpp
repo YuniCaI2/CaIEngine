@@ -65,7 +65,7 @@ void TestFrameGraph() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             FrameWork::CaIShader::Get(presentShader)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(presentMaterial)->SetTexture("colorTexture", resourceManager.GetVulkanResource(colorAttachment));
+            FrameWork::CaIMaterial::Get(presentMaterial)->SetTexture("colorTexture", resourceManager.GetVulkanIndex(colorAttachment));
             FrameWork::CaIMaterial::Get(presentMaterial)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
         });

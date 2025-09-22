@@ -796,7 +796,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
 }
 
 
-void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *description) {
+void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG::BaseDescription *description) {
     if (description->GetResourceType() != FG::ResourceType::Texture) {
         LOG_ERROR("Can't create resource which description is not texture type by create texture");
     }
@@ -815,6 +815,25 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *de
     texture->sampler = CreateSampler(texDesc->mipLevels);
     //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
     texture->inUse = true;
+
+    //对resolve处理
+    if (texDesc->samples != VK_SAMPLE_COUNT_1_BIT) {
+        resolveID = getNextIndex<FrameWork::Texture>();
+        auto resolve = getByIndex<FrameWork::Texture>(resolveID);
+        vulkanDevice->createImage(&resolve->image, VkExtent2D(texDesc->width, texDesc->height),
+            texDesc->mipLevels, texDesc->arrayLayers, VK_SAMPLE_COUNT_1_BIT, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
+        texDesc->usages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            CreateImageView(resolve->image, resolve->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+        }else {
+            CreateImageView(resolve->image, resolve->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+        }
+        resolve->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        resolve->sampler = CreateSampler(texDesc->mipLevels);
+        //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
+        resolve->inUse = true;
+    }
+
 }
 
 std::vector<uint32_t>& vulkanFrameWork::GetSwapChainTextures() {

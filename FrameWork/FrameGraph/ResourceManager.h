@@ -79,9 +79,12 @@ namespace FG {
     struct AliasGroup {
         std::vector<uint32_t> sharedResourceIndices;
         uint32_t vulkanIndex{UINT32_MAX};
-        bool isReset = true;
+        std::atomic<bool> isReset = true;
         BaseDescription* description{}; //资源描述
         std::unique_ptr<std::mutex> mutexPtr;//实现对AliasGroup访问的异步
+
+        //对应图像的Resolve的资源
+        uint32_t resolveVulkanIndex{UINT32_MAX};
     };
 
     class ResourceDescription {
@@ -170,21 +173,30 @@ namespace FG {
         uint32_t RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>& )>& Func);
         ResourceDescription* FindResource(const std::string& name);
         ResourceDescription* FindResource(uint32_t index);
-        uint32_t GetVulkanResource(const std::string& name);
-        uint32_t GetVulkanResource(uint32_t resourceIndex);
+        uint32_t GetVulkanIndex(const std::string& name);
+        uint32_t GetVulkanIndex(uint32_t resourceIndex);
+        uint32_t GetVulkanResolveIndex(uint32_t resourceIndex);
         void ClearAliasGroups();
-        std::vector<AliasGroup>& GetAliasGroups();
+        std::vector<std::unique_ptr<AliasGroup>>& GetAliasGroups();
     private:
         friend FrameGraph;
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
         //aliasGroup Index创建
         void CreateVulkanResource(uint32_t index);//生成Alias Group
-        void ResetVulkanResource();
-
+        void ResetVulkanResources();
+        void ResetVulkanResource(uint32_t aliasIndex);
+        void UpdateReusePool();
 
         std::unordered_map<std::string, uint32_t> nameToResourceIndex;
         std::vector<std::unique_ptr<ResourceDescription>> resourceDescriptions;
-        std::vector<AliasGroup> aliasGroups;
+        std::vector<std::unique_ptr<AliasGroup>> aliasGroups;
+
+        struct ReuseResource {
+            uint32_t resourceIndex = 0;
+            uint32_t resolveIndex = 0;
+        };
+        std::unordered_map<uint32_t, std::deque<std::pair<ReuseResource, int>>> reuseResourcePool;
+
         std::unordered_map<uint32_t, uint32_t> resourceDescriptionToAliasGroup;
     };
 }

@@ -1,9 +1,10 @@
 Settings {
     Blend SrcAlpha OneMinusSrcAlpha
     BlendOp Add
-    Cull On
+    Cull Back
     ZTest LessOrEqual
     ZWrite On
+    MSAA On
 }
 
 Vertex {

@@ -34,6 +34,18 @@ FG::FrameGraph& FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
 }
 
 FG::FrameGraph& FG::FrameGraph::Compile() {
+    usingResourceNodes.clear();
+    usingPassNodes.clear();
+    //清理池
+    for (auto& [passIndex, pool] : renderPassCommandPools) {
+        if(pool != VK_NULL_HANDLE)
+            vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+                                pool, nullptr);
+        pool = VK_NULL_HANDLE;
+    }
+    timeline.clear();
+    //清理别名系统
+    resourceManager.ClearAliasGroups();
     CullPassAndResource();
     CreateTimeline();
     CreateAliasGroups();
@@ -46,9 +58,6 @@ FG::FrameGraph& FG::FrameGraph::Compile() {
 
 void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo &barrier){
     if (!barrier.isImage) return;
-
-
-
     auto resource = resourceManager.FindResource(barrier.resourceID);
     auto description = resource->GetDescription<TextureDescription>();
 
@@ -63,7 +72,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
     VkImageMemoryBarrier vkBarrier{};
     vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     vkBarrier.image = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-        resourceManager.GetVulkanResource(barrier.resourceID))->image.image;
+        resourceManager.GetVulkanIndex(barrier.resourceID))->image.image;
     vkBarrier.oldLayout = barrier.oldLayout;
     vkBarrier.newLayout = barrier.newLayout;
     vkBarrier.srcAccessMask = barrier.srcAccessMask;
@@ -79,6 +88,36 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
         0, nullptr,
         0, nullptr,
         1, &vkBarrier);
+
+    if (description->samples != VK_SAMPLE_COUNT_1_BIT) {
+        VkImageSubresourceRange subresourceRange{};
+        subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.layerCount = description->arrayLayers;
+        subresourceRange.levelCount = description->mipLevels;
+        subresourceRange.baseMipLevel = 0;
+        subresourceRange.baseArrayLayer = 0;
+
+        VkImageMemoryBarrier vkBarrier{};
+        vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        vkBarrier.image = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+            resourceManager.GetVulkanResolveIndex(barrier.resourceID))->image.image;
+        vkBarrier.oldLayout = barrier.oldLayout;
+        vkBarrier.newLayout = barrier.newLayout;
+        vkBarrier.srcAccessMask = barrier.srcAccessMask;
+        vkBarrier.dstAccessMask = barrier.dstAccessMask;
+        vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        vkBarrier.subresourceRange = subresourceRange;
+
+        vkCmdPipelineBarrier(cmdBuffer,
+            barrier.srcStageMask,
+            barrier.dstStageMask,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &vkBarrier);
+    }
 }
 
 FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
@@ -98,7 +137,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
     updateBeforeRendering();
     std::vector<std::future<RenderPassData>> futures;
     futures.reserve(usingPassNodes.size());
-    resourceManager.ResetVulkanResource();
+    resourceManager.ResetVulkanResources();
 
     // 为每个 pass 创建 secondary command buffer
     for (auto& t : timeline) {
@@ -241,6 +280,9 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
             }
         }
     }
+
+    //更新释放别名池
+    resourceManager.UpdateReusePool();
 
     return *this;
 }
@@ -624,7 +666,7 @@ void FG::FrameGraph::CreateAliasGroups() {
                                 inputResource->GetName(), resource->GetName());
                         }
                         auto& aliasGroup = resourceManager.aliasGroups[resourceManager.resourceDescriptionToAliasGroup[inputResourceIndex]];
-                        aliasGroup.sharedResourceIndices.push_back(resIndex);
+                        aliasGroup->sharedResourceIndices.push_back(resIndex);
                         resourceManager.resourceDescriptionToAliasGroup[resIndex] = resourceManager.resourceDescriptionToAliasGroup[inputResourceIndex];
                     }
                 }
@@ -633,7 +675,7 @@ void FG::FrameGraph::CreateAliasGroups() {
                 auto& aliasGroups = resourceManager.GetAliasGroups();
                 for (int i = 0; i < aliasGroups.size(); i++) {
                     if (resourceManager.CanAlias(resIndex, i)) {
-                        aliasGroups[i].sharedResourceIndices.push_back(resIndex);
+                        aliasGroups[i]->sharedResourceIndices.push_back(resIndex);
                         resourceManager.resourceDescriptionToAliasGroup[resIndex] = i;
                         foundAlias = true;
                         break;
@@ -641,15 +683,15 @@ void FG::FrameGraph::CreateAliasGroups() {
                 }
             }
             if (!foundAlias) {
-                AliasGroup newGroup;
-                newGroup.sharedResourceIndices.push_back(resIndex);
+                auto newGroup = std::make_unique<AliasGroup>();
+                newGroup->sharedResourceIndices.push_back(resIndex);
                 if (resource->GetType() == ResourceType::Texture) {
-                    newGroup.description = resource->GetDescription<TextureDescription>();
+                    newGroup->description = resource->GetDescription<TextureDescription>();
                 }else {
-                    newGroup.description = resource->GetDescription<BufferDescription>();
+                    newGroup->description = resource->GetDescription<BufferDescription>();
                 }
-                newGroup.mutexPtr = std::make_unique<std::mutex>();
-                newGroup.vulkanIndex = -1; //在运行时创建资源
+                newGroup->mutexPtr = std::make_unique<std::mutex>();
+                newGroup->vulkanIndex = -1; //在运行时创建资源
                 resourceManager.GetAliasGroups().push_back(std::move(newGroup));
                 resourceManager.resourceDescriptionToAliasGroup[resIndex] =
                     resourceManager.GetAliasGroups().size() - 1;
@@ -696,7 +738,7 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     attachmentInfo.pNext = nullptr; // 重要：明确设置为 nullptr
 
-    auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResource(resourceIndex));
+    auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanIndex(resourceIndex));
 
     if (!texture || texture->imageView == VK_NULL_HANDLE) {
         LOG_ERROR("Invalid texture or imageView for resource index: {}", resourceIndex);
@@ -707,6 +749,7 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
+
     attachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
     attachmentInfo.resolveImageView = VK_NULL_HANDLE;
     attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -714,9 +757,19 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT) {
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
     }else if((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT) {
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
+            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        }
     }
 
     return attachmentInfo;
@@ -727,7 +780,7 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     attachmentInfo.pNext = nullptr; // 重要：明确设置为 nullptr
 
-    auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResource(resourceIndex));
+    auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanIndex(resourceIndex));
 
     // 添加安全检查
     if (!texture || texture->imageView == VK_NULL_HANDLE) {
@@ -747,9 +800,19 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
     if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT && texture->image.samples != 0) {
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
     }else if((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT && texture->image.samples != 0) {
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
+            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        }
     }
 
     return attachmentInfo;
