@@ -51,7 +51,6 @@ private:
 
     void destroyCommandBuffers();
 
-    void RecreateAllWindowFrameBuffers(); //重建所有大小和窗口一样大的帧缓冲以便显示
 
     std::string shaderDir = "glsl";
 
@@ -107,12 +106,7 @@ protected:
     VkPipelineCache pipelineCache{VK_NULL_HANDLE};
     VulkanSwapChain swapChain;
     //呈现
-    std::unique_ptr<FrameWork::VulkanFBO> presentFrameBuffer{};
     std::vector<uint32_t> swapChainTextures;//保持方便重建
-    uint32_t presentColorAttachmentID = -1;
-    uint32_t presentShaderID = -1;
-    uint32_t presentMaterialID = -1;
-
 
     //同步信号量
     struct Semaphores {
@@ -385,13 +379,6 @@ public:
     void EndCommandBuffer() const;
 
 
-    //初始化呈现
-    void InitPresent(const std::string &presentShaderName, uint32_t colorAttachmentID);
-
-    void PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-    void SwitchPresentColorAttachment(uint32_t colorAttachmentIDs);
-
     //描述符
     VkDescriptorSetLayout CreateDescriptorSetLayout(
         VkDescriptorType descriptorType, VkShaderStageFlags stageFlags
@@ -415,6 +402,8 @@ public:
     void LoadVulkanModel(uint32_t& modelDataID, const std::string &fileName, ModelType modelType,
                     TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
 
+    void BindMesh(VkCommandBuffer commandBuffer, uint32_t meshData);
+
     void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
 
 
@@ -434,6 +423,8 @@ public:
     //快速生成基础几何模型
     void GenFace(uint32_t &model, const glm::vec3 &position, const glm::vec3 &normal, float width, float height,
                  std::string texPath = "");
+
+    void GenFaceData(uint32_t& modelDataID, const glm::vec3 &position, const glm::vec3 &normal, float width, float height, const std::string& texPath = "");
 
     //参数变量向外接口
     static vulkanFrameWork &GetInstance(); //单例接口

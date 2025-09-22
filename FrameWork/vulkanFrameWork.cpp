@@ -93,17 +93,6 @@ void vulkanFrameWork::destroyCommandBuffers() {
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(drawCmdBuffers.size()), drawCmdBuffers.data());
 }
 
-void vulkanFrameWork::RecreateAllWindowFrameBuffers() {
-    ReCreateAttachment();
-    for (uint32_t i = 0; i < vulkanFBOs.size(); i++) {
-        if (vulkanFBOs[i]->inUse && vulkanFBOs[i]->isFollowWindow) {
-            RecreateFrameBuffer(i);
-        }
-    }
-    RecreatePresentFrameBuffer(presentFrameBuffer);
-}
-
-
 std::string vulkanFrameWork::getShaderPath() const {
     return VulkanTool::getShaderBasePath() + shaderDir + "/";
 }
@@ -495,12 +484,7 @@ void vulkanFrameWork::DestroyAll() {
         delete slot;
     }
 
-    //清理presentFrameBuffer
-    if (presentFrameBuffer != nullptr) {
-        for (auto& fbo : presentFrameBuffer->framebuffers) {
-            vkDestroyFramebuffer(device, fbo, nullptr);
-        }
-    }
+
 
 
     //----------------
@@ -2182,63 +2166,6 @@ VkCommandBuffer vulkanFrameWork::BeginCommandBuffer() const {
     return cmdBuffer;
 }
 
-void vulkanFrameWork::InitPresent(const std::string &presentShaderName, uint32_t colorAttachmentID) {
-    CreatePresentFrameBuffer(presentFrameBuffer, renderPassTable[RenderPassType::Present]);
-    auto presentShader = FrameWork::CaIShader::Create (presentShaderID,
-        "../resources/CaIShaders/Present/present.caishader", RenderPassType::Present
-        );
-    auto presentMaterial = FrameWork::CaIMaterial::Create(presentMaterialID,presentShaderID);
-    presentMaterial->SetAttachment("colorTexture", colorAttachmentID);
-
-    auto colorAttachment = getByIndex<FrameWork::VulkanAttachment>(colorAttachmentID);
-    presentColorAttachmentID = colorAttachmentID;
-}
-
-void vulkanFrameWork::PresentFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-    VkClearValue clearValue[2];
-    clearValue[0].color = defaultClearColor;
-    clearValue[1].depthStencil = {1.0f, 0};
-    VkRenderPassBeginInfo renderPassInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .pNext = nullptr,
-        .renderPass = renderPassTable[RenderPassType::Present],
-        .framebuffer = presentFrameBuffer->framebuffers[imageIndex],
-        .renderArea = {
-            .offset = {0, 0},
-            .extent = {
-                .width = windowWidth,
-                .height = windowHeight,
-            }
-        },
-        .clearValueCount = 2,
-        .pClearValues = clearValue
-    };
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    VkViewport viewport = {};
-    viewport.width = (float) windowWidth;
-    viewport.height = (float) windowHeight;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-    VkRect2D scissor = {};
-    scissor.extent.width = windowWidth;
-    scissor.extent.height = windowHeight;
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    FrameWork::CaIShader::Get(presentShaderID)->Bind(commandBuffer);
-    FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(commandBuffer);
-    //呈现的顶点硬编码在着色器中
-    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-
-    vkCmdEndRenderPass(commandBuffer);
-}
-
-void vulkanFrameWork::SwitchPresentColorAttachment(uint32_t colorAttachmentIDs) {
-    presentColorAttachmentID = colorAttachmentIDs;
-    FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", colorAttachmentIDs);
-}
 
 VkDescriptorSetLayout vulkanFrameWork::CreateDescriptorSetLayout(
         VkDescriptorType descriptorType, VkShaderStageFlags stageFlags
@@ -2524,6 +2451,14 @@ void vulkanFrameWork::LoadVulkanModel(uint32_t &modelDataID, const std::string &
     }
 }
 
+void vulkanFrameWork::BindMesh(VkCommandBuffer cmdBuffer, uint32_t meshData) {
+    auto mesh = vulkanRenderAPI.getByIndex<FrameWork::Mesh>(meshData);
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &mesh->VertexBuffer.buffer, offsets);
+    vkCmdBindIndexBuffer(cmdBuffer, mesh->IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdDrawIndexed(cmdBuffer, mesh->indexCount, 1, 0, 0, 0); //没有进行实例渲染
+}
+
 
 void vulkanFrameWork::DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet) {
     auto model = getByIndex<FrameWork::Model>(modelID);
@@ -2646,6 +2581,100 @@ void vulkanFrameWork::GenFace(uint32_t &model, const glm::vec3 &position, const 
     modelPtr->triangleBoundingBoxs = std::make_unique<std::vector<FrameWork::AABB>>(std::move(triangleBoundingBoxes));
     //构建包围盒
 
+}
+
+void vulkanFrameWork::GenFaceData(uint32_t &modelDataID, const glm::vec3 &position, const glm::vec3 &normal, float width,
+    float height, const std::string &texPath) {
+    modelDataID = getNextIndex<FrameWork::VulkanModelData>();
+    auto modelData = getByIndex<FrameWork::VulkanModelData>(modelDataID);
+    modelData->inUse = true;
+
+    glm::vec3 originNormal = {0, 0, 1};
+    auto dot = glm::dot(glm::normalize(normal), originNormal);
+    auto rotateMatrix = glm::mat4(1.0f);
+    if (dot <= -0.9999) {
+        rotateMatrix = glm::rotate(rotateMatrix, glm::radians(180.0f), {0, 1, 0});
+    }else if (dot < 0.9999) {
+        auto cross = glm::cross(originNormal, glm::normalize(normal));
+        cross = glm::normalize(cross);
+        rotateMatrix = glm::rotate(rotateMatrix, glm::acos(dot), cross);
+    }
+
+    std::vector<FrameWork::Vertex> vertices(4);
+    // 计算平面四个角的位置（在XY平面上）
+    float halfWidth = width * 0.5f;
+    float halfHeight = height * 0.5f;
+
+    // 左下角
+    vertices[0].position =glm::vec3(-halfWidth, -halfHeight, 0.0f);
+    vertices[0].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[0].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[0].texCoord = glm::vec2(0.0f, 1.0f);
+
+    // 右下角
+    vertices[1].position = glm::vec3(halfWidth, -halfHeight, 0.0f);
+    vertices[1].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[1].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[1].texCoord = glm::vec2(1.0f, 1.0f);
+
+    // 右上角
+    vertices[2].position =glm::vec3(halfWidth, halfHeight, 0.0f);
+    vertices[2].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[2].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[2].texCoord = glm::vec2(1.0f, 0.0f);
+
+    // 左上角
+    vertices[3].position =glm::vec3(-halfWidth, halfHeight, 0.0f);
+    vertices[3].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+    vertices[3].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+    vertices[3].texCoord = glm::vec2(0.0f, 0.0f);
+
+    modelData->meshIDs.resize(1);
+    modelData->textures.resize(1);
+
+    //提前进行旋转
+    for (auto& v : vertices) {
+        v.normal = glm::vec3(rotateMatrix * glm::vec4(v.normal, 1.0f));
+        v.position = glm::vec3(rotateMatrix * glm::vec4(v.position, 1.0f));
+        v.tangent = glm::vec3(rotateMatrix * glm::vec4(v.tangent, 1.0f));
+    }
+    modelData->position = position;
+
+    std::vector<uint32_t> indices = {
+        0, 1, 2,  // 第一个三角形
+        2, 3, 0   // 第二个三角形
+    };
+    SetUpStaticMesh(modelData->meshIDs.back(), vertices, indices, false);
+
+    //构建包围盒子
+    std::vector<FrameWork::AABB> triangleBoundingBoxes;
+    bool firstTriangle = true;
+    for (int i = 0; i < indices.size(); i += 3) {
+        glm::vec3 v1 = vertices[indices[i]].position;
+        glm::vec3 v2 = vertices[indices[i + 1]].position;
+        glm::vec3 v3 = vertices[indices[i + 2]].position;
+
+        FrameWork::AABB triangleAABB;
+        triangleAABB.max = glm::max(glm::max(v1, v2), v3);
+        triangleAABB.min = glm::min(glm::min(v1, v2), v3);
+
+        if (firstTriangle) {
+            modelData->aabb = triangleAABB;
+            firstTriangle = false;
+        } else {
+            modelData->aabb.max = glm::max(modelData->aabb.max, triangleAABB.max);
+            modelData->aabb.min = glm::min(modelData->aabb.min, triangleAABB.min);
+        }
+
+        triangleBoundingBoxes.push_back(triangleAABB);
+    }
+    modelData->triangleBoundingBoxs = std::make_unique<std::vector<FrameWork::AABB>>(std::move(triangleBoundingBoxes));
+    //构建包围盒
+
+    if (!texPath.empty()) {
+        auto textureData = resourceManager.LoadTextureFullData(texPath, DiffuseColor);
+        CreateTexture(modelData->textures.back()[DiffuseColor], textureData);
+    }
 }
 
 
@@ -3083,7 +3112,6 @@ void vulkanFrameWork::prepare() {
     CreateSwapChainTex();
     createCommandBuffers();
     createSynchronizationPrimitives();
-    setupRenderPass();
     createPipelineCache();
 }
 

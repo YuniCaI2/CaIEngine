@@ -20,9 +20,7 @@ public:
     virtual ~BaseScene() override;
     virtual void Render(const VkCommandBuffer& cmdBuffer) override;
     virtual const std::function<void()>& GetRenderFunction() override;
-    virtual std::vector<uint32_t> GetModelIDs() override;
     virtual std::string GetName() const override;
-    virtual uint32_t GetPresentColorAttachment() override;
 
 private:
     void PrepareResources(FrameWork::Camera& camera);

@@ -99,7 +99,7 @@ void * FrameWork::CaIShader::GetShaderPropertyAddress(uint32_t materialDataID, c
             (materialData->fragmentUniformBuffers[vulkanRenderAPI.currentFrame].mapped) + property.offset + property.arrayOffset * id;
         }
     }
-    LOG_ERROR("Can't find shader property name : {}", name);
+    LOG_ERROR("Can't find shader property name : {} in {}", name, shaderPath);
     return nullptr;
 }
 

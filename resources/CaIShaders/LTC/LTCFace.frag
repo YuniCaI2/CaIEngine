@@ -1,70 +1,28 @@
-Settings {
-    Blend SrcAlpha OneMinusSrcAlpha
-    BlendOp Add
-    Cull Back
-    ZTest LessOrEqual
-    ZWrite On
-    MSAA On
-}
+#version 450 core
 
-Vertex {
-    Input{
-        0 vec3 inPos
-        1 vec3 inNormal
-        2 vec3 inTangent
-        3 vec2 inTexCoord
-    }
-    Output{
-        0 vec2 outTexCoord
-        1 vec3 outWorldPos
-        2 vec3 outNormal
-    }
-    Properties {
-        mat4 viewMatrix
-        mat4 projectionMatrix
-        mat4 modelMatrix
-    }
-    Program{
-        void main()
-        {
-            vec4 worldPos = modelMatrix * vec4(inPos, 1.0);
-            outWorldPos = vec3(worldPos);
-            gl_Position = projectionMatrix * viewMatrix * worldPos;
+layout (location = 0) in vec2 outTexCoord;
+layout (location = 1) in vec3 outWorldPos;
+layout (location = 2) in vec3 outNormal;
 
-            // 正确计算法线变换（应该使用法线矩阵）
-            mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));
-            outNormal = normalMatrix * inNormal;
+layout(location = 0) out vec4 fragColor;
 
-            outTexCoord = inTexCoord;
-        }
-    }
-}
+layout (binding = 1) uniform UniformBufferObject {
+    mat4 lightMatrix;
+    vec3 lightPosition;
+    float lightHeight;
+    vec3 lightColor;
+    float lightWidth;
+    float lightIntensity;
+    vec3 cameraPos;
+    vec3 materialDiffuse;
+    vec3 materialF0;
+    float materialRoughness;
+} _UBO;
 
-Fragment{
-    Input{
-        0 vec2 outTexCoord
-        1 vec3 outWorldPos
-        2 vec3 outNormal
-    }
-    Output{
-        0 vec4 fragColor
-    }
-    Properties {
-        mat4 lightMatrix
-        vec3 lightPosition
-        float lightHeight
-        vec3 lightColor
-        float lightWidth
-        float lightIntensity
-        vec3 cameraPos
-        vec3 materialDiffuse
-        vec3 materialF0
-        float materialRoughness
-        sampler2D LTC1
-        sampler2D LTC2
-        sampler2D lightTexture
-    }
-    Program{
+layout (binding = 2) uniform sampler2D LTC1;
+layout (binding = 3) uniform sampler2D LTC2;
+layout (binding = 4) uniform sampler2D lightTexture;
+
         // LUT相关常量
         const float LUT_SIZE = 64.0;
         const float LUT_SCALE = (LUT_SIZE - 1.0)/LUT_SIZE;
@@ -181,17 +139,17 @@ Fragment{
             texX = clamp(texX / length(points[2] - points[1]), 0.0, 1.0);
             texY = clamp(texY / length(points[0] - points[1]), 0.0, 1.0);
             vec2 texUV = vec2(texX, texY);
-            float lod = (sqrt(materialRoughness) + sqrt(t) * sqrt(max(abs(texX - 0.5), abs(texY - 0.5)))) * 6.0;
+            float lod = (sqrt(_UBO.materialRoughness) + sqrt(t) * sqrt(max(abs(texX - 0.5), abs(texY - 0.5)))) * 6.0;
             return vec3(texUV, t);
         }
 
         void main() {
-            vec3 V = normalize(cameraPos - outWorldPos);
+            vec3 V = normalize(_UBO.cameraPos - outWorldPos);
             vec3 N = normalize(outNormal);
 
             float nDotV = max(dot(N, V), 0.001);
 
-            vec2 uv = vec2(materialRoughness, sqrt(1.0 - nDotV)); //使得cos接近1时密度大
+            vec2 uv = vec2(_UBO.materialRoughness, sqrt(1.0 - nDotV)); //使得cos接近1时密度大
             uv = clamp(uv, 0.0, 1.0) * LUT_SCALE + LUT_BIAS;
 
             vec4 t1 = texture(LTC1, uv);
@@ -204,8 +162,8 @@ Fragment{
             );
 
             vec3 points[4];
-            float halfH = lightHeight * 0.5;
-            float halfW = lightWidth * 0.5;
+            float halfH = _UBO.lightHeight * 0.5;
+            float halfW = _UBO.lightWidth * 0.5;
 
             points[0] = vec3(-halfW, -halfH, 0.0);
             points[1] = vec3(-halfW,  halfH, 0.0);
@@ -214,25 +172,24 @@ Fragment{
 
             // 变换到世界空间
             for(int i = 0; i < 4; i++){
-                vec4 worldPos = lightMatrix * vec4(points[i], 1.0);
+                vec4 worldPos = _UBO.lightMatrix * vec4(points[i], 1.0);
                 points[i] = worldPos.xyz;
             }
 
             // 计算镜面反射
             vec3 spec = LTC_Evaluate(N, V, outWorldPos, Minv, points);
-            spec *= materialF0 * t2.x + (1.0 - materialF0) * t2.y;
+            spec *= _UBO.materialF0 * t2.x + (1.0 - _UBO.materialF0) * t2.y;
             vec3 textureRt = GetLightTex(points, Minv, N, V);
             vec2 texUV = vec2(textureRt.x ,textureRt.y);
             float t = textureRt.z;
-            float lod = (sqrt(1.0 - max(1.0, length(spec))) + sqrt(materialRoughness) * 6.0) * 2.0;
+            float lod = (sqrt(1.0 - max(1.0, length(spec))) + sqrt(_UBO.materialRoughness) * 6.0) * 2.0;
             spec *= vec3(textureLod(lightTexture, texUV, lod));
 
             vec3 diff = LTC_Evaluate(N, V, outWorldPos, mat3(1.0), points);
 
-            vec3 radiance = lightColor * lightIntensity;
-            vec3 col = radiance * (spec + materialDiffuse * diff);
+            vec3 radiance = _UBO.lightColor * _UBO.lightIntensity;
+            vec3 col = radiance * (spec + _UBO.materialDiffuse * diff);
 
             fragColor = vec4(ACEStonemap(col), 1.0);
         }
-    }
-}
+    

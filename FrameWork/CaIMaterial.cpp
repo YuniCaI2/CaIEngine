@@ -66,11 +66,11 @@ FrameWork::CaIMaterial::~CaIMaterial() {
         vulkanRenderAPI.DeleteMaterialData(dataID);
 }
 
-void FrameWork::CaIMaterial::SetTexture(const std::string &name, uint32_t id) const {
+FrameWork::CaIMaterial &FrameWork::CaIMaterial::SetTexture(const std::string &name, uint32_t id)  {
     //Update DescriptorSet
     if (!CaIShader::exist(shaderRef)) {
         LOG_ERROR("Failed to set texture for material \"{}\" ", name);
-        return;
+        return *this;
     }
     auto shaderInfo = CaIShader::Get(shaderRef)->GetShaderInfo();
     auto materialData = vulkanRenderAPI.getByIndex<FrameWork::MaterialData>(dataID);
@@ -93,11 +93,11 @@ void FrameWork::CaIMaterial::SetTexture(const std::string &name, uint32_t id) co
     auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(id);
     if (texture == nullptr) {
         LOG_ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
-        return;
+        return *this;
     }
     if (texture->inUse == false) {
         LOG_ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
-        return;
+        return *this;
     }
     for (auto &set: materialData->descriptorSets) {
         VkDescriptorImageInfo descriptorInfo = {
@@ -118,6 +118,7 @@ void FrameWork::CaIMaterial::SetTexture(const std::string &name, uint32_t id) co
         vkUpdateDescriptorSets(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
                                1, &descriptorWrite, 0, nullptr);
     }
+    return *this;
 }
 
 void FrameWork::CaIMaterial::SetAttachment(const std::string &name, uint32_t id) {

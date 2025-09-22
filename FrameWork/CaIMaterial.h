@@ -25,18 +25,19 @@ namespace FrameWork {
 
 
         template<typename Param>
-        void SetParam(const std::string& name, const Param& param, uint32_t index) {
+        CaIMaterial& SetParam(const std::string& name, const Param& param, uint32_t index) {
             if (CaIShader::Get(shaderRef) == nullptr) {
                 LOG_ERROR("Can't set the param {} ,the material Shader has been destroyed", name);
-                return;
+                return *this;
             }
             auto address = CaIShader::Get(shaderRef)->GetShaderPropertyAddress(dataID, name, index);
             if (address != nullptr) {
                 memcpy(address, &param, sizeof(Param));
             }
+            return *this;
         }
 
-        void SetTexture(const std::string& name, uint32_t id) const;
+        CaIMaterial &SetTexture(const std::string &name, uint32_t id) ;
         void SetAttachment(const std::string& name, uint32_t id) ; //因为有时候会将Attachment作为纹理输入比如呈现或者后处理，飞行帧资源上不同
 
         [[nodiscard]] CaIShader* GetShader() const;

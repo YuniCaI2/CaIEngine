@@ -39,17 +39,11 @@ const std::function<void()> & BaseScene::GetRenderFunction() {
     return GUIFunc;
 }
 
-std::vector<uint32_t> BaseScene::GetModelIDs() {
-    return modelID;
-}
-
 std::string BaseScene::GetName() const {
     return sceneName;
 }
 
-uint32_t BaseScene::GetPresentColorAttachment() {
-    return presentColorAttachment;
-}
+
 
 void BaseScene::PrepareResources(FrameWork::Camera& camera) {
     cameraPtr = &camera;
@@ -122,8 +116,6 @@ void BaseScene::CreateFrameGraphResource() {
                                   0.01f, 100.0f);
             projection[1][1] *= -1;
             glm::mat4 pos = glm::translate(glm::mat4(1.0), model->position);
-            // LOG_TRACE("Camera position: {}, {}, {}", cameraPtr->Position.x, cameraPtr->Position.y, cameraPtr->Position.z);
-            // LOG_TRACE("Model position: {}, {}, {}", model->position.x, model->position.y, model->position.z);
             for (int i = 0; i < model->meshIDs.size(); i++) {
                 auto material = FrameWork::CaIMaterial::Get(materials[i]);
                 material->SetParam("viewMatrix", cameraPtr->GetViewMatrix(), 0);
@@ -173,8 +165,5 @@ void BaseScene::CreateFrameGraphResource() {
     renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(
         colorAttachment);
 
-    resourceManager.FindResource(colorAttachment)->SetOutputRenderPass(forwardPass).SetInputRenderPass(presentPass);
-    resourceManager.FindResource(depthAttachment)->SetOutputRenderPass(forwardPass);
-    resourceManager.FindResource(swapChainAttachment)->SetOutputRenderPass(presentPass);
     frameGraph->Compile();
 }

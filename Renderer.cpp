@@ -30,7 +30,7 @@ public:
     }
 
     ~Renderer() {
-        // GUI.ReleaseGUIResources();
+        GUI.ReleaseGUIResources();
         FrameWork::Slot::DestroyDescriptorSetLayout();
     }
 
@@ -38,7 +38,7 @@ public:
         auto cmdBuffer = vulkanRenderAPI.BeginCommandBuffer();
         scenes[currentSceneIndex]->Render(cmdBuffer);
         // vulkanRenderAPI.PresentFrame(cmdBuffer, vulkanRenderAPI.GetCurrentImageIndex());
-        // GUI.RenderGUI(cmdBuffer);
+        GUI.RenderGUI(cmdBuffer);
         vulkanRenderAPI.EndCommandBuffer();
     }
 
@@ -46,7 +46,7 @@ public:
 
     void prepare() {
         //创建场景
-        auto scene1 = std::make_unique<BaseScene>(camera);
+        auto scene1 = std::make_unique<LTCScene>(&camera);
         scenes.push_back(std::move(scene1));
 #ifdef _WIN32
         // auto scene2 = std::make_unique<LTCScene>(&camera);
@@ -54,8 +54,8 @@ public:
 #endif
         //呈现
         // vulkanRenderAPI.InitPresent("uniformPresent", scenes[0]->GetPresentColorAttachment());
-        // GUI.InitFrameWorkGUI();
-        // SetGUI();
+        GUI.InitFrameWorkGUI();
+        SetGUI();
     }
 
     void render() {
@@ -77,7 +77,6 @@ public:
                         bool isSelected = (i == currentSceneIndex);
                         if (ImGui::Selectable(scenes[i]->GetName().c_str(), isSelected)) {
                             currentSceneIndex = i;
-                            vulkanRenderAPI.SwitchPresentColorAttachment(scenes[i]->GetPresentColorAttachment());
                             camera.reset({0,0,3});
 
                         }

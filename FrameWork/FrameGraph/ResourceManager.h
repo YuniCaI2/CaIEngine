@@ -94,18 +94,7 @@ namespace FG {
         virtual ~ResourceDescription() = default;
 
         ResourceDescription& SetName(const std::string &name_) { name = name_; return *this; }
-        ResourceDescription& SetOutputRenderPass(uint32_t renderPass) {
-            if (inputRenderPasses.contains(renderPass)) {
-                LOG_ERROR("Input Render Pass : \" {} \" already exists! But you want to insert in output RenderPass !", renderPass);
-            }
-            outputRenderPasses.insert(renderPass); return *this;
-        }
-        ResourceDescription& SetInputRenderPass(uint32_t renderPass) {
-            if (outputRenderPasses.contains(renderPass)) {
-                LOG_ERROR("Output Render Pass : \" {} \" already exists! But you want to insert in input RenderPass !", renderPass);
-            }
-            inputRenderPasses.insert(renderPass); return *this;
-        }
+
 
         ResourceType GetType() const { return resourceType; }
         std::string GetName() const { return name; }
@@ -152,6 +141,18 @@ namespace FG {
             firstUseTime = UINT32_MAX;
             lastUseTime = 0;
             return *this;
+        }
+        ResourceDescription& SetOutputRenderPass(uint32_t renderPass) {
+            if (inputRenderPasses.contains(renderPass)) {
+                LOG_ERROR("Input Render Pass : \" {} \" already exists! But you want to insert in output RenderPass !", renderPass);
+            }
+            outputRenderPasses.insert(renderPass); return *this;
+        }
+        ResourceDescription& SetInputRenderPass(uint32_t renderPass) {
+            if (outputRenderPasses.contains(renderPass)) {
+                LOG_ERROR("Output Render Pass : \" {} \" already exists! But you want to insert in input RenderPass !", renderPass);
+            }
+            inputRenderPasses.insert(renderPass); return *this;
         }
         uint32_t GetFirstUseTime() {return firstUseTime;}
         uint32_t GetLastUseTime() {return lastUseTime;}

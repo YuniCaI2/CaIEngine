@@ -16,9 +16,7 @@ namespace FrameWork{
         virtual ~Scene() = default;
         virtual void Render(const VkCommandBuffer& cmdBuffer) = 0;
         virtual const std::function<void()>& GetRenderFunction() = 0;
-        virtual std::vector<uint32_t> GetModelIDs() = 0;
         virtual std::string GetName() const = 0;
-        virtual uint32_t GetPresentColorAttachment() = 0;
     };
 
 

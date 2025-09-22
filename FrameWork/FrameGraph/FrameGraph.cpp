@@ -183,6 +183,10 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                     auto resource = resourceManager.FindResource(resourceIndex);
                     if(resource && resource->GetType() == ResourceType::Texture){
                         auto description = resource->GetDescription<TextureDescription>();
+                        sampleCount = description->samples;
+                        data.width = description->width;
+                        data.height = description->height;
+                        data.arrayLayer = description->arrayLayers;
                         if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
                             data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
@@ -422,6 +426,27 @@ void FG::FrameGraph::CullPassAndResource() {
     std::unordered_set<uint32_t> usePassNode;
     std::vector<uint32_t> startPassNodes;
 
+    //先根据renderPass的信息构建Resource的拓扑关系
+    for (auto& renderPassID : renderPassNodes) {
+        auto renderPass = renderPassManager.FindRenderPass(renderPassID);
+        for (auto& id : renderPass->GetCreateResources()) {
+            auto resource = resourceManager.FindResource(id);
+            resource->SetOutputRenderPass(renderPassID);
+        }
+        for (auto& id : renderPass->GetOutputResources()) {
+            auto resource = resourceManager.FindResource(id);
+            resource->SetOutputRenderPass(renderPassID);
+        }
+        for (auto& id : renderPass->GetInputResources()) {
+            auto resource = resourceManager.FindResource(id);
+            resource->SetInputRenderPass(renderPassID);
+        }
+        for (auto& id : renderPass->GetReadResources()) {
+            auto resource = resourceManager.FindResource(id);
+            resource->SetInputRenderPass(renderPassID);
+        }
+    }
+
     //找到write 或者 proxy 的RenderPass作为反向的起点
     for (auto& renderPassIndex : renderPassNodes) {
         auto renderPassNode = renderPassManager.FindRenderPass(renderPassIndex);
@@ -467,6 +492,16 @@ void FG::FrameGraph::CullPassAndResource() {
                     }
                 }
             }
+            auto inputResources = startPass->GetInputResources();
+            for (auto& inputResourceIndex : inputResources) {
+                auto readResource = resourceManager.FindResource(inputResourceIndex);
+                for (auto& renderPassIndex : readResource->GetOutputRenderPass()) {
+                    if (!usePassNode.contains(renderPassIndex)) {
+                        usePassNode.insert(renderPassIndex);
+                        search(renderPassIndex);
+                    }
+                }
+            }
         }
     };
 
@@ -495,7 +530,7 @@ void FG::FrameGraph::CullPassAndResource() {
             }
             if (isDepth)
                 for (auto& renderPassIndex : resource->GetOutputRenderPass()) {
-                    if (usePassNode.contains(renderPassIndex)) {
+                    if (usePassNode.contains(renderPassIndex) && resource->GetInputRenderPass().empty()) {
                         usingResourceNodes.push_back(resourceIndex);
                     }
                 }
