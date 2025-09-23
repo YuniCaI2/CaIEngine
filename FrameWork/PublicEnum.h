@@ -221,6 +221,20 @@ enum class PolygonMode {
     Line,
     Fill
 };
+
+enum class SSBO_OP {
+    Write,
+    Read,
+    WriteRead
+};
+
+enum class StorageObjectType {
+    Image2D,
+    Image3D,
+    ImageCube,
+    Buffer
+};
+
 #endif //PUBLICENUM_H
 
 

@@ -24,31 +24,28 @@ namespace FrameWork {
         static bool IsBaseProperty(ShaderPropertyType type);
         static std::string TranslateToVulkan(const std::string &code, const ShaderPropertiesInfo& properties);
 
+        //Comp
+        static CompShaderInfo GetCompShaderInfo(const std::string &code);
+        static std::string TranslateCompToVulkan(const std::string &code, const CompShaderInfo& compShaderInfo);
+
         // private:
         // 为了测试
         static ShaderStateSet GetShaderStateSet(const std::string &code);
+        static CompLocalInvocation GetCompLocalInvocation(const std::string& code);
+        static std::vector<SSBO> GetSSBOs(const std::string &code);
+        static void SetUpCompSSBOAndProperty(CompShaderInfo& info);
 
         static std::string GetCodeBlock(const std::string &code, const std::string &blockName);
-
         static void SetUpPropertiesStd140(ShaderInfo &shaderInfo);
-
         static PropertyAlignInfo GetPropertyAlignInfoStd140(ShaderPropertyType type, uint32_t arrayLength);
-
         static bool isValidChar(const char &c);
-
         static size_t FindWord(const std::string &code, const std::string &word, size_t offset);
-
         static void RemoveCRLF(std::string &code);
-
         static void RemoveSpaces(std::string &code);
-
         static std::vector<std::string> SplitString(const std::string &str, char p);
-
         static std::vector<std::string> ExtractWords(const std::string &str);
-
         static void GetPropertyNameAndArrayLength(const std::string &propertyStr, std::string &name,
                                                   uint32_t &arrayLength);
-
         static void ReplaceAllWordsInBlock(std::string& blockCode, const std::string& src, const std::string& dst);
 
 
@@ -115,6 +112,19 @@ namespace FrameWork {
             {"Fill", PolygonMode::Fill},
         };
 
+        inline static std::unordered_map<std::string, SSBO_OP> ssboOpMap = {
+            {"Write", SSBO_OP::Write},
+            {"Read", SSBO_OP::Read},
+            {"WriteRead", SSBO_OP::WriteRead},
+        };
+
+        inline static std::unordered_map<std::string, StorageObjectType> storageObjectTypeMap = {
+            {"Image2D", StorageObjectType::Image2D},
+            {"Image3D", StorageObjectType::Image3D},
+            {"ImageCube", StorageObjectType::ImageCube},
+            {"Buffer", StorageObjectType::Buffer},
+        };
+
         inline static std::unordered_map<BlendOption, VkBlendOp> blendOpToVulkanBlendOp = {
             {BlendOption::ADD, VK_BLEND_OP_ADD}, {BlendOption::MAX, VK_BLEND_OP_MAX},
             {BlendOption::MIN, VK_BLEND_OP_MIN}, {BlendOption::SUBTRACT, VK_BLEND_OP_SUBTRACT},
@@ -160,6 +170,20 @@ namespace FrameWork {
             {CompareOption::GREATER_OR_EQUAL, VK_COMPARE_OP_GREATER_OR_EQUAL},
             {CompareOption::LESS_OR_EQUAL, VK_COMPARE_OP_LESS_OR_EQUAL},
         };
+
+        inline static std::unordered_map<SSBO_OP, std::string> ssboOpToString = {
+            {SSBO_OP::Write, "writeonly"},
+            {SSBO_OP::Read, "readonly"},
+            {SSBO_OP::WriteRead, ""}
+        };
+
+        inline static std::unordered_map<StorageObjectType, std::string> storageTypeToStringType = {
+            {StorageObjectType::Image2D, "image2D"},
+            {StorageObjectType::Image3D, "image3D"},
+            {StorageObjectType::ImageCube, "imageCube"},
+            {StorageObjectType::Buffer, "buffer"}
+        };
+
     };
 }
 

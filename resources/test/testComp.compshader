@@ -1,0 +1,31 @@
+Settings{
+
+    localX 256
+    localY 1
+    localZ 1
+}
+
+Properties{
+    float scales
+}
+
+Calling{
+    struct Particle {
+        vec2 position;
+        vec2 velocity;
+        vec4 color;
+    };
+}
+
+SSBO{
+    Read Particle particles
+    Read Image2D image1
+    Write Image2D image2
+}
+
+Program{
+    int main(){
+        int test = scale;
+        particles[index].position = 1;
+    }
+}

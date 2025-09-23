@@ -151,6 +151,101 @@ FrameWork::ShaderStateSet FrameWork::ShaderParse::GetShaderStateSet(const std::s
     return shaderStateSet;
 }
 
+FrameWork::CompLocalInvocation FrameWork::ShaderParse::GetCompLocalInvocation(const std::string &code) {
+    CompLocalInvocation invocation = {};
+    auto block = GetCodeBlock(code, "Settings");
+    auto lines = SplitString(block, '\n');
+    for (auto& line : lines) {
+        auto words = ExtractWords(line);
+        if (words.size() >= 2 && words[0] != "//") {
+            if (words[0] == "localX") {
+                invocation.x = std::stoi(words[1]);
+            }else if (words[0] == "localY") {
+                invocation.y = std::stoi(words[1]);
+            }else if (words[0] == "localZ") {
+                invocation.z = std::stoi(words[1]);
+            }else {
+                LOG_WARNING("Can't find suitable operation for {}", words[0]);
+            }
+        }else {
+            LOG_ERROR("the settings format is wrong: {}", line);
+            return {};
+        }
+    }
+    return invocation;
+}
+
+std::vector<FrameWork::SSBO> FrameWork::ShaderParse::GetSSBOs(const std::string &code) {
+    std::vector<SSBO> ssbos;
+    auto block = GetCodeBlock(code, "SSBO");
+    auto lines = SplitString(block, '\n');
+    //再得到声明来验证
+    auto callingBlock = GetCodeBlock(code, "Calling");
+
+    for (auto& line : lines) {
+        auto words = ExtractWords(line);
+        SSBO ssbo;
+        if (words.size() >= 3 && words[0] != "//") {
+            if (ssboOpMap.contains(words[0])) {
+                ssbo.ssboOP = ssboOpMap[words[0]];
+            }else {
+                LOG_ERROR("Can't find suitable operation for {}", words[0]);
+                return {};
+            }
+
+
+            if (storageObjectTypeMap.contains(words[1])) {
+                ssbo.type = storageObjectTypeMap[words[1]];
+            }else {
+                if (callingBlock.find(words[1]) != std::string::npos) {
+                    ssbo.structName = words[1];
+                    ssbo.type = StorageObjectType::Buffer;
+                }else {
+                    LOG_ERROR("Can't find suitable type for {}", words[1]);
+                }
+            }
+
+            ssbo.name = words[2];
+        }
+        ssbos.push_back(ssbo);
+    }
+    return ssbos;
+}
+
+void FrameWork::ShaderParse::SetUpCompSSBOAndProperty(CompShaderInfo &info) {
+    uint32_t binding = 0;
+
+    //Properties:
+    if (!info.shaderProperties.baseProperties.empty()) {
+        uint32_t offset = 0;
+        for (auto& property : info.shaderProperties.baseProperties) {
+            auto alignInfo = GetPropertyAlignInfoStd140(property.type, property.arrayLength);
+            property.size = alignInfo.size;
+            property.binding = binding;
+            property.align = alignInfo.alignment;
+            property.arrayOffset = alignInfo.arrayOffset;
+
+            // 正确的对齐计算
+            property.offset = (offset + alignInfo.alignment - 1) / alignInfo.alignment * alignInfo.alignment;
+
+            // 更新 offset
+            offset = property.offset + property.size;
+        }
+        binding++;
+    }
+    for (auto& property : info.shaderProperties.textureProperties) {
+        property.binding = binding;
+        binding++;
+    }
+
+    //SSBOS
+    for (auto& ssbo : info.ssbos) {
+        ssbo.binding = binding;
+        binding++;
+    }
+
+}
+
 std::string FrameWork::ShaderParse::GetCodeBlock(const std::string &code, const std::string &blockName) {
     auto begin = code.find(blockName);
     if (begin == std::string::npos)
@@ -370,6 +465,11 @@ std::vector<std::string> FrameWork::ShaderParse::ExtractWords(const std::string 
         }
     }
 
+    //防止最后一个字只有一个char，也就是将缓冲区中词完全退出
+    if (record) {
+        words.push_back(str.substr(s));
+    }
+
     for (auto& word : words)
         RemoveCRLF(word);
 
@@ -471,9 +571,9 @@ std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, c
     vulkanCode += "\n";
 
     if (!properties.textureProperties.empty()) {
-        for (int i = 0; i < properties.textureProperties.size(); ++i) {
-            vulkanCode += "layout (binding = " + std::to_string(properties.textureProperties[i].binding) +
-                ") uniform sampler2D " + properties.textureProperties[i].name + ";\n";
+        for (const auto & texturePropertie : properties.textureProperties) {
+            vulkanCode += "layout (binding = " + std::to_string(texturePropertie.binding) +
+                ") uniform sampler2D " + texturePropertie.name + ";\n";
         }
     }
 
@@ -488,5 +588,99 @@ std::string FrameWork::ShaderParse::TranslateToVulkan(const std::string &code, c
 
 
     //返回
+    return vulkanCode;
+}
+
+FrameWork::CompShaderInfo FrameWork::ShaderParse::GetCompShaderInfo(const std::string &code) {
+    CompShaderInfo info{};
+    info.localInvocation = GetCompLocalInvocation(code);
+    info.shaderProperties = GetShaderProperties(code);
+    info.ssbos = GetSSBOs(code);
+    SetUpCompSSBOAndProperty(info);
+    return info;
+}
+
+std::string FrameWork::ShaderParse::TranslateCompToVulkan(const std::string &code, const CompShaderInfo & shaderInfo) {
+    if (code.empty()) {
+        LOG_WARNING("Empty code in TranslateCompToVulkan");
+        return "";
+    }
+
+    //着色器版本
+    std::string vulkanCode = "#version 450 core\n\n";
+    size_t pos = 0;
+
+    //Properties:
+    auto properties = shaderInfo.shaderProperties;
+
+    if (!properties.baseProperties.empty()) {
+        vulkanCode += "layout (binding = " + std::to_string(properties.baseProperties[0].binding) + ") uniform UniformBufferObject {\n";
+        for (const auto & property : properties.baseProperties) {
+            if (property.arrayLength == 0) {
+                //非数组类型
+                vulkanCode += "    " + propertyTypeMapToGLSL[property.type] + " " + property.name + ";\n";
+            }else {
+                //数组类型
+                vulkanCode += "    " + propertyTypeMapToGLSL[property.type] + " " + property.name + "["
+                + std::to_string(property.arrayLength) + "]" + ";\n";
+            }
+        }
+        vulkanCode += "} _UBO;\n";
+    }
+    vulkanCode += "\n";
+
+    if (!properties.textureProperties.empty()) {
+        for (auto & texturePropertie : properties.textureProperties) {
+            vulkanCode += "layout (binding = " + std::to_string(texturePropertie.binding) +
+                ") uniform sampler2D " + texturePropertie.name + ";\n";
+        }
+    }
+
+    vulkanCode += "\n";
+
+    //Calling
+    vulkanCode += GetCodeBlock(code, "Calling");
+
+    vulkanCode += "\n";
+
+    //SSBO
+    auto ssbos = shaderInfo.ssbos;
+    for (auto& ssbo : ssbos) {
+        vulkanCode += "layout(binding = " + std::to_string(ssbo.binding) + " ) ";
+        if (ssbo.type == StorageObjectType::Image2D ||
+            ssbo.type == StorageObjectType::Image3D ||
+            ssbo.type == StorageObjectType::ImageCube) {
+            vulkanCode += "uniform ";
+            vulkanCode += ssboOpToString[ssbo.ssboOP] + " " +
+                storageTypeToStringType[ssbo.type] + " " + ssbo.name + ";\n";
+        }
+        if (ssbo.type == StorageObjectType::Buffer) {
+            vulkanCode += ssboOpToString[ssbo.ssboOP] + " " + storageTypeToStringType[ssbo.type]
+            + " " + ssbo.structName + " {" + "\n    ";
+            vulkanCode += ssbo.name + "[];\n};\n";
+        }
+        vulkanCode += "\n";
+    }
+    vulkanCode += "\n";
+
+    //Local Invocation
+    vulkanCode += "layout (local_size_x = " +
+        std::to_string(shaderInfo.localInvocation.x)
+        + ", local_size_y = " +
+        std::to_string(shaderInfo.localInvocation.y)
+            +", local_size_z = " +
+        std::to_string(shaderInfo.localInvocation.z) +
+        " ) in;";
+
+    vulkanCode += "\n";
+    //Program
+    std::string programBlock = GetCodeBlock(code, "Program");
+    if (!properties.baseProperties.empty()) {
+        for (auto& property : properties.baseProperties) {
+            ReplaceAllWordsInBlock(programBlock, property.name,  "_UBO." + property.name);
+        }
+    }
+    vulkanCode += programBlock;
+
     return vulkanCode;
 }

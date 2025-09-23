@@ -339,6 +339,28 @@ namespace FrameWork {
         //这里先省略几何着色器，后面在加
     };
 
+    struct CompLocalInvocation {
+        uint32_t x = 1;
+        uint32_t y = 1;
+        uint32_t z = 1;
+    };
+
+    struct SSBO {
+        std::string name{};
+        std::string structName{}; //存储StorageBuffer的Struct
+        StorageObjectType type{};
+        SSBO_OP ssboOP;
+        uint32_t binding = 0;
+    };
+
+
+    struct CompShaderInfo {
+        CompLocalInvocation localInvocation;
+        ShaderPropertiesInfo shaderProperties;
+        std::vector<SSBO> ssbos;
+    };
+
+
     struct MaterialData { //用来存储Vulkan中的资源
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts; //此处仅仅只是一个引用不管理其生命周期
         std::vector<VkDescriptorSet> descriptorSets;
@@ -348,6 +370,17 @@ namespace FrameWork {
 
         bool inUse = false;
     };
+
+
+
+    struct CompMaterialData {
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        std::vector<VkDescriptorSet> descriptorSets;
+        std::vector<Buffer> uniformBuffers;
+
+        bool inUse = false;
+    };
+
 
 }
 

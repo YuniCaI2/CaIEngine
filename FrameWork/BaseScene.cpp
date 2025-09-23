@@ -16,7 +16,10 @@ BaseScene::BaseScene(FrameWork::Camera& camera) {
     // CreateGraphicsPipeline();
     // PrepareResources(camera);
     cameraPtr = &camera;
+    GUIFunc = [this]() {
 
+    };
+    sceneName =  "Base Scene";
     //初始化frameGraph
     frameGraph = std::make_unique<FG::FrameGraph>(resourceManager, renderPassManager);
     CreateFrameGraphResource();
@@ -46,10 +49,7 @@ std::string BaseScene::GetName() const {
 
 
 void BaseScene::PrepareResources(FrameWork::Camera& camera) {
-    cameraPtr = &camera;
-    GUIFunc = [this]() {
-        ImGui::SliderFloat("SSAA", &ssaa, 1.0f, 4.0f);
-    };
+
 }
 
 void BaseScene::CreateFrameGraphResource() {

@@ -7,6 +7,7 @@
 #include "Logger.h"
 #include <vulkanFrameWork.h>
 std::string testFilePath = "../../resources/test/testShader.caishader";
+std::string compFilePath = "../../resources/test/testComp.compshader";
 using namespace FrameWork;
 
 void testBlockGetter(const std::string& code){
@@ -112,6 +113,20 @@ void testCreatePipeline() {
    LOG_DEBUG("会报关于没有释放descriptorSetLayout的错，因为我为了集中性将DescriptorSetLayout的管理封装给了slot，得后续处理");
 };
 
+void testGetLocalInvocation(const std::string& code) {
+   auto localInvocation = ShaderParse::GetCompLocalInvocation(code);
+   LOG_TRACE("x: {}, y: {}, z: {}", localInvocation.x, localInvocation.y, localInvocation.z);
+}
+
+void testGetCompShaderInfo(const std::string& code) {
+   auto info = ShaderParse::GetCompShaderInfo(code);
+}
+
+void testTranslateVulkanComp(const std::string& code) {
+   auto info = ShaderParse::GetCompShaderInfo(code);
+   auto vulkanCode = ShaderParse::TranslateCompToVulkan(code, info);
+}
+
 int main(){
    LOG.Run();
    vulkanRenderAPI.initVulkan();
@@ -123,6 +138,16 @@ int main(){
    std::stringstream ss;
    ss << testFile.rdbuf();
    std::string code = ss.str();
+
+   std::ifstream compFile(compFilePath);
+   if (! compFile.is_open()) {
+      LOG_ERROR("Failed to open test file from: {}", testFilePath);
+   }
+   std::stringstream compSS;
+   compSS << compFile.rdbuf();
+   std::string compCode = compSS.str();
+   LOG_DEBUG("{}", compCode);
+
    // testGetShaderInfo(code);
    // testBlockGetter(code);
    // testFindWord(code);
@@ -134,7 +159,10 @@ int main(){
    // testTranslate(code);
    // testGetShaderInfo(code);
    // testGetShaderModule();
-   testCreatePipeline();
+   // testCreatePipeline();
+   // testGetLocalInvocation(compCode);
+   // testGetCompShaderInfo(compCode);
+   testTranslateVulkanComp(compCode);
 
    vulkanRenderAPI.DestroyAll();
    LOG.Stop();
