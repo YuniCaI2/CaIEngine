@@ -249,8 +249,6 @@ public:
 
     virtual void prepare();
 
-    //加载SPIR-V文件
-    VkPipelineShaderStageCreateInfo loadShader(const std::string &fileName, VkShaderStageFlagBits stage);
 
     void windowResize();
 
@@ -300,8 +298,6 @@ public:
     //创建pipelineInfo
     //创建管线
     void InitPipelineInfo(uint32_t &pipelineInfoIdx);
-
-    void LoadPipelineShader(uint32_t &pipelineInfoIdx, const std::string &fileName, VkShaderStageFlagBits stage);
 
     void AddPipelineVertexBindingDescription(uint32_t &pipelineInfoIdx,
                                              VkVertexInputBindingDescription &bindingDescription);
@@ -369,6 +365,9 @@ public:
     //支持Dynamic Rendering Pipeline
     FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,VkFormat colorFormat = VK_FORMAT_UNDEFINED, uint32_t width = -1,
                                                uint32_t height = -1);
+
+    //计算着色器
+    FrameWork::CompShaderInfo CreateCompPipeline(uint32_t& pipelineID, const std::string& shaderPath);
 
     //简单封装
     VkCommandBuffer BeginCommandBuffer() const;

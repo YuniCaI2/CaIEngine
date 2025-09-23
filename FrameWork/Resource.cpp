@@ -191,12 +191,12 @@ FrameWork::Resource::ShaderTimeCache FrameWork::Resource::LoadShaderCache(const 
     uint32_t pathLen = 0;
     while (file.read(reinterpret_cast<char *>(&pathLen), sizeof(pathLen))) {
         if (file.eof()) {
-            throw std::runtime_error("Failed to read path str in : " + shaderTimeCachePath);
+            throw std::runtime_error("Failed to read path str in : " + filePath);
         }
         std::string pathStr(pathLen, '\0');
         file.read(pathStr.data(), pathLen);
         if (file.eof()) {
-            throw std::runtime_error("Failed to read time in : " + shaderTimeCachePath);
+            throw std::runtime_error("Failed to read time in : " + filePath);
         }
         std::filesystem::file_time_type timeType;
         decltype(timeType.time_since_epoch().count()) time;
@@ -219,132 +219,14 @@ void FrameWork::Resource::CompileShader(const std::string &filepath) const {
     }
 }
 
-void FrameWork::Resource::CompileShaderModify() const {
-    std::string vertExtension = ".vert";
-    std::string fragExtension = ".frag";
-    std::string compExtension = ".comp";
-    std::string vertspvExtension = ".vert.spv";
-    std::string fragspvExtension = ".frag.spv";
-    std::string compspvExtension = ".comp.spv";
-    std::filesystem::path allShaderPath = generalShaderPath;
-    if (!std::filesystem::exists(allShaderPath) || !std::filesystem::is_directory(allShaderPath)) {
-        LOG_ERROR("Can't Open {}", allShaderPath.string());
-        return;
-    }
-    auto GetExtension = [](const std::string &path) {
-        auto start = path.find_last_of("/\\");
-        auto dotstart = path.substr(start).find_first_of('.');
-        if (start == std::string::npos || dotstart == std::string::npos) {
-            throw std::runtime_error("Error loading shader: " + path);
-        }
-
-        return path.substr(start + dotstart);
-    };
-
-    auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
-        if (filepath1.string() == ".") {
-            return false;
-        }
-        auto time1 = std::filesystem::last_write_time(filepath1);
-        if (time1 == time) {
-            return false;
-        } else {
-            return true;
-        }
-    };
-
-    //加载时间缓存
-    try {
-        shaderTimeCache =  LoadShaderCache(shaderTimeCachePath);
-    } catch (std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-    bool flag = false; //标记位
-    //遍历所有文件夹
-    for (auto &singleFile:
-         std::filesystem::directory_iterator(allShaderPath)) {
-        if (singleFile.is_directory()) {
-            std::vector<std::filesystem::path> shaderPaths(6, ".");
-            for (auto &shaderPath: std::filesystem::directory_iterator(singleFile)) {
-                std::string path = shaderPath.path().string();
-                std::string extension = GetExtension(path);
-                if (extension == vertExtension) {
-                    shaderPaths[0] = shaderPath;
-                }
-                if (extension == fragExtension) {
-                    shaderPaths[1] = shaderPath;
-                }
-                if (extension == compExtension) {
-                    shaderPaths[2] = shaderPath;
-                }
-                if (extension == vertspvExtension) {
-                    shaderPaths[3] = shaderPath;
-                }
-                if (extension == fragspvExtension) {
-                    shaderPaths[4] = shaderPath;
-                }
-                if (extension == compspvExtension) {
-                    shaderPaths[5] = shaderPath;
-                }
-            }
-            //这里3指的是3种
-            for (int i = 0; i < 3; i++) {
-                if (shaderTimeCache.find(shaderPaths[i].string()) != shaderTimeCache.end()) {
-                    if (IfCompile(shaderPaths[i], shaderTimeCache[shaderPaths[i].string()])) {
-                        CompileShader(shaderPaths[i].string());
-                        flag = true;
-                        shaderTimeCache[shaderPaths[i].string()] = last_write_time(shaderPaths[i]);
-                    }
-                } else {
-                    CompileShader(shaderPaths[i].string());
-                    flag = true;
-                    shaderTimeCache[shaderPaths[i].string()] = last_write_time(shaderPaths[i]);
-                }
-            }
-        }
-    }
-    if (flag) {
-        SaveCache(shaderTimeCachePath, shaderTimeCache);
-    }
-}
 
 void FrameWork::Resource::CompileCaIShader(const std::string &filepath) const {
 }
 
-void FrameWork::Resource::CompileCaIShaderModify() const {
-}
 
 FrameWork::Resource::Resource() {
 }
 
-VkShaderModule FrameWork::Resource::getShaderModulFromFile(VkDevice device, const std::string &fileName,
-                                                           VkShaderStageFlags shaderStage) const {
-    auto shaderPath = generalShaderPath + fileName + "/" + fileName;
-    switch (shaderStage) {
-        case VK_SHADER_STAGE_VERTEX_BIT:
-            shaderPath += ".vert";
-            break;
-        case VK_SHADER_STAGE_FRAGMENT_BIT:
-            shaderPath += ".frag";
-            break;
-        case VK_SHADER_STAGE_COMPUTE_BIT:
-            shaderPath += ".comp";
-            break;
-        default:
-            break;
-    }
-    shaderPath += ".spv";
-
-    VkShaderModule shaderModule;
-    try {
-        CompileShaderModify();
-        shaderModule = VulkanTool::loadShader(shaderPath, device);
-    } catch (const std::ios_base::failure &e) {
-        std::cerr << e.what() << std::endl;
-        return VK_NULL_HANDLE;
-    }
-    return shaderModule;
-}
 
 //这里默认这里的Obj不支持PBR贴图，等待后续扩展
 std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType,
@@ -623,6 +505,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
             vulkanVertShaderFile << vulkanVertCode;
             vulkanVertShaderFile.close();
             CompileShader(vulkanShaderPath.string() + ".vert");
+            caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
         }
         auto vertShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".vert.spv" , device);
         shaderModules.emplace_back(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule);
@@ -638,14 +521,64 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
             vulkanFragShaderFile << vulkanFragCode;
             vulkanFragShaderFile.close();
             CompileShader(vulkanShaderPath.string() + ".frag");
+            caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
         }
         auto fragShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".frag.spv" , device);
         shaderModules.emplace_back(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule);
     }
     if (ifCompile) {
-        // SaveCache(caiShaderTimeCachePath, caiShaderTimeCache);
+        SaveCache(caiShaderTimeCachePath, caiShaderTimeCache);
         //测试会因为地址原因报错
     }
+
+    return shaderModules;
+}
+
+FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevice device, const std::string &filePath,
+    CompShaderInfo &compShaderInfo) const {
+    auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
+        if (filepath1.string() == ".") {
+            return false;
+        }
+        auto time1 = std::filesystem::last_write_time(filepath1);
+        if (time1 == time) {
+            return false;
+        } else {
+            return true;
+        }
+    };
+    FrameWork::ShaderModulePackages shaderModules{};
+    caiShaderTimeCache = LoadShaderCache(caiShaderTimeCachePath);
+    std::ifstream testFile(filePath);
+    bool ifCompile = true;
+    if (! caiShaderTimeCache.empty()) {
+        ifCompile = IfCompile(filePath, caiShaderTimeCache[filePath]);
+    }
+    if (!testFile.is_open()) {
+        LOG_ERROR("Failed to open test file from: {}", filePath);
+    }
+    std::stringstream ss;
+    ss << testFile.rdbuf();
+    std::string code = ss.str();
+    compShaderInfo = ShaderParse::GetCompShaderInfo(code);
+
+    std::string vulkanCode{};
+    std::filesystem::path vulkanShaderPath = std::filesystem::path(filePath).parent_path();
+    vulkanShaderPath = vulkanShaderPath / std::filesystem::path(filePath).stem();
+    if (ifCompile) {
+        vulkanCode = ShaderParse::TranslateCompToVulkan(vulkanCode, compShaderInfo);
+        std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".comp");
+        if (! vulkanVertShaderFile.is_open()) {
+            LOG_ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
+            return {};
+        }
+        vulkanVertShaderFile << vulkanCode;
+        vulkanVertShaderFile.close();
+        CompileShader(vulkanShaderPath.string() + ".comp");
+        caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
+    }
+    auto  compShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".vert.spv" , device);
+    shaderModules.emplace_back(VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule);
 
     return shaderModules;
 }

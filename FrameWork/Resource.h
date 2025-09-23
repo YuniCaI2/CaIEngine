@@ -38,17 +38,15 @@ namespace FrameWork {
         ShaderTimeCache LoadShaderCache(const std::string& filePath) const;
 
         void CompileShader(const std::string& filepath) const;
-        void CompileShaderModify() const;
         //编译caishader
         void CompileCaIShader(const std::string& filepath) const;
-        void CompileCaIShaderModify() const;
 
         static TextureFullData LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type);
         static TextureFullData LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type);
     public:
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
         ShaderModulePackages GetShaderCaIShaderModule(VkDevice device, const std::string& filePath,ShaderInfo& shaderInfo) const;
-        VkShaderModule getShaderModulFromFile(VkDevice device,const std::string& fileName, VkShaderStageFlags stage) const;
+        ShaderModulePackages GetCompShaderModule(VkDevice device, const std::string& filePath, CompShaderInfo& compShaderInfo) const;
         std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale = 1.0f);
         std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, const aiScene* scene,aiTextureType type, std::string directory);
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
@@ -61,7 +59,6 @@ namespace FrameWork {
         std::string resourcePath{"../resources/"};
         std::string generalShaderPath{"../resources/shaders/glsl/"};
         std::string generalModelPath{"../resources/models/"};
-        std::string shaderTimeCachePath{"../resources/shaders/shaderTimeCache.bin"};
         std::string caiShaderTimeCachePath{"../resources/CaIShaders/caiShaderTimeCache.bin"};
     };
 }

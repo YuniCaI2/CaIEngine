@@ -1056,11 +1056,7 @@ void vulkanFrameWork::InitPipelineInfo(uint32_t &pipelineInfoIdx) {
     pipelineInfo->inUse = true;
 }
 
-void vulkanFrameWork::
-LoadPipelineShader(uint32_t &pipelineInfoIdx, const std::string &fileName, VkShaderStageFlagBits stage) {
-    auto pipelineInfo = getByIndex<FrameWork::VulkanPipelineInfo>(pipelineInfoIdx);
-    pipelineInfo->shaderModules[stage] = loadShader(fileName, stage);
-}
+
 
 void vulkanFrameWork::AddPipelineVertexBindingDescription(uint32_t& pipelineInfoIdx,
     VkVertexInputBindingDescription &bindingDescription) {
@@ -2087,6 +2083,10 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     return shaderInfo;
 }
 
+FrameWork::CompShaderInfo vulkanFrameWork::CreateCompPipeline(uint32_t &pipelineID, const std::string &shaderPath) {
+    return {};
+}
+
 
 void vulkanFrameWork::BeginRenderPass(const std::string &renderPassName, uint32_t frameBufferID, uint32_t renderWidth, uint32_t renderHeight, VkClearColorValue clearColor) const {
     VkClearValue clearValues[2];
@@ -2693,26 +2693,6 @@ void vulkanFrameWork::UpdateAllSlots() {
 }
 
 
-void vulkanFrameWork::CreateVulkanComputePipeline(uint32_t &pipelineInfoIdx, const std::string &fileName,
-                                                  const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
-    pipelineInfoIdx = getNextIndex<FrameWork::VulkanPipeline>();
-    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineInfoIdx);
-    pipeline->inUse = true;
-    pipeline->descriptorSetLayouts = descriptorSetLayouts;
-    auto ShaderStageInfo = loadShader(fileName, VK_SHADER_STAGE_COMPUTE_BIT);
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
-    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
-    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipeline->pipelineLayout));
-
-    VkComputePipelineCreateInfo createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-    createInfo.layout = pipeline->pipelineLayout;
-    createInfo.stage = ShaderStageInfo;
-    VK_CHECK_RESULT(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline->pipeline));
-}
-
 void vulkanFrameWork::CreateGPUStorgeBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer, void *data) {
     FrameWork::Buffer stagingBuffer;
     vulkanDevice->createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -3122,16 +3102,6 @@ void vulkanFrameWork::prepare() {
     createPipelineCache();
 }
 
-VkPipelineShaderStageCreateInfo vulkanFrameWork::loadShader(const std::string &fileName, VkShaderStageFlagBits stage) {
-    VkPipelineShaderStageCreateInfo shaderStageInfo{};
-    shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageInfo.stage = stage;
-    shaderStageInfo.pName = "main";
-    shaderStageInfo.module = resourceManager.getShaderModulFromFile(device, fileName, stage);
-    assert(shaderStageInfo.module != VK_NULL_HANDLE);
-    shaderModules.emplace_back(shaderStageInfo.module);
-    return shaderStageInfo;
-}
 
 void vulkanFrameWork::windowResize() {
     int _width = 0, _height = 0;

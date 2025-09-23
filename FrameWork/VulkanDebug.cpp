@@ -76,23 +76,10 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // Depth attachment
-    // attachments[1].format = vulkanRenderAPI.GetDepthFormat();
-    // attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-    // attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    // attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    // attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    // attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    // attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    // attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
     VkAttachmentReference colorReference = {};
     colorReference.attachment = 0;
     colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    // VkAttachmentReference depthReference = {};
-    // depthReference.attachment = 1;
-    // depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 
     VkSubpassDescription subpassDescription = {};
@@ -107,7 +94,6 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     subpassDescription.pResolveAttachments = nullptr;
 
     std::array<VkSubpassDependency, 1> dependencies{};
-    //Access Mask 会指向附件类型
 
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass = 0;
@@ -117,13 +103,7 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
     dependencies[0].dependencyFlags = 0;
 
-    // dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
-    // dependencies[1].dstSubpass = 0;
-    // dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    // dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    // dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    // dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    // dependencies[1].dependencyFlags = 0;
+
 
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -162,8 +142,6 @@ void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t color
     scissor.offset.y = 0.0f;
     uint32_t pipelineInfoId = -1;
     vulkanRenderAPI.InitPipelineInfo(pipelineInfoId);
-    vulkanRenderAPI.LoadPipelineShader(pipelineInfoId, shaderName, VK_SHADER_STAGE_VERTEX_BIT);
-    vulkanRenderAPI.LoadPipelineShader(pipelineInfoId, shaderName, VK_SHADER_STAGE_FRAGMENT_BIT);
     vulkanRenderAPI.AddPipelineVertexAttributeDescription(pipelineInfoId, attributeDescription);
     vulkanRenderAPI.AddPipelineVertexBindingDescription(pipelineInfoId, bindingDescription);
     vulkanRenderAPI.SetPipelineViewPort(pipelineInfoId, viewport);
