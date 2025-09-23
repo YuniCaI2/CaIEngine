@@ -601,6 +601,13 @@ FrameWork::CompShaderInfo FrameWork::ShaderParse::GetCompShaderInfo(const std::s
 }
 
 std::string FrameWork::ShaderParse::TranslateCompToVulkan(const std::string &code, const CompShaderInfo & shaderInfo) {
+    auto ToUp = [](const std::string &code) {
+        std::string rt;
+        for (auto& c : code) {
+            rt.push_back(std::toupper(c));
+        }
+        return rt;
+    };
     if (code.empty()) {
         LOG_WARNING("Empty code in TranslateCompToVulkan");
         return "";
@@ -646,17 +653,20 @@ std::string FrameWork::ShaderParse::TranslateCompToVulkan(const std::string &cod
     //SSBO
     auto ssbos = shaderInfo.ssbos;
     for (auto& ssbo : ssbos) {
-        vulkanCode += "layout(binding = " + std::to_string(ssbo.binding) + " ) ";
         if (ssbo.type == StorageObjectType::Image2D ||
             ssbo.type == StorageObjectType::Image3D ||
             ssbo.type == StorageObjectType::ImageCube) {
+            vulkanCode += "layout(binding = " + std::to_string(ssbo.binding);
+            vulkanCode += ", rgba8) ";
             vulkanCode += "uniform ";
             vulkanCode += ssboOpToString[ssbo.ssboOP] + " " +
                 storageTypeToStringType[ssbo.type] + " " + ssbo.name + ";\n";
         }
         if (ssbo.type == StorageObjectType::Buffer) {
+            vulkanCode += "layout(std430, binding = " + std::to_string(ssbo.binding) + ") ";
             vulkanCode += ssboOpToString[ssbo.ssboOP] + " " + storageTypeToStringType[ssbo.type]
-            + " " + ssbo.structName + " {" + "\n    ";
+            + " " + ssbo.structName + "_SSBO_" + ToUp(ssboOpToString[ssbo.ssboOP]) + " {" + "\n    ";
+            vulkanCode += ssbo.structName + " ";
             vulkanCode += ssbo.name + "[];\n};\n";
         }
         vulkanCode += "\n";

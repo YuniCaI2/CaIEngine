@@ -1,5 +1,4 @@
 Settings{
-
     localX 256
     localY 1
     localZ 1
@@ -18,14 +17,16 @@ Calling{
 }
 
 SSBO{
-    Read Particle particles
-    Read Image2D image1
+    Read  Particle particlesIn
+    Write Particle particlesOut
+    Read  Image2D image1
     Write Image2D image2
 }
 
 Program{
-    int main(){
-        int test = scale;
-        particles[index].position = 1;
+    void main(){
+        particlesOut[index].position = particlesIn[index].position + particlesIn[index].velocity * scales;
+        particlesOut[index].velocity = particlesIn[index].velocity;
+        particlesOut[index].color    = particlesIn[index].color;
     }
 }
