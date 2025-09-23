@@ -110,7 +110,7 @@ int main() {
             app.render();
         )
     }
-    LOG.Stop();
     vulkanRenderAPI.DestroyAll();
+    LOG.Stop();
     return 0;
 }

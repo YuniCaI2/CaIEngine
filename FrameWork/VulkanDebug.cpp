@@ -23,7 +23,7 @@ VKAPI_ATTR VkBool32  VKAPI_CALL FrameWork::VulkanDebug::debugUtilsMessageCallbac
     void *pUserData) {
     //大于警告都需要发送
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+        LOG_ERROR("validation layer: {}", pCallbackData->pMessage);
     }
     return VK_FALSE;
 }
