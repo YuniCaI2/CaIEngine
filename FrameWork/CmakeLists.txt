@@ -54,7 +54,11 @@ add_library(FrameWork ${frameWorkPath} ${frameGraphPath}
         FrameGraph/RenderPassManager.cpp
         FrameGraph/RenderPassManager.h
         FrameGraph/FrameGraph.cpp
-        FrameGraph/FrameGraph.h)
+        FrameGraph/FrameGraph.h
+        CompMaterial.cpp
+        CompMaterial.h
+        CompShader.cpp
+        CompShader.h)
 
 # 基础库链接（所有平台共用）
 target_link_libraries(FrameWork PUBLIC

@@ -135,6 +135,7 @@ protected:
     std::vector<FrameWork::Slot *> slots_;
     std::vector<FrameWork::MaterialData*> materialDatas_;
     std::vector<FrameWork::VulkanModelData*> modelDatas_; //更浅
+    std::vector<FrameWork::CompMaterialData*> compMaterialDatas_;
 
     // 对象池的锁声明
     std::mutex texturesMutex;
@@ -149,6 +150,7 @@ protected:
     std::mutex slotsMutex;
     std::mutex materialDatasMutex;
     std::mutex modelDatasMutex;
+    std::mutex compMaterialDatasMutex;
 
     std::unordered_map<std::string, VkRenderPass> renderPasses; //记录renderpass
     std::unordered_map<RenderPassType, VkRenderPass> renderPassTable;
@@ -162,6 +164,8 @@ protected:
     std::deque<ReleaseContainer> pipelineReleaseQueue;
     std::deque<ReleaseContainer> materialDataReleaseQueue;
     std::deque<ReleaseContainer> modelDataReleaseQueue;
+    std::deque<ReleaseContainer> compMaterialDataReleaseQueue;
+
     //多线程安全，上锁
     std::mutex texDeleteMutex;
     std::mutex meshDeleteMutex;
@@ -170,6 +174,7 @@ protected:
     std::mutex pipelineDeleteMutex;
     std::mutex materialDeleteMutex;
     std::mutex modelDataDeleteMutex;
+    std::mutex compMaterialDeleteMutex;
 
 
     std::string title = "Vulkan FrameWork";
@@ -488,6 +493,8 @@ public:
 
     void DeleteModelData(uint32_t id);
 
+    void DeleteCompMaterialData(uint32_t id);
+
     void CheckDelete(); //每帧进行清理资源,在帧尾清理
 
 
@@ -520,6 +527,8 @@ public:
             return reinterpret_cast<std::vector<T*>& >(materialDatas_);
         } else if constexpr (std::is_same_v<T, FrameWork::VulkanModelData>) {
             return reinterpret_cast<std::vector<T*>&> (modelDatas_);
+        } else if constexpr (std::is_same_v<T, FrameWork::CompMaterialData>) {
+            return reinterpret_cast<std::vector<T*>&> (compMaterialDatas_);
         }
         else {
             std::cerr << "Unknown type in getNextIndex!" << std::endl;
@@ -553,7 +562,10 @@ public:
             return materialDatasMutex;
         } else if constexpr (std::is_same_v<T, FrameWork::VulkanModelData>) {
             return modelDatasMutex;
-        } else {
+        } else if constexpr (std::is_same_v<T, FrameWork::CompMaterialData>) {
+            return compMaterialDatasMutex;
+        }
+        else {
             static std::mutex dummy_mutex;
             return dummy_mutex;
         }
@@ -693,6 +705,18 @@ public:
             }
             for (auto& meshID : modelData->meshIDs) {
                 destroyByIndex<FrameWork::Mesh>(meshID);
+            }
+        } else if (std::is_same_v<T, FrameWork::CompMaterialData>) {
+            auto compMaterialData = getByIndex<FrameWork::CompMaterialData>(index);
+            compMaterialData->inUse = false;
+
+            for (int i = 0; i < compMaterialData->descriptorSetLayouts.size(); ++i) {
+                vulkanDescriptorPool.RegisterUnusedDescriptorSet(compMaterialData->descriptorSetLayouts[i],
+                    compMaterialData->descriptorSets[i]);
+            }
+
+            for (auto& uniformBuffer : compMaterialData->uniformBuffers) {
+                uniformBuffer.destroy();
             }
         }
     }

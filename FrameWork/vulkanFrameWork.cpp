@@ -2848,6 +2848,13 @@ void vulkanFrameWork::DeleteModelData(uint32_t id) {
     }
 }
 
+void vulkanFrameWork::DeleteCompMaterialData(uint32_t id) {
+    std::lock_guard<std::mutex> lock(compMaterialDeleteMutex);
+    if (id < compMaterialDatas_.size() && compMaterialDatas_[id]->inUse) {
+        compMaterialDataReleaseQueue.emplace_back(id, MAX_FRAME + 1);
+    }
+}
+
 void vulkanFrameWork::CheckDelete() {
     processReleaseQueue<FrameWork::Texture>(textureReleaseQueue);
     processReleaseQueue<FrameWork::Mesh>(meshReleaseQueue);
