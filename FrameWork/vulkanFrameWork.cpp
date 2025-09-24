@@ -11,6 +11,7 @@
 #include <array>
 #include <vector>
 
+#include "CompShader.h"
 #include "Logger.h"
 #include "ShaderParse.h"
 #include "VulkanDebug.h"
@@ -2084,7 +2085,91 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
 }
 
 FrameWork::CompShaderInfo vulkanFrameWork::CreateCompPipeline(uint32_t &pipelineID, const std::string &shaderPath) {
-    return {};
+    FrameWork::CompShaderInfo compShaderInfo;
+    auto shaderModulePacks = resourceManager.GetCompShaderModule(device, shaderPath, compShaderInfo);
+    //获取pipelineID
+    pipelineID = getNextIndex<FrameWork::VulkanPipeline>();
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(pipelineID);
+    pipeline->inUse = true;
+
+    //绑定descriptorSetLayoutBinding
+    std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+
+    //绑定Uniform
+    if (!compShaderInfo.shaderProperties.baseProperties.empty()) {
+        VkDescriptorSetLayoutBinding binding = {
+            .binding = compShaderInfo.shaderProperties.baseProperties[0].binding,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+            .pImmutableSamplers = nullptr
+        };
+        descriptorSetLayoutBindings.push_back(binding);
+    }
+    //Texture
+    for (auto& texPro : compShaderInfo.shaderProperties.textureProperties) {
+        VkDescriptorSetLayoutBinding binding = {
+            .binding = texPro.binding,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+            .pImmutableSamplers = nullptr
+        };
+        descriptorSetLayoutBindings.push_back(binding);
+    }
+
+    //SSBO
+    for (auto& ssbo : compShaderInfo.ssbos) {
+        VkDescriptorSetLayoutBinding binding = {
+            .binding = ssbo.binding,
+            .descriptorType = FrameWork::ShaderParse::storageTypeToDescriptorType[ssbo.type],
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+            .pImmutableSamplers = nullptr
+        };
+        descriptorSetLayoutBindings.push_back(binding);
+    }
+
+    //创建SetLayout
+    VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .bindingCount = (uint32_t)descriptorSetLayoutBindings.size(),
+        .pBindings = descriptorSetLayoutBindings.data()
+    };
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VK_CHECK_RESULT(
+        vkCreateDescriptorSetLayout(device, &setLayoutCreateInfo, nullptr, &layout)
+        );
+    pipeline->descriptorSetLayouts.push_back(layout);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+    pipelineLayoutInfo.pSetLayouts = pipeline->descriptorSetLayouts.data();
+
+    VK_CHECK_RESULT(
+        vkCreatePipelineLayout(device, &pipelineLayoutInfo,
+            nullptr, &pipeline->pipelineLayout)
+        );
+
+    VkComputePipelineCreateInfo computePipelineCreateInfo{};
+    computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    computePipelineCreateInfo.layout = pipeline->pipelineLayout;
+    computePipelineCreateInfo.stage = SetPipelineShaderStageInfo(shaderModulePacks).back(); //因为只有一个
+    VK_CHECK_RESULT(
+        vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &pipeline->pipeline)
+        );
+
+    for (auto& shaderModule : shaderModulePacks ){
+        vkDestroyShaderModule(
+            device, shaderModule.second, nullptr
+            );
+    }
+
+
+    return compShaderInfo;
 }
 
 

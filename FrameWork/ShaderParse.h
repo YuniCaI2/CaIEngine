@@ -184,6 +184,14 @@ namespace FrameWork {
             {StorageObjectType::Buffer, "buffer"}
         };
 
+        inline static std::unordered_map<StorageObjectType, VkDescriptorType> storageTypeToDescriptorType = {
+            {StorageObjectType::Image2D, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE},
+            {StorageObjectType::Image3D, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE},
+            {StorageObjectType::ImageCube, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE},
+            {StorageObjectType::Buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}
+
+        };
+
     };
 }
 

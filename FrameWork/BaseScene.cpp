@@ -68,7 +68,7 @@ void BaseScene::CreateFrameGraphResource() {
          FrameWork::CaIMaterial::Get(materials[i])->SetTexture("colorSampler", model->textures[i][DiffuseColor]);
      }
     std::string presentShaderPath = "../resources/CaIShaders/Present/Present.caishader";
-    FrameWork::CaIShader::Create(presentShaderID, presentShaderPath);
+    FrameWork::CaIShader::Create(presentShaderID, presentShaderPath, VK_FORMAT_R8G8B8A8_UNORM);
     FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
 
     //创建FrameGraph资源
@@ -78,7 +78,7 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    vulkanRenderAPI.GetVulkanSwapChain().colorFormat, 1, 1, vulkanRenderAPI.GetSampleCount(),
+                    VK_FORMAT_R8G8B8A8_UNORM, 1, 1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                     )
                 );
