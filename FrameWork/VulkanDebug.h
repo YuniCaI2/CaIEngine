@@ -12,7 +12,6 @@
 #include<unordered_map>
 
 #include "PublicStruct.h"
-#include "Slot.h"
 
 namespace FrameWork {
     class VulkanDebug {
@@ -60,7 +59,6 @@ namespace FrameWork {
         VkPipelineLayout debugPipelineLayout {VK_NULL_HANDLE};
         VkRenderPass debugRenderPass{VK_NULL_HANDLE};
         VkDescriptorSetLayout uniformDescriptorSetLayout{VK_NULL_HANDLE};
-        std::unordered_map<uint32_t , Slot> slots;
         glm::mat4 viewMatrix{};
         glm::mat4 projectionMatrix{};
         glm::mat4 modelMatrix{};

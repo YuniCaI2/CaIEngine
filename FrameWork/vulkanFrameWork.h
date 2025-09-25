@@ -19,7 +19,6 @@
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
 #include "Resource.h"
-#include "Slot.h"
 #define MAX_FRAME 2
 
 
@@ -132,7 +131,6 @@ protected:
     std::vector<FrameWork::Material *> materials;
     std::vector<FrameWork::Model *> models;
     std::vector<FrameWork::StorageBuffer *> storageBuffers;
-    std::vector<FrameWork::Slot *> slots_;
     std::vector<FrameWork::MaterialData*> materialDatas_;
     std::vector<FrameWork::VulkanModelData*> modelDatas_; //更浅
     std::vector<FrameWork::CompMaterialData*> compMaterialDatas_;
@@ -147,14 +145,12 @@ protected:
     std::mutex materialsMutex;
     std::mutex modelsMutex;
     std::mutex storageBuffersMutex;
-    std::mutex slotsMutex;
     std::mutex materialDatasMutex;
     std::mutex modelDatasMutex;
     std::mutex compMaterialDatasMutex;
 
     std::unordered_map<std::string, VkRenderPass> renderPasses; //记录renderpass
     std::unordered_map<RenderPassType, VkRenderPass> renderPassTable;
-    std::unordered_map<std::string, VkDescriptorSetLayout> descriptorSetLayouts;
 
     using ReleaseContainer = std::pair<uint32_t, uint32_t>; //后者是释放计数器
     std::deque<ReleaseContainer> textureReleaseQueue;
@@ -181,8 +177,6 @@ protected:
     std::string name = "VulkanFrameWork";
 
 public:
-    friend class FrameWork::Slot;
-
     uint32_t currentFrame = 0;
     uint32_t MaxFrame = MAX_FRAME;
     uint32_t windowWidth{1280};
@@ -382,12 +376,6 @@ public:
 
     void EndCommandBuffer() const;
 
-
-    //描述符
-    VkDescriptorSetLayout CreateDescriptorSetLayout(
-        VkDescriptorType descriptorType, VkShaderStageFlags stageFlags
-    );
-
     void CreateMaterial(uint32_t &materialIdx, const std::vector<FrameWork::TextureFullData> &texDatas);
 
     void CreateMaterialData(FrameWork::CaIMaterial& caiMaterial);
@@ -400,33 +388,15 @@ public:
     void SetUpStaticMesh(unsigned int &meshID, std::vector<FrameWork::Vertex> &vertices, std::vector<uint32_t> &indices,
                          bool skinned);
 
-    void LoadModel(uint32_t &modelID, const std::string &fileName, ModelType modelType,
-                   TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
-
     void LoadVulkanModel(uint32_t& modelDataID, const std::string &fileName, ModelType modelType,
                     TextureTypeFlags textureTypeFlags, glm::vec3 position = {0, 0, 1}, float scale = 1.0f);
 
     void BindMesh(VkCommandBuffer commandBuffer, uint32_t meshData);
 
-    void DrawModel(uint32_t modelID, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t firstSet);
-
-
-
-    FrameWork::Slot *CreateSlot(uint32_t &slotID);
-
-    void UpdateAllSlots();
-
-    //计算着色器
-    void CreateVulkanComputePipeline(uint32_t &pipelineInfoIdx, const std::string &fileName,
-                                     const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts); //注意这和上面的管线不同
     void CreateGPUStorgeBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer, void *data);
 
     void CreateHostVisibleStorageBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, FrameWork::Buffer &buffer,
                                         void *data);
-
-    //快速生成基础几何模型
-    void GenFace(uint32_t &model, const glm::vec3 &position, const glm::vec3 &normal, float width, float height,
-                 std::string texPath = "");
 
     void GenFaceData(uint32_t& modelDataID, const glm::vec3 &position, const glm::vec3 &normal, float width, float height, const std::string& texPath = "");
 
@@ -520,8 +490,6 @@ public:
             return reinterpret_cast<std::vector<T *> &>(models);
         } else if constexpr (std::is_same_v<T, FrameWork::StorageBuffer>) {
             return reinterpret_cast<std::vector<T *> &>(storageBuffers);
-        } else if constexpr (std::is_same_v<T, FrameWork::Slot>) {
-            return reinterpret_cast<std::vector<T *> &>(slots_);
         } else if constexpr (std::is_same_v<T, FrameWork::MaterialData>) {
             return reinterpret_cast<std::vector<T*>& >(materialDatas_);
         } else if constexpr (std::is_same_v<T, FrameWork::VulkanModelData>) {
@@ -555,9 +523,7 @@ public:
             return modelsMutex;
         } else if constexpr (std::is_same_v<T, FrameWork::StorageBuffer>) {
             return storageBuffersMutex;
-        } else if constexpr (std::is_same_v<T, FrameWork::Slot>) {
-            return slotsMutex;
-        } else if constexpr (std::is_same_v<T, FrameWork::MaterialData>) {
+        }  else if constexpr (std::is_same_v<T, FrameWork::MaterialData>) {
             return materialDatasMutex;
         } else if constexpr (std::is_same_v<T, FrameWork::VulkanModelData>) {
             return modelDatasMutex;
@@ -656,6 +622,9 @@ public:
             if (vulkanPipeline->pipeline != VK_NULL_HANDLE) {
                 vkDestroyPipeline(device, vulkanPipeline->pipeline, nullptr);
             }
+            for (auto& descriptorSetLayout : vulkanPipeline->descriptorSetLayouts) {
+                vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+            }
         } else if (std::is_same_v<T, FrameWork::Material>) {
             auto material = materials[index];
             material->inUse = false;
@@ -676,12 +645,7 @@ public:
             storageBuffer->inUse = false;
             storageBuffer->buffer.destroy();
             storageBuffer->itemNum = 0;
-        } else if (std::is_same_v<T, FrameWork::Slot>) {
-            auto &slot = slots_[index];
-            slot->inUse = false;
-            delete slot;
-            slot = nullptr;
-        } else if (std::is_same_v<T, FrameWork::MaterialData>) {
+        }  else if (std::is_same_v<T, FrameWork::MaterialData>) {
             auto & materialData = materialDatas_[index];
             materialData->inUse = false;
             for (int i = 0; i < materialData->descriptorSetLayouts.size(); ++i) {

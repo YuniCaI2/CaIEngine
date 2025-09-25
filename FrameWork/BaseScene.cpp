@@ -4,7 +4,6 @@
 
 #include "BaseScene.h"
 #include "vulkanFrameWork.h"
-#include "Slot.h"
 #include <iostream>
 
 #include "FrameGraph/FrameGraph.h"

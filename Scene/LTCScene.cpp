@@ -136,7 +136,7 @@ void LTCScene::CreateFrameGraphResource() {
     };
 
     auto UpdateLightUniform = [this, BindCamera](uint32_t materialID, FrameWork::Camera* camera, uint32_t modelID) {
-        BindCamera(modelID, camera, modelID);
+        BindCamera(materialID, camera, modelID);
         auto rotateY = glm::rotate(glm::mat4(1.0f), glm::radians(lightRotateY
         ), glm::vec3(0.0f, 1.0f, 0.0f));
         auto rotateX = glm::rotate(glm::mat4(1.0f), glm::radians(lightRotateX), glm::vec3(1.0f, 0.0f, 0.0f));

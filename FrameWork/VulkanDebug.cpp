@@ -64,221 +64,221 @@ void FrameWork::VulkanDebug::setupDebuggingMessengerCreateInfo(VkDebugUtilsMesse
 }
 
 void FrameWork::AABBDeBugging::Init(const std::string &shaderName,uint32_t colorAttachment) {
-    //RenderPass Init
-
-    std::array<VkAttachmentDescription, 1> attachments = {};
-    // Color attachment
-    attachments[0].format = vulkanRenderAPI.GetVulkanSwapChain().colorFormat;
-    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachments[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    VkAttachmentReference colorReference = {};
-    colorReference.attachment = 0;
-    colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-
-
-    VkSubpassDescription subpassDescription = {};
-    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount = 1;
-    subpassDescription.pColorAttachments = &colorReference;
-    subpassDescription.pDepthStencilAttachment = nullptr;
-    subpassDescription.inputAttachmentCount = 0;
-    subpassDescription.pInputAttachments = nullptr;
-    subpassDescription.preserveAttachmentCount = 0;
-    subpassDescription.pPreserveAttachments = nullptr;
-    subpassDescription.pResolveAttachments = nullptr;
-
-    std::array<VkSubpassDependency, 1> dependencies{};
-
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-    dependencies[0].dependencyFlags = 0;
-
-
-
-    VkRenderPassCreateInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpassDescription;
-    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-    renderPassInfo.pDependencies = dependencies.data();
-    if (vulkanRenderAPI.GetRenderPass("debugRenderPass") == VK_NULL_HANDLE) {
-        VK_CHECK_RESULT(vkCreateRenderPass(vulkanRenderAPI.vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &debugRenderPass));
-        vulkanRenderAPI.RegisterRenderPass(debugRenderPass, "debugRenderPass");
-    }else {
-        debugRenderPass = vulkanRenderAPI.GetRenderPass("debugRenderPass");
-    }
-
-    //framebuffer
-    vulkanRenderAPI.CreateFrameBuffer(frameBufferID,
-        {colorAttachment},
-        vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(), debugRenderPass);
-
-    //Pipeline
-    auto bindingDescription = LineVertex::getBindingDescription();
-    auto attributeDescription = LineVertex::getAttributeDescription();
-    VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = vulkanRenderAPI.GetFrameWidth();
-    viewport.height = vulkanRenderAPI.GetFrameHeight();
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    VkRect2D scissor = {};
-    scissor.extent.width = vulkanRenderAPI.GetFrameWidth();
-    scissor.extent.height = vulkanRenderAPI.GetFrameHeight();
-    scissor.offset.x = 0.0f;
-    scissor.offset.y = 0.0f;
-    uint32_t pipelineInfoId = -1;
-    vulkanRenderAPI.InitPipelineInfo(pipelineInfoId);
-    vulkanRenderAPI.AddPipelineVertexAttributeDescription(pipelineInfoId, attributeDescription);
-    vulkanRenderAPI.AddPipelineVertexBindingDescription(pipelineInfoId, bindingDescription);
-    vulkanRenderAPI.SetPipelineViewPort(pipelineInfoId, viewport);
-    vulkanRenderAPI.SetPipelineScissor(pipelineInfoId, scissor);
-    VkPipelineRasterizationStateCreateInfo rasterizer = {};
-    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
-    rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_NONE;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
-    vulkanRenderAPI.SetPipelineRasterizationState(pipelineInfoId, rasterizer);
-    VkPipelineDepthStencilStateCreateInfo depthStencil = {};
-    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_FALSE;
-    depthStencil.depthWriteEnable = VK_FALSE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-    depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.stencilTestEnable = VK_FALSE;
-    vulkanRenderAPI.SetPipelineDepthStencilState(pipelineInfoId, depthStencil);
-    VkPipelineMultisampleStateCreateInfo multisampling = {};
-    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    vulkanRenderAPI.SetPipelineMultiSampleState(pipelineInfoId, multisampling);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-        .primitiveRestartEnable = VK_FALSE
-    };
-    uniformDescriptorSetLayout = FrameWork::Slot::CreateUniformDescriptorSetLayout(VK_SHADER_STAGE_VERTEX_BIT);
-    vulkanRenderAPI.SetPipelineInputAssembly(pipelineInfoId, inputAssembly);
-    vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
-    vulkanRenderAPI.CreateVulkanPipeline(debugPipelineID, "DeBugPipeline", pipelineInfoId, "debugRenderPass", 0,
-        {uniformDescriptorSetLayout}, 1, 0
-        );
-    debugPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(debugPipelineID)->pipeline;
-    debugPipelineLayout = vulkanRenderAPI.getByIndex<VulkanPipeline>(debugPipelineID)->pipelineLayout;
+    // //RenderPass Init
+    //
+    // std::array<VkAttachmentDescription, 1> attachments = {};
+    // // Color attachment
+    // attachments[0].format = vulkanRenderAPI.GetVulkanSwapChain().colorFormat;
+    // attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    // attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    // attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    // attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    // attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    // attachments[0].initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // VkAttachmentReference colorReference = {};
+    // colorReference.attachment = 0;
+    // colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    //
+    //
+    //
+    // VkSubpassDescription subpassDescription = {};
+    // subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    // subpassDescription.colorAttachmentCount = 1;
+    // subpassDescription.pColorAttachments = &colorReference;
+    // subpassDescription.pDepthStencilAttachment = nullptr;
+    // subpassDescription.inputAttachmentCount = 0;
+    // subpassDescription.pInputAttachments = nullptr;
+    // subpassDescription.preserveAttachmentCount = 0;
+    // subpassDescription.pPreserveAttachments = nullptr;
+    // subpassDescription.pResolveAttachments = nullptr;
+    //
+    // std::array<VkSubpassDependency, 1> dependencies{};
+    //
+    // dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    // dependencies[0].dstSubpass = 0;
+    // dependencies[0].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    // dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    // dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    // dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    // dependencies[0].dependencyFlags = 0;
+    //
+    //
+    //
+    // VkRenderPassCreateInfo renderPassInfo = {};
+    // renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    // renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    // renderPassInfo.pAttachments = attachments.data();
+    // renderPassInfo.subpassCount = 1;
+    // renderPassInfo.pSubpasses = &subpassDescription;
+    // renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    // renderPassInfo.pDependencies = dependencies.data();
+    // if (vulkanRenderAPI.GetRenderPass("debugRenderPass") == VK_NULL_HANDLE) {
+    //     VK_CHECK_RESULT(vkCreateRenderPass(vulkanRenderAPI.vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &debugRenderPass));
+    //     vulkanRenderAPI.RegisterRenderPass(debugRenderPass, "debugRenderPass");
+    // }else {
+    //     debugRenderPass = vulkanRenderAPI.GetRenderPass("debugRenderPass");
+    // }
+    //
+    // //framebuffer
+    // vulkanRenderAPI.CreateFrameBuffer(frameBufferID,
+    //     {colorAttachment},
+    //     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(), debugRenderPass);
+    //
+    // //Pipeline
+    // auto bindingDescription = LineVertex::getBindingDescription();
+    // auto attributeDescription = LineVertex::getAttributeDescription();
+    // VkViewport viewport = {};
+    // viewport.x = 0.0f;
+    // viewport.y = 0.0f;
+    // viewport.width = vulkanRenderAPI.GetFrameWidth();
+    // viewport.height = vulkanRenderAPI.GetFrameHeight();
+    // viewport.minDepth = 0.0f;
+    // viewport.maxDepth = 1.0f;
+    // VkRect2D scissor = {};
+    // scissor.extent.width = vulkanRenderAPI.GetFrameWidth();
+    // scissor.extent.height = vulkanRenderAPI.GetFrameHeight();
+    // scissor.offset.x = 0.0f;
+    // scissor.offset.y = 0.0f;
+    // uint32_t pipelineInfoId = -1;
+    // vulkanRenderAPI.InitPipelineInfo(pipelineInfoId);
+    // vulkanRenderAPI.AddPipelineVertexAttributeDescription(pipelineInfoId, attributeDescription);
+    // vulkanRenderAPI.AddPipelineVertexBindingDescription(pipelineInfoId, bindingDescription);
+    // vulkanRenderAPI.SetPipelineViewPort(pipelineInfoId, viewport);
+    // vulkanRenderAPI.SetPipelineScissor(pipelineInfoId, scissor);
+    // VkPipelineRasterizationStateCreateInfo rasterizer = {};
+    // rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    // rasterizer.depthClampEnable = VK_FALSE;
+    // rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    // rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+    // rasterizer.lineWidth = 1.0f;
+    // rasterizer.cullMode = VK_CULL_MODE_NONE;
+    // rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    // rasterizer.depthBiasEnable = VK_FALSE;
+    // vulkanRenderAPI.SetPipelineRasterizationState(pipelineInfoId, rasterizer);
+    // VkPipelineDepthStencilStateCreateInfo depthStencil = {};
+    // depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    // depthStencil.depthTestEnable = VK_FALSE;
+    // depthStencil.depthWriteEnable = VK_FALSE;
+    // depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    // depthStencil.depthBoundsTestEnable = VK_FALSE;
+    // depthStencil.stencilTestEnable = VK_FALSE;
+    // vulkanRenderAPI.SetPipelineDepthStencilState(pipelineInfoId, depthStencil);
+    // VkPipelineMultisampleStateCreateInfo multisampling = {};
+    // multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    // multisampling.sampleShadingEnable = VK_FALSE;
+    // multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    // vulkanRenderAPI.SetPipelineMultiSampleState(pipelineInfoId, multisampling);
+    // VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+    //     .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+    //     .pNext = nullptr,
+    //     .flags = 0,
+    //     .topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+    //     .primitiveRestartEnable = VK_FALSE
+    // };
+    // uniformDescriptorSetLayout = FrameWork::Slot::CreateUniformDescriptorSetLayout(VK_SHADER_STAGE_VERTEX_BIT);
+    // vulkanRenderAPI.SetPipelineInputAssembly(pipelineInfoId, inputAssembly);
+    // vulkanRenderAPI.AddPipelineColorBlendState(pipelineInfoId, true, BlendOp::Opaque);
+    // vulkanRenderAPI.CreateVulkanPipeline(debugPipelineID, "DeBugPipeline", pipelineInfoId, "debugRenderPass", 0,
+    //     {uniformDescriptorSetLayout}, 1, 0
+    //     );
+    // debugPipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(debugPipelineID)->pipeline;
+    // debugPipelineLayout = vulkanRenderAPI.getByIndex<VulkanPipeline>(debugPipelineID)->pipelineLayout;
 }
 
 void FrameWork::AABBDeBugging::GenerateAABB(uint32_t modelID) {
-        auto model = vulkanRenderAPI.getByIndex<Model>(modelID);
-        if (model->inUse == false) {
-            return;
-        }
-        FrameWork::Buffer vertexBuffer{VK_NULL_HANDLE};
-        FrameWork::Buffer indexBuffer{VK_NULL_HANDLE};
-        auto modelIndices = GenerateLineIndices(lines.size());
-        auto modelAABB = GenerateLineVertex(model->aabb, glm::vec3(255.0f, 0.0f, 0.0f));
-        lines.insert(lines.end(), std::make_move_iterator( modelAABB.begin()),
-            std::make_move_iterator( modelAABB.end()));
-        indices.insert(indices.end(), std::make_move_iterator(modelIndices.begin()),
-            std::make_move_iterator( modelIndices.end()));
-        for (auto& aabb : *model->triangleBoundingBoxs) {
-            auto triIndices = GenerateLineIndices(lines.size());
-            auto triAABB = GenerateLineVertex(aabb, glm::vec3(0.0f, 255.0f, 0.0f));
-            lines.insert(lines.end(), std::make_move_iterator( triAABB.begin()),
-                std::make_move_iterator( triAABB.end()));
-            indices.insert(indices.end(), std::make_move_iterator(triIndices.begin()),
-                std::make_move_iterator( triIndices.end()));
-        }
-        VkDeviceSize vertexBufferSize = sizeof(LineVertex) * lines.size();
-        vulkanRenderAPI.CreateGPUBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBuffer, lines.data());
-
-        VkDeviceSize indicesBufferSize = sizeof(uint32_t) * indices.size();
-        vulkanRenderAPI.CreateGPUBuffer(indicesBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBuffer, indices.data());
-        vertexBuffers.emplace(modelID, vertexBuffer);
-        indexBuffers.emplace(modelID, indexBuffer);
-        indicesCounts.emplace(modelID, indices.size());
-        lines.clear();
-        indices.clear();
-
-
-        Slot slot;
-        slot.SetUniformObject<UniformBufferObject>(VK_SHADER_STAGE_VERTEX_BIT,&viewMatrix,
-            &projectionMatrix, &vulkanRenderAPI.getByIndex<Model>(modelID)->position);
-        slot.inUse = true;
-        slots.emplace(modelID , std::move(slot));
+        // auto model = vulkanRenderAPI.getByIndex<Model>(modelID);
+        // if (model->inUse == false) {
+        //     return;
+        // }
+        // FrameWork::Buffer vertexBuffer{VK_NULL_HANDLE};
+        // FrameWork::Buffer indexBuffer{VK_NULL_HANDLE};
+        // auto modelIndices = GenerateLineIndices(lines.size());
+        // auto modelAABB = GenerateLineVertex(model->aabb, glm::vec3(255.0f, 0.0f, 0.0f));
+        // lines.insert(lines.end(), std::make_move_iterator( modelAABB.begin()),
+        //     std::make_move_iterator( modelAABB.end()));
+        // indices.insert(indices.end(), std::make_move_iterator(modelIndices.begin()),
+        //     std::make_move_iterator( modelIndices.end()));
+        // for (auto& aabb : *model->triangleBoundingBoxs) {
+        //     auto triIndices = GenerateLineIndices(lines.size());
+        //     auto triAABB = GenerateLineVertex(aabb, glm::vec3(0.0f, 255.0f, 0.0f));
+        //     lines.insert(lines.end(), std::make_move_iterator( triAABB.begin()),
+        //         std::make_move_iterator( triAABB.end()));
+        //     indices.insert(indices.end(), std::make_move_iterator(triIndices.begin()),
+        //         std::make_move_iterator( triIndices.end()));
+        // }
+        // VkDeviceSize vertexBufferSize = sizeof(LineVertex) * lines.size();
+        // vulkanRenderAPI.CreateGPUBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBuffer, lines.data());
+        //
+        // VkDeviceSize indicesBufferSize = sizeof(uint32_t) * indices.size();
+        // vulkanRenderAPI.CreateGPUBuffer(indicesBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBuffer, indices.data());
+        // vertexBuffers.emplace(modelID, vertexBuffer);
+        // indexBuffers.emplace(modelID, indexBuffer);
+        // indicesCounts.emplace(modelID, indices.size());
+        // lines.clear();
+        // indices.clear();
+        //
+        //
+        // Slot slot;
+        // slot.SetUniformObject<UniformBufferObject>(VK_SHADER_STAGE_VERTEX_BIT,&viewMatrix,
+        //     &projectionMatrix, &vulkanRenderAPI.getByIndex<Model>(modelID)->position);
+        // slot.inUse = true;
+        // slots.emplace(modelID , std::move(slot));
 }
 
 void FrameWork::AABBDeBugging::Draw(VkCommandBuffer cmdBuffer) {
-    VkClearValue clearValues[2];
-    auto frameBuffers = vulkanRenderAPI.getByIndex<FrameWork::VulkanFBO>(frameBufferID)->framebuffers;
-    clearValues[0].color = vulkanRenderAPI.defaultClearColor;
-    clearValues[1].depthStencil = {1.0f, 0};
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.renderPass = debugRenderPass;
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.framebuffer = frameBuffers[vulkanRenderAPI.GetCurrentFrame()];
-    renderPassInfo.renderArea.offset.x = 0;
-    renderPassInfo.renderArea.offset.y = 0;
-    renderPassInfo.renderArea.extent.width = vulkanRenderAPI.GetFrameWidth();
-    renderPassInfo.renderArea.extent.height = vulkanRenderAPI.GetFrameHeight();
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = clearValues;
-
-    vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    VkViewport viewport = {};
-    viewport.width = (float) vulkanRenderAPI.windowWidth;
-    viewport.height = (float) vulkanRenderAPI.windowHeight;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &viewport);
-    VkRect2D scissor = {};
-    scissor.extent.width = vulkanRenderAPI.windowWidth;
-    scissor.extent.height = vulkanRenderAPI.windowHeight;
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    vkCmdSetScissor(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &scissor);
-    vkCmdBindPipeline(vulkanRenderAPI.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, debugPipeline);
-    VkDeviceSize offset = {0};
-    for (auto& [modelID, vertexBuffer] : vertexBuffers) {
-        if (vulkanRenderAPI.getByIndex<Model>(modelID)->inUse == false) {
-            //这样没有删除可以保证线程安全但是占用内存
-            continue;
-        }
-        slots[modelID].Bind(cmdBuffer, debugPipelineLayout, 0);
-        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.buffer, &offset);
-        vkCmdBindIndexBuffer(cmdBuffer, indexBuffers[modelID].buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(cmdBuffer, indicesCounts[modelID], 1, 0, 0, 0);
-    }
-    vkCmdEndRenderPass(vulkanRenderAPI.GetCurrentCommandBuffer());
+    // VkClearValue clearValues[2];
+    // auto frameBuffers = vulkanRenderAPI.getByIndex<FrameWork::VulkanFBO>(frameBufferID)->framebuffers;
+    // clearValues[0].color = vulkanRenderAPI.defaultClearColor;
+    // clearValues[1].depthStencil = {1.0f, 0};
+    // VkRenderPassBeginInfo renderPassInfo = {};
+    // renderPassInfo.renderPass = debugRenderPass;
+    // renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    // renderPassInfo.framebuffer = frameBuffers[vulkanRenderAPI.GetCurrentFrame()];
+    // renderPassInfo.renderArea.offset.x = 0;
+    // renderPassInfo.renderArea.offset.y = 0;
+    // renderPassInfo.renderArea.extent.width = vulkanRenderAPI.GetFrameWidth();
+    // renderPassInfo.renderArea.extent.height = vulkanRenderAPI.GetFrameHeight();
+    // renderPassInfo.clearValueCount = 2;
+    // renderPassInfo.pClearValues = clearValues;
+    //
+    // vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    // VkViewport viewport = {};
+    // viewport.width = (float) vulkanRenderAPI.windowWidth;
+    // viewport.height = (float) vulkanRenderAPI.windowHeight;
+    // viewport.minDepth = 0.0f;
+    // viewport.maxDepth = 1.0f;
+    // vkCmdSetViewport(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &viewport);
+    // VkRect2D scissor = {};
+    // scissor.extent.width = vulkanRenderAPI.windowWidth;
+    // scissor.extent.height = vulkanRenderAPI.windowHeight;
+    // scissor.offset.x = 0;
+    // scissor.offset.y = 0;
+    // vkCmdSetScissor(vulkanRenderAPI.GetCurrentCommandBuffer(), 0, 1, &scissor);
+    // vkCmdBindPipeline(vulkanRenderAPI.GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, debugPipeline);
+    // VkDeviceSize offset = {0};
+    // for (auto& [modelID, vertexBuffer] : vertexBuffers) {
+    //     if (vulkanRenderAPI.getByIndex<Model>(modelID)->inUse == false) {
+    //         //这样没有删除可以保证线程安全但是占用内存
+    //         continue;
+    //     }
+    //     slots[modelID].Bind(cmdBuffer, debugPipelineLayout, 0);
+    //     vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer.buffer, &offset);
+    //     vkCmdBindIndexBuffer(cmdBuffer, indexBuffers[modelID].buffer, 0, VK_INDEX_TYPE_UINT32);
+    //     vkCmdDrawIndexed(cmdBuffer, indicesCounts[modelID], 1, 0, 0, 0);
+    // }
+    // vkCmdEndRenderPass(vulkanRenderAPI.GetCurrentCommandBuffer());
 }
 
 void FrameWork::AABBDeBugging::Update(const glm::mat4 &viewMatrix,
     const glm::mat4 &projectionMatrix) {
-
-    this->viewMatrix = viewMatrix;
-    this->projectionMatrix = projectionMatrix;
-    //这里的slot不归framework管理
-    for (auto& [_, slot] : slots) {
-        slot.Update();
-    }
+    //
+    // this->viewMatrix = viewMatrix;
+    // this->projectionMatrix = projectionMatrix;
+    // //这里的slot不归framework管理
+    // for (auto& [_, slot] : slots) {
+    //     slot.Update();
+    // }
 }
 
 void FrameWork::AABBDeBugging::Destroy() {

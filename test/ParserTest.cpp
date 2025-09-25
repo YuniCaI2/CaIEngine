@@ -127,6 +127,11 @@ void testTranslateVulkanComp(const std::string& code) {
    auto vulkanCode = ShaderParse::TranslateCompToVulkan(code, info);
 }
 
+void testCreateCompPipeline(const std::string& path) {
+   uint32_t pipelineID = -1;
+   auto shaderInfo = vulkanRenderAPI.CreateCompPipeline(pipelineID, path);
+}
+
 
 int main(){
    LOG.Run();
@@ -163,7 +168,8 @@ int main(){
    // testCreatePipeline();
    // testGetLocalInvocation(compCode);
    // testGetCompShaderInfo(compCode);
-   testTranslateVulkanComp(compCode);
+   // testTranslateVulkanComp(compCode);
+   testCreateCompPipeline(compFilePath);
 
    vulkanRenderAPI.DestroyAll();
    LOG.Stop();

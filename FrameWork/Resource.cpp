@@ -566,7 +566,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
     std::filesystem::path vulkanShaderPath = std::filesystem::path(filePath).parent_path();
     vulkanShaderPath = vulkanShaderPath / std::filesystem::path(filePath).stem();
     if (ifCompile) {
-        vulkanCode = ShaderParse::TranslateCompToVulkan(vulkanCode, compShaderInfo);
+        vulkanCode = ShaderParse::TranslateCompToVulkan(code, compShaderInfo);
         std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".comp");
         if (! vulkanVertShaderFile.is_open()) {
             LOG_ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
@@ -577,7 +577,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
         CompileShader(vulkanShaderPath.string() + ".comp");
         caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
     }
-    auto  compShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".vert.spv" , device);
+    auto  compShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".comp.spv" , device);
     shaderModules.emplace_back(VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule);
 
     return shaderModules;

@@ -25,6 +25,7 @@ SSBO{
 
 Program{
     void main(){
+        uint index = gl_GlobalInvocationID.x;
         particlesOut[index].position = particlesIn[index].position + particlesIn[index].velocity * scales;
         particlesOut[index].velocity = particlesIn[index].velocity;
         particlesOut[index].color    = particlesIn[index].color;

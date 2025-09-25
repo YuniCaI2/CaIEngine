@@ -31,13 +31,11 @@ public:
 
     ~Renderer() {
         GUI.ReleaseGUIResources();
-        FrameWork::Slot::DestroyDescriptorSetLayout();
     }
 
     void buildCommandBuffers() {
         auto cmdBuffer = vulkanRenderAPI.BeginCommandBuffer();
         scenes[currentSceneIndex]->Render(cmdBuffer);
-        // vulkanRenderAPI.PresentFrame(cmdBuffer, vulkanRenderAPI.GetCurrentImageIndex());
         GUI.RenderGUI(cmdBuffer);
         vulkanRenderAPI.EndCommandBuffer();
     }
@@ -49,11 +47,9 @@ public:
         auto scene1 = std::make_unique<BaseScene>(camera);
         scenes.push_back(std::move(scene1));
 #ifdef _WIN32
-        // auto scene2 = std::make_unique<LTCScene>(&camera);
-        // scenes.push_back(std::move(scene2));
+        auto scene2 = std::make_unique<LTCScene>(&camera);
+        scenes.push_back(std::move(scene2));
 #endif
-        //呈现
-        // vulkanRenderAPI.InitPresent("uniformPresent", scenes[0]->GetPresentColorAttachment());
         GUI.InitFrameWorkGUI();
         SetGUI();
     }
