@@ -61,11 +61,12 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
     auto resource = resourceManager.FindResource(barrier.resourceID);
     auto description = resource->GetDescription<TextureDescription>();
 
+
     VkImageSubresourceRange subresourceRange{};
     subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
         ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
     subresourceRange.layerCount = description->arrayLayers;
-    subresourceRange.levelCount = description->mipLevels;
+    subresourceRange.levelCount = (description->samples == VK_SAMPLE_COUNT_1_BIT) ? description->mipLevels : 1; //这里是保证在MSAA时，mipLevel对应是resolve
     subresourceRange.baseMipLevel = 0;
     subresourceRange.baseArrayLayer = 0;
 
@@ -90,7 +91,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
         1, &vkBarrier);
 
     if (description->samples != VK_SAMPLE_COUNT_1_BIT) {
-        VkImageSubresourceRange subresourceRange{};
+        VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
             ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
         subresourceRange.layerCount = description->arrayLayers;
@@ -98,7 +99,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
         subresourceRange.baseMipLevel = 0;
         subresourceRange.baseArrayLayer = 0;
 
-        VkImageMemoryBarrier vkBarrier{};
+        VkImageMemoryBarrier vkBarrier = {};
         vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         vkBarrier.image = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
             resourceManager.GetVulkanResolveIndex(barrier.resourceID))->image.image;
@@ -257,7 +258,8 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
             VkRenderingInfo renderingInfo = {};
             auto& preBarriers = renderPass->GetPreBarriers();
             for (auto& barrier : preBarriers) {
-                InsertImageBarrier(commandBuffer, barrier);
+                if (barrier.isImage)
+                    InsertImageBarrier(commandBuffer, barrier);
             }
 
             if (!data.colorAttachments.empty() || data.hasDepth) {
@@ -280,7 +282,8 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
 
             auto& postBarriers = renderPass->GetPostBarriers();
             for (auto& barrier : postBarriers) {
-                InsertImageBarrier(commandBuffer, barrier);
+                if (barrier.isImage)
+                    InsertImageBarrier(commandBuffer, barrier);
             }
         }
     }

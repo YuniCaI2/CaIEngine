@@ -270,6 +270,8 @@ public:
     void CreateImageView(FrameWork::VulkanImage &image, VkImageView &imageView, VkImageAspectFlags aspectFlags,
                          VkImageViewType viewType);
 
+    void CreateImageView(FrameWork::VulkanImage& image, VkImageView& imageView, const VkImageSubresourceRange& subresourceRange, VkImageViewType viewType);
+
     void CreateAttachment(uint32_t &attachmentId, uint32_t width, uint32_t height, AttachmentType attachmentType,
                           VkSampleCountFlagBits numSample, bool isSampled); //最后一个参数的含义是是否会作为纹理被着色器采样
     void ReCreateAttachment();
@@ -284,8 +286,6 @@ public:
     void RecreatePresentFrameBuffer(std::unique_ptr<FrameWork::VulkanFBO>& presentFBO);
 
     void RegisterRenderPass(VkRenderPass renderPass, const std::string &name);
-
-    void RegisterDescriptorSetLayout(VkDescriptorSetLayout &descriptorSetLayout, const std::string &name);
 
     void UnRegisterRenderPass(const std::string &name);
 
@@ -579,6 +579,14 @@ public:
             if (texture->imageView != VK_NULL_HANDLE) {
                 vkDestroyImageView(device, texture->imageView, nullptr);
                 texture->imageView = VK_NULL_HANDLE;
+            }
+
+            if (! texture->mipMapViews.empty()) {
+                for (auto& mipmapImageView : texture->mipMapViews) {
+                    if (mipmapImageView != VK_NULL_HANDLE)
+                        vkDestroyImageView(device, mipmapImageView, nullptr);
+                    mipmapImageView = VK_NULL_HANDLE;
+                }
             }
 
             texture->image.destroy();

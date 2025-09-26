@@ -764,7 +764,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
 
     stagingBuffer.destroy();
 
-    CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+    CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D); //这里先保留旧接口
     texture->sampler = CreateSampler(mipmapLevels);
     texturePathMap[data.path] = textureId;
     texture->inUse = true;
@@ -772,15 +772,16 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
 }
 
 
-void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG::BaseDescription *description) {
+void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG::BaseDescription *description) { //特别的此函数只生成2D纹理， Cube纹理有CreateCubeTexture生成
     if (description->GetResourceType() != FG::ResourceType::Texture) {
         LOG_ERROR("Can't create resource which description is not texture type by create texture");
     }
     auto texDesc = static_cast<FG::TextureDescription*> (description);
+    auto textureMipmap = texDesc->samples == VK_SAMPLE_COUNT_1_BIT ? texDesc->mipLevels : 1;
     textureId = getNextIndex<FrameWork::Texture>();
     auto texture = getByIndex<FrameWork::Texture>(textureId);
     vulkanDevice->createImage(&texture->image, VkExtent2D(texDesc->width, texDesc->height),
-        texDesc->mipLevels, texDesc->arrayLayers,texDesc->samples, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
+        textureMipmap, texDesc->arrayLayers,texDesc->samples, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
     texDesc->usages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
@@ -788,7 +789,10 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG
         CreateImageView(texture->image, texture->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
     }
     texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
-    texture->sampler = CreateSampler(texDesc->mipLevels);
+
+    if (texDesc->samples == VK_SAMPLE_COUNT_1_BIT) {
+        texture->sampler = CreateSampler(textureMipmap);
+    }
     //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
     texture->inUse = true;
 
@@ -808,7 +812,37 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG
         resolve->sampler = CreateSampler(texDesc->mipLevels);
         //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
         resolve->inUse = true;
-    }
+        if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->mipLevels > 1) {
+            //为各个Mipmap预先生成好对应的ImageView
+            //因为多采样时原图不能有mipmap，所以此处对应resolve的mipmap
+            resolve->mipMapViews.resize(texDesc->mipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
+            for (uint32_t i = 0; i < texDesc->mipLevels; i++) {
+                VkImageSubresourceRange subresourceRange = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = i,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0, //这里为单层的Image
+                    .layerCount =  1
+                };
+                CreateImageView(resolve->image, resolve->mipMapViews[i], subresourceRange, VK_IMAGE_VIEW_TYPE_2D);
+            }
+        }
+    }else {
+        if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->mipLevels > 1) {
+            //为各个Mipmap预先生成好对应的ImageView
+            texture->mipMapViews.resize(texDesc->mipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
+            for (uint32_t i = 0; i < texDesc->mipLevels; i++) {
+                VkImageSubresourceRange subresourceRange = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = i,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0, //这里为单层的Image
+                    .layerCount =  1
+                };
+                CreateImageView(texture->image, texture->mipMapViews[i], subresourceRange, VK_IMAGE_VIEW_TYPE_2D);
+            }
+        }
+    }//当采样数为1时
 
 }
 
@@ -838,6 +872,26 @@ void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView
 
     VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView));
 }
+
+void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView&imageView,
+    const VkImageSubresourceRange &subresourceRange, VkImageViewType viewType) {
+    VkImageViewCreateInfo viewCreateInfo = {};
+    viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewCreateInfo.image = image.image;
+    viewCreateInfo.viewType = viewType;
+    viewCreateInfo.format = image.format;
+
+    viewCreateInfo.subresourceRange = subresourceRange;
+
+    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+
+
+    VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView));
+}
+
 
 void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, uint32_t height, AttachmentType attachmentType, VkSampleCountFlagBits numSample, bool isSampled) {
     attachmentId = getNextIndex<FrameWork::VulkanAttachment>();

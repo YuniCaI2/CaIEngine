@@ -77,7 +77,7 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    VK_FORMAT_R8G8B8A8_UNORM, 1, 1, vulkanRenderAPI.GetSampleCount(),
+                    VK_FORMAT_R8G8B8A8_UNORM, 8, 1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                     )
                 );

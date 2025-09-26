@@ -206,6 +206,7 @@ namespace FrameWork {
     struct Texture {
         VulkanImage image{};
         VkImageView imageView{VK_NULL_HANDLE};
+        std::vector<VkImageView> mipMapViews; //这里的mipmap视图是为了保证StorageImage可以访问对应的Mipmap
         VkSampler sampler{VK_NULL_HANDLE}; //optional
         bool isSwapChainRef{false}; //这里用来适配FrameGraph的资源导入
         bool inUse = false;
