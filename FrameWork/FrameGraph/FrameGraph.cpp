@@ -8,39 +8,40 @@
 
 #include "ResourceManager.h"
 
-FG::FrameGraph::FrameGraph(ResourceManager &resourceManager, RenderPassManager &renderPassManager):
-resourceManager(resourceManager), renderPassManager(renderPassManager), threadPool(8)
-{}
+FG::FrameGraph::FrameGraph(ResourceManager &resourceManager,
+                           RenderPassManager &renderPassManager) : resourceManager(resourceManager),
+                                                                   renderPassManager(renderPassManager), threadPool(8) {
+}
 
 FG::FrameGraph::~FrameGraph() {
     // 清理command pools
-    for (auto& [passIndex, pool] : renderPassCommandPools) {
-            if(pool != VK_NULL_HANDLE)
+    for (auto &[passIndex, pool]: renderPassCommandPools) {
+        if (pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                                pool, nullptr);
-            pool = VK_NULL_HANDLE;
+                                 pool, nullptr);
+        pool = VK_NULL_HANDLE;
     }
     renderPassCommandPools.clear();
 }
 
-FG::FrameGraph& FG::FrameGraph::AddResourceNode(uint32_t resourceNode) {
+FG::FrameGraph &FG::FrameGraph::AddResourceNode(uint32_t resourceNode) {
     resourceNodes.push_back(resourceNode);
     return *this;
 }
 
-FG::FrameGraph& FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
+FG::FrameGraph &FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
     renderPassNodes.push_back(renderPassNode);
     return *this;
 }
 
-FG::FrameGraph& FG::FrameGraph::Compile() {
+FG::FrameGraph &FG::FrameGraph::Compile() {
     usingResourceNodes.clear();
     usingPassNodes.clear();
     //清理池
-    for (auto& [passIndex, pool] : renderPassCommandPools) {
-        if(pool != VK_NULL_HANDLE)
+    for (auto &[passIndex, pool]: renderPassCommandPools) {
+        if (pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                                pool, nullptr);
+                                 pool, nullptr);
         pool = VK_NULL_HANDLE;
     }
     timeline.clear();
@@ -49,14 +50,13 @@ FG::FrameGraph& FG::FrameGraph::Compile() {
     CullPassAndResource();
     CreateTimeline();
     CreateAliasGroups();
-    InsertBarriers(); 
+    InsertBarriers();
     CreateCommandPools();
     return *this;
 }
 
 
-
-void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo &barrier){
+void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo &barrier) {
     if (!barrier.isImage) return;
     auto resource = resourceManager.FindResource(barrier.resourceID);
     auto description = resource->GetDescription<TextureDescription>();
@@ -64,9 +64,11 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
 
     VkImageSubresourceRange subresourceRange{};
     subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
+                                      ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                      : VK_IMAGE_ASPECT_COLOR_BIT;
     subresourceRange.layerCount = description->arrayLayers;
-    subresourceRange.levelCount = (description->samples == VK_SAMPLE_COUNT_1_BIT) ? description->mipLevels : 1; //这里是保证在MSAA时，mipLevel对应是resolve
+    subresourceRange.levelCount = (description->samples == VK_SAMPLE_COUNT_1_BIT) ? description->mipLevels : 1;
+    //这里是保证在MSAA时，mipLevel对应是resolve
     subresourceRange.baseMipLevel = 0;
     subresourceRange.baseArrayLayer = 0;
 
@@ -83,17 +85,18 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
     vkBarrier.subresourceRange = subresourceRange;
 
     vkCmdPipelineBarrier(cmdBuffer,
-        barrier.srcStageMask,
-        barrier.dstStageMask,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &vkBarrier);
+                         barrier.srcStageMask,
+                         barrier.dstStageMask,
+                         0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &vkBarrier);
 
     if (description->samples != VK_SAMPLE_COUNT_1_BIT) {
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-            ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
+                                          ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                          : VK_IMAGE_ASPECT_COLOR_BIT;
         subresourceRange.layerCount = description->arrayLayers;
         subresourceRange.levelCount = description->resolveMipLevels;
         subresourceRange.baseMipLevel = 0;
@@ -112,16 +115,16 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
         vkBarrier.subresourceRange = subresourceRange;
 
         vkCmdPipelineBarrier(cmdBuffer,
-            barrier.srcStageMask,
-            barrier.dstStageMask,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &vkBarrier);
+                             barrier.srcStageMask,
+                             barrier.dstStageMask,
+                             0,
+                             0, nullptr,
+                             0, nullptr,
+                             1, &vkBarrier);
     }
 }
 
-FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
+FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
     struct RenderPassData {
         VkCommandBuffer secondaryCmd;
         std::vector<VkRenderingAttachmentInfo> colorAttachments;
@@ -136,13 +139,13 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
     };
 
     updateBeforeRendering();
-    std::vector<std::future<RenderPassData>> futures;
+    std::vector<std::future<RenderPassData> > futures;
     futures.reserve(usingPassNodes.size());
     resourceManager.ResetVulkanResources();
 
     // 为每个 pass 创建 secondary command buffer
-    for (auto& t : timeline) {
-        for (auto& passIndex : t) {
+    for (auto &t: timeline) {
+        for (auto &passIndex: t) {
             auto renderPass = renderPassManager.FindRenderPass(passIndex);
             futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
                 RenderPassData data;
@@ -154,24 +157,26 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 // 收集附件格式信息
                 VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
-                auto& resourceCreateIndices = renderPass->GetCreateResources();
-                auto& resourceInputIndices = renderPass->GetInputResources();
+                auto &resourceCreateIndices = renderPass->GetCreateResources();
+                auto &resourceInputIndices = renderPass->GetInputResources();
 
                 // 处理创建的资源
-                for(auto& resourceIndex : resourceCreateIndices){
+                for (auto &resourceIndex: resourceCreateIndices) {
                     auto resource = resourceManager.FindResource(resourceIndex);
 
-                    if(resource && resource->GetType() == ResourceType::Texture){
+                    if (resource && resource->GetType() == ResourceType::Texture) {
                         auto description = resource->GetDescription<TextureDescription>();
                         sampleCount = description->samples;
                         data.width = description->width;
                         data.height = description->height;
                         data.arrayLayer = description->arrayLayers;
 
-                        if((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
+                        if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
                             data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
-                        } else if((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+                        } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                             data.depthFormat = description->format;
                             data.depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
                             data.hasDepth = true;
@@ -180,18 +185,19 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 }
 
                 // 处理输入资源
-                for(auto& resourceIndex : resourceInputIndices){
+                for (auto &resourceIndex: resourceInputIndices) {
                     auto resource = resourceManager.FindResource(resourceIndex);
-                    if(resource && resource->GetType() == ResourceType::Texture){
+                    if (resource && resource->GetType() == ResourceType::Texture) {
                         auto description = resource->GetDescription<TextureDescription>();
                         sampleCount = description->samples;
                         data.width = description->width;
                         data.height = description->height;
                         data.arrayLayer = description->arrayLayers;
-                        if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
+                        if (description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
                             data.colorFormats.push_back(description->format);
                             data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
-                        } else if((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+                        } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                             data.depthFormat = description->format;
                             data.depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
                             data.hasDepth = true;
@@ -203,7 +209,9 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo{};
                 inheritanceRenderingInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
                 inheritanceRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorFormats.size());
-                inheritanceRenderingInfo.pColorAttachmentFormats = data.colorFormats.empty() ? nullptr : data.colorFormats.data();
+                inheritanceRenderingInfo.pColorAttachmentFormats = data.colorFormats.empty()
+                                                                       ? nullptr
+                                                                       : data.colorFormats.data();
                 inheritanceRenderingInfo.depthAttachmentFormat = data.depthFormat;
                 inheritanceRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
                 inheritanceRenderingInfo.rasterizationSamples = sampleCount;
@@ -251,13 +259,13 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
 
 
     int futureIndex = 0;
-    for (auto& t : timeline) {
-        for (auto& passIndex : t) {
+    for (auto &t: timeline) {
+        for (auto &passIndex: t) {
             auto renderPass = renderPassManager.FindRenderPass(passIndex);
             RenderPassData data = futures[futureIndex++].get();
             VkRenderingInfo renderingInfo = {};
-            auto& preBarriers = renderPass->GetPreBarriers();
-            for (auto& barrier : preBarriers) {
+            auto &preBarriers = renderPass->GetPreBarriers();
+            for (auto &barrier: preBarriers) {
                 if (barrier.isImage)
                     InsertImageBarrier(commandBuffer, barrier);
             }
@@ -271,7 +279,8 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 renderingInfo.layerCount = data.arrayLayer;
                 renderingInfo.viewMask = 0;
                 renderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorAttachments.size());
-                renderingInfo.pColorAttachments = data.colorAttachments.empty() ? nullptr : data.colorAttachments.data();
+                renderingInfo.pColorAttachments =
+                        data.colorAttachments.empty() ? nullptr : data.colorAttachments.data();
                 renderingInfo.pDepthAttachment = data.hasDepth ? &data.depthAttachment : nullptr;
                 renderingInfo.pStencilAttachment = nullptr;
 
@@ -280,8 +289,8 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
                 vkCmdEndRendering(commandBuffer);
             }
 
-            auto& postBarriers = renderPass->GetPostBarriers();
-            for (auto& barrier : postBarriers) {
+            auto &postBarriers = renderPass->GetPostBarriers();
+            for (auto &barrier: postBarriers) {
                 if (barrier.isImage)
                     InsertImageBarrier(commandBuffer, barrier);
             }
@@ -420,7 +429,7 @@ FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
 //     return *this;
 // }
 
-FG::FrameGraph & FG::FrameGraph::SetUpdateBeforeRendering(const std::function<void()> &callback) {
+FG::FrameGraph &FG::FrameGraph::SetUpdateBeforeRendering(const std::function<void()> &callback) {
     updateBeforeRendering = callback;
     return *this;
 }
@@ -430,34 +439,34 @@ void FG::FrameGraph::CullPassAndResource() {
     std::vector<uint32_t> startPassNodes;
 
     //先根据renderPass的信息构建Resource的拓扑关系
-    for (auto& renderPassID : renderPassNodes) {
+    for (auto &renderPassID: renderPassNodes) {
         auto renderPass = renderPassManager.FindRenderPass(renderPassID);
-        for (auto& id : renderPass->GetCreateResources()) {
+        for (auto &id: renderPass->GetCreateResources()) {
             auto resource = resourceManager.FindResource(id);
             resource->SetOutputRenderPass(renderPassID);
         }
-        for (auto& id : renderPass->GetOutputResources()) {
+        for (auto &id: renderPass->GetOutputResources()) {
             auto resource = resourceManager.FindResource(id);
             resource->SetOutputRenderPass(renderPassID);
         }
-        for (auto& id : renderPass->GetInputResources()) {
+        for (auto &id: renderPass->GetInputResources()) {
             auto resource = resourceManager.FindResource(id);
             resource->SetInputRenderPass(renderPassID);
         }
-        for (auto& id : renderPass->GetReadResources()) {
+        for (auto &id: renderPass->GetReadResources()) {
             auto resource = resourceManager.FindResource(id);
             resource->SetInputRenderPass(renderPassID);
         }
     }
 
     //找到write 或者 proxy 的RenderPass作为反向的起点
-    for (auto& renderPassIndex : renderPassNodes) {
+    for (auto &renderPassIndex: renderPassNodes) {
         auto renderPassNode = renderPassManager.FindRenderPass(renderPassIndex);
         auto createResources = renderPassNode->GetCreateResources();
         auto outputAttachments = renderPassNode->GetOutputResources();
         if (!createResources.empty() || !outputAttachments.empty()) {
             bool found = false;
-            for (auto createResourceIndex : createResources) {
+            for (auto createResourceIndex: createResources) {
                 auto resource = resourceManager.FindResource(createResourceIndex);
                 if (resource) {
                     if (resource->isExternal) {
@@ -469,16 +478,16 @@ void FG::FrameGraph::CullPassAndResource() {
                 }
             }
             if (!found)
-            for (auto writeResourceIndex : outputAttachments) {
-                auto resource = resourceManager.FindResource(writeResourceIndex);
-                if (resource) {
-                    if (resource->isExternal) {
-                        usePassNode.insert(renderPassIndex);
-                        startPassNodes.push_back(renderPassIndex);
-                        break;
+                for (auto writeResourceIndex: outputAttachments) {
+                    auto resource = resourceManager.FindResource(writeResourceIndex);
+                    if (resource) {
+                        if (resource->isExternal) {
+                            usePassNode.insert(renderPassIndex);
+                            startPassNodes.push_back(renderPassIndex);
+                            break;
+                        }
                     }
                 }
-            }
         }
     }
 
@@ -486,9 +495,9 @@ void FG::FrameGraph::CullPassAndResource() {
         auto startPass = renderPassManager.FindRenderPass(start);
         if (startPass != nullptr) {
             auto readResources = startPass->GetReadResources();
-            for (auto& readResourceIndex : readResources) {
+            for (auto &readResourceIndex: readResources) {
                 auto readResource = resourceManager.FindResource(readResourceIndex);
-                for (auto& renderPassIndex : readResource->GetOutputRenderPass()) {
+                for (auto &renderPassIndex: readResource->GetOutputRenderPass()) {
                     if (!usePassNode.contains(renderPassIndex)) {
                         usePassNode.insert(renderPassIndex);
                         search(renderPassIndex);
@@ -496,9 +505,9 @@ void FG::FrameGraph::CullPassAndResource() {
                 }
             }
             auto inputResources = startPass->GetInputResources();
-            for (auto& inputResourceIndex : inputResources) {
+            for (auto &inputResourceIndex: inputResources) {
                 auto readResource = resourceManager.FindResource(inputResourceIndex);
-                for (auto& renderPassIndex : readResource->GetOutputRenderPass()) {
+                for (auto &renderPassIndex: readResource->GetOutputRenderPass()) {
                     if (!usePassNode.contains(renderPassIndex)) {
                         usePassNode.insert(renderPassIndex);
                         search(renderPassIndex);
@@ -509,12 +518,12 @@ void FG::FrameGraph::CullPassAndResource() {
     };
 
     //开始反向搜索
-    for (auto startPassNode : startPassNodes) {
+    for (auto startPassNode: startPassNodes) {
         search(startPassNode);
     }
 
     //获得工作resource
-    for (auto resourceIndex : resourceNodes) {
+    for (auto resourceIndex: resourceNodes) {
         auto resource = resourceManager.FindResource(resourceIndex);
         bool isDepth = false;
         if (resource->GetType() == ResourceType::Texture) {
@@ -526,13 +535,13 @@ void FG::FrameGraph::CullPassAndResource() {
         if (resource->isExternal) {
             usingResourceNodes.push_back(resourceIndex);
         } else {
-            for (auto& renderPassIndex : resource->GetInputRenderPass()) {
+            for (auto &renderPassIndex: resource->GetInputRenderPass()) {
                 if (usePassNode.contains(renderPassIndex)) {
                     usingResourceNodes.push_back(resourceIndex);
                 }
             }
             if (isDepth)
-                for (auto& renderPassIndex : resource->GetOutputRenderPass()) {
+                for (auto &renderPassIndex: resource->GetOutputRenderPass()) {
                     if (usePassNode.contains(renderPassIndex) && resource->GetInputRenderPass().empty()) {
                         usingResourceNodes.push_back(resourceIndex);
                     }
@@ -541,7 +550,7 @@ void FG::FrameGraph::CullPassAndResource() {
     }
 
     //获得工作pass
-    for (auto& renderPassNode : renderPassNodes) {
+    for (auto &renderPassNode: renderPassNodes) {
         if (usePassNode.contains(renderPassNode)) {
             usingPassNodes.push_back(renderPassNode);
         }
@@ -552,23 +561,23 @@ void FG::FrameGraph::CreateTimeline() {
     //创建依赖关系
     std::vector<uint32_t> q;
     std::unordered_set<uint32_t> hasAddedPass;
-    for (auto& renderPassIndex : usingPassNodes) {
+    for (auto &renderPassIndex: usingPassNodes) {
         auto renderPass = renderPassManager.FindRenderPass(renderPassIndex);
         if (renderPass != nullptr) {
             //清空依赖保证安全
             renderPass->GetRenderPassDependencies().clear();
-            for (auto& inputIndex : renderPass->GetInputResources()) {
+            for (auto &inputIndex: renderPass->GetInputResources()) {
                 auto input = resourceManager.FindResource(inputIndex);
                 if (input != nullptr) {
-                    for (auto& inputRenderPassIndex : input->GetOutputRenderPass()) {
+                    for (auto &inputRenderPassIndex: input->GetOutputRenderPass()) {
                         renderPass->AddRenderPassDependency(inputRenderPassIndex);
                     }
                 }
             }
-            for (auto& readIndex : renderPass->GetReadResources()) {
+            for (auto &readIndex: renderPass->GetReadResources()) {
                 auto readResource = resourceManager.FindResource(readIndex);
                 if (readResource != nullptr) {
-                    for (auto& inputRenderPassIndex : readResource->GetOutputRenderPass()) {
+                    for (auto &inputRenderPassIndex: readResource->GetOutputRenderPass()) {
                         renderPass->AddRenderPassDependency(inputRenderPassIndex);
                     }
                 }
@@ -582,14 +591,14 @@ void FG::FrameGraph::CreateTimeline() {
     while (!q.empty()) {
         timeline.push_back(q);
         std::vector<uint32_t> tempQ;
-        for (auto& renderPassIndex : usingPassNodes) {
+        for (auto &renderPassIndex: usingPassNodes) {
             if (hasAddedPass.contains(renderPassIndex)) {
                 continue;
             }
             auto renderPass = renderPassManager.FindRenderPass(renderPassIndex);
             if (renderPass != nullptr) {
                 auto dependencies = renderPass->GetRenderPassDependencies();
-                for (auto& r : q) {
+                for (auto &r: q) {
                     if (dependencies.contains(r)) {
                         dependencies.erase(r);
                     }
@@ -603,19 +612,19 @@ void FG::FrameGraph::CreateTimeline() {
         q = std::move(tempQ);
     }
 
-    if(hasAddedPass.size() != usingPassNodes.size()) {
+    if (hasAddedPass.size() != usingPassNodes.size()) {
         LOG_ERROR("There are some RenderPass have cyclic dependencies !");
         //终止
         return;
     }
 
     //调整资源在时间线中的使用情况
-    for (auto& resourceIndex : usingResourceNodes) {
+    for (auto &resourceIndex: usingResourceNodes) {
         auto resource = resourceManager.FindResource(resourceIndex);
         resource->ResetUseTime();
         bool first = false;
         for (int i = 0; i < timeline.size(); ++i) {
-            for (auto& renderPassIndex : resource->GetOutputRenderPass()) {
+            for (auto &renderPassIndex: resource->GetOutputRenderPass()) {
                 if (std::ranges::find(timeline[i], renderPassIndex) != std::ranges::end(timeline[i])) {
                     resource->SetFirstUseTime(i);
                     first = true;
@@ -632,7 +641,7 @@ void FG::FrameGraph::CreateTimeline() {
         }
         bool last = false;
         for (int i = timeline.size() - 1; i >= 0; i--) {
-            for (auto& renderPassIndex : resource->GetInputRenderPass()) {
+            for (auto &renderPassIndex: resource->GetInputRenderPass()) {
                 if (std::ranges::find(timeline[i], renderPassIndex) != std::ranges::end(timeline[i])) {
                     resource->SetLastUseTime(i);
                     last = true;
@@ -657,27 +666,27 @@ void FG::FrameGraph::CreateTimeline() {
 
 void FG::FrameGraph::CreateAliasGroups() {
     std::vector<uint32_t> tempResourceNode;
-    for (auto& node : usingResourceNodes) {
+    for (auto &node: usingResourceNodes) {
         //外部资源不处理
-        if (! resourceManager.FindResource(node)->isExternal) {
+        if (!resourceManager.FindResource(node)->isExternal) {
             tempResourceNode.push_back(node);
         }
     }
     //首先排序根据第一次使用的时间
     std::ranges::sort(tempResourceNode,
-        [&](uint32_t a, uint32_t b) {
-           return resourceManager.FindResource(a)->GetFirstUseTime() <
-               resourceManager.FindResource(b)->GetFirstUseTime();
-        }
-        );
+                      [&](uint32_t a, uint32_t b) {
+                          return resourceManager.FindResource(a)->GetFirstUseTime() <
+                                 resourceManager.FindResource(b)->GetFirstUseTime();
+                      }
+    );
 
     //贪心创建资源
-    for (auto& resIndex : tempResourceNode) {
+    for (auto &resIndex: tempResourceNode) {
         auto resource = resourceManager.FindResource(resIndex);
         if (resource != nullptr) {
             //首先先将input和output一一对应
             bool foundAlias = false;
-            for (auto& renderPassIndex : resource->GetOutputRenderPass()) {
+            for (auto &renderPassIndex: resource->GetOutputRenderPass()) {
                 auto renderPass = renderPassManager.FindRenderPass(renderPassIndex);
                 if (renderPass != nullptr) {
                     if (renderPass->GetInputResources().size() != renderPass->GetOutputResources().size()) {
@@ -697,20 +706,23 @@ void FG::FrameGraph::CreateAliasGroups() {
                         auto inputResource = resourceManager.FindResource(inputResourceIndex);
 
                         if (inputResource->GetType() != resource->GetType()) {
-                            LOG_ERROR("The RenderPass name : {} input type not equal output type !", renderPass->GetName());
+                            LOG_ERROR("The RenderPass name : {} input type not equal output type !",
+                                      renderPass->GetName());
                         }
-                        if (! resourceManager.resourceDescriptionToAliasGroup.contains(inputResourceIndex)) {
+                        if (!resourceManager.resourceDescriptionToAliasGroup.contains(inputResourceIndex)) {
                             LOG_ERROR("Find the input resource {} didn't create alias than out resource {}",
-                                inputResource->GetName(), resource->GetName());
+                                      inputResource->GetName(), resource->GetName());
                         }
-                        auto& aliasGroup = resourceManager.aliasGroups[resourceManager.resourceDescriptionToAliasGroup[inputResourceIndex]];
+                        auto &aliasGroup = resourceManager.aliasGroups[resourceManager.resourceDescriptionToAliasGroup[
+                            inputResourceIndex]];
                         aliasGroup->sharedResourceIndices.push_back(resIndex);
-                        resourceManager.resourceDescriptionToAliasGroup[resIndex] = resourceManager.resourceDescriptionToAliasGroup[inputResourceIndex];
+                        resourceManager.resourceDescriptionToAliasGroup[resIndex] = resourceManager.
+                                resourceDescriptionToAliasGroup[inputResourceIndex];
                     }
                 }
             }
             if (!foundAlias) {
-                auto& aliasGroups = resourceManager.GetAliasGroups();
+                auto &aliasGroups = resourceManager.GetAliasGroups();
                 for (int i = 0; i < aliasGroups.size(); i++) {
                     if (resourceManager.CanAlias(resIndex, i)) {
                         aliasGroups[i]->sharedResourceIndices.push_back(resIndex);
@@ -725,50 +737,49 @@ void FG::FrameGraph::CreateAliasGroups() {
                 newGroup->sharedResourceIndices.push_back(resIndex);
                 if (resource->GetType() == ResourceType::Texture) {
                     newGroup->description = resource->GetDescription<TextureDescription>();
-                }else {
+                } else {
                     newGroup->description = resource->GetDescription<BufferDescription>();
                 }
                 newGroup->mutexPtr = std::make_unique<std::mutex>();
                 newGroup->vulkanIndex = -1; //在运行时创建资源
                 resourceManager.GetAliasGroups().push_back(std::move(newGroup));
                 resourceManager.resourceDescriptionToAliasGroup[resIndex] =
-                    resourceManager.GetAliasGroups().size() - 1;
+                        resourceManager.GetAliasGroups().size() - 1;
             }
         }
     }
-
 }
 
-void FG::FrameGraph::CreateCommandPools(){
+void FG::FrameGraph::CreateCommandPools() {
     //这里先不考虑compute，计算着色器需要不同queue
     renderPassCommandPools.clear();
-    for(auto& renderPassIndex : usingPassNodes){
-            VkCommandPoolCreateInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
-            info.flags =VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            VK_CHECK_RESULT(
-                vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
-                                    &renderPassCommandPools[renderPassIndex])
-            );
-            commandBuffers[renderPassIndex].resize(MAX_FRAME);
-            for (int i = 0; i < MAX_FRAME; i++) {
-                VkCommandBufferAllocateInfo allocInfo{};
-                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-                allocInfo.commandPool = renderPassCommandPools[renderPassIndex];
-                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-                allocInfo.commandBufferCount = 1;
+    for (auto &renderPassIndex: usingPassNodes) {
+        VkCommandPoolCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
+        info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        VK_CHECK_RESULT(
+            vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
+                &renderPassCommandPools[renderPassIndex])
+        );
+        commandBuffers[renderPassIndex].resize(MAX_FRAME);
+        for (int i = 0; i < MAX_FRAME; i++) {
+            VkCommandBufferAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocInfo.commandPool = renderPassCommandPools[renderPassIndex];
+            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+            allocInfo.commandBufferCount = 1;
 
-                vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                    &allocInfo, &commandBuffers[renderPassIndex][i]);
+            vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+                                     &allocInfo, &commandBuffers[renderPassIndex][i]);
         }
     }
 }
 
 
-VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t resourceIndex){
+VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t resourceIndex) {
     auto resourceDesc = resourceManager.FindResource(resourceIndex);
-    if(resourceDesc->GetType() == ResourceType::Buffer){
+    if (resourceDesc->GetType() == ResourceType::Buffer) {
         LOG_ERROR("the resource name: {} is not attachment !", resourceDesc->GetName());
     }
 
@@ -792,19 +803,22 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     attachmentInfo.resolveImageView = VK_NULL_HANDLE;
     attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
+    if ((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
             attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
             attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
-    }else if((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+    } else if ((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
             attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
             attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         }
@@ -813,7 +827,7 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     return attachmentInfo;
 }
 
-VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t resourceIndex){
+VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t resourceIndex) {
     VkRenderingAttachmentInfo attachmentInfo = {};
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     attachmentInfo.pNext = nullptr; // 重要：明确设置为 nullptr
@@ -835,19 +849,22 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
     attachmentInfo.resolveImageView = VK_NULL_HANDLE;
     attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    if((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
+    if ((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT && texture->image.samples != 0) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
             attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
             attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
-    }else if((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+    } else if ((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT && texture->image.samples != 0) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
+            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
             attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
             attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         }
@@ -863,84 +880,91 @@ void FG::FrameGraph::InsertBarriers() {
         bool writable = false;
     };
     std::unordered_map<uint32_t, ResourceState> resourceStates;
-    for (auto& passSet : timeline) {
-        for (auto& pass : passSet) {
+    for (auto &passSet: timeline) {
+        for (auto &pass: passSet) {
             auto renderPass = renderPassManager.FindRenderPass(pass);
             //这里先只考虑graphics如果考虑compute 需要再讨论，因为图形管线要求的布局和compute不同, 此处先不考虑Buffer，因为Buffer以Compute Pipeline管理
             if (renderPass != nullptr) {
                 //得到当前RenderPassType
                 auto curPassType = renderPass->GetPassType();
-                for (auto& resourceIndex : renderPass->GetCreateResources()) {
+                for (auto &resourceIndex: renderPass->GetCreateResources()) {
                     auto resource = resourceManager.FindResource(resourceIndex);
-                    if (curPassType == PassType::Graphics) {
-                        if (resource) {
-                            BarrierInfo newBarrier  = {};
-                            newBarrier.resourceID = resourceIndex;
-                            //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
-                            if (resource->GetType() == ResourceType::Texture) {
-                                auto description = resource->GetDescription<TextureDescription>();
+                    if (resource) {
+                        if (resource->GetType() == ResourceType::Texture) {
+                            auto description = resource->GetDescription<TextureDescription>();
+                            if (curPassType == PassType::Graphics) {
+                                BarrierInfo newBarrier = {};
+                                newBarrier.resourceID = resourceIndex;
+                                //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
                                 newBarrier.isImage = true;
                                 newBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                                 newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                                 newBarrier.srcAccessMask = 0;
-                                if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
                                     newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                    newBarrier.dstStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                                }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                    newBarrier.dstAccessMask =
+                                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                                     newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                    newBarrier.dstStageMask =
+                                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                    newBarrier.dstAccessMask =
+                                            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                                 }
                                 resourceStates[resourceIndex].writable = true;
                                 resourceStates[resourceIndex].readable = false;
                                 renderPass->AddPreBarrier(newBarrier);
-
                                 if (resource->isPresent) {
                                     newBarrier.isImage = true;
                                     newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                                     newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                                    if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                    newBarrier.srcAccessMask =
+                                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                    if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+                                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
                                         newBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                                        newBarrier.dstStageMask =  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                                        newBarrier.dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                                         newBarrier.dstAccessMask = 0;
                                     }
-
                                     resourceStates[resourceIndex].writable = false;
                                     resourceStates[resourceIndex].readable = false;
                                     renderPass->AddPostBarrier(newBarrier);
                                 }
-                            }
-                        }
-                    }else if (curPassType == PassType::Compute) {
-                         if (resource) {
-                            BarrierInfo newBarrier  = {};
-                            newBarrier.resourceID = resourceIndex;
-                            //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
-                            if (resource->GetType() == ResourceType::Texture) {
-                                newBarrier.isImage = true;
-                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                                newBarrier.srcAccessMask = 0;
-                                newBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; //计算着色器所用
-                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-
-                                resourceStates[resourceIndex].writable = true;
-                                resourceStates[resourceIndex].readable = true;
-                                renderPass->AddPreBarrier(newBarrier);
-
-                                //交换链显然不会填进去
+                            } else if (curPassType == PassType::Compute) {
+                                if (description->usages & VK_IMAGE_USAGE_STORAGE_BIT) {
+                                    BarrierInfo newBarrier = {};
+                                    newBarrier.resourceID = resourceIndex;
+                                    //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
+                                    newBarrier.isImage = true;
+                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                                    newBarrier.srcAccessMask = 0;
+                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                    newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                                    resourceStates[resourceIndex].writable = true;
+                                    resourceStates[resourceIndex].readable = true;
+                                    renderPass->AddPreBarrier(newBarrier);
+                                } else {
+                                    //如果不是Storage 抛出错误
+                                    LOG_ERROR("Unsupported Usage in Comp RenderPass Create Resource");
+                                }
                             }
                         }
                     }
                 }
                 //作为附件输入,此处也不考虑Buffer，如果加入compute Pipeline需要考虑其前驱节点,因为要求的布局不同
-                for (auto& resourceIndex : renderPass->GetInputResources()) { // 计算着色器没有Input的情况,Input 的含义就是作为帧缓冲此处抽象
+                for (auto &resourceIndex: renderPass->GetInputResources()) {
+                    // 计算着色器没有Input的情况,Input 的含义就是作为帧缓冲此处抽象
                     auto resource = resourceManager.FindResource(resourceIndex);
-                    if(resource->isPresent){
-                        LOG_ERROR("The resource name : {} is SwapChain, can't be used as Input Attachment !", resource->GetName());
+                    if (resource->isPresent) {
+                        LOG_ERROR("The resource name : {} is SwapChain, can't be used as Input Attachment !",
+                                  resource->GetName());
                     }
                     //资源状态，得知其之前的修改情况
                     auto resourceState = resourceStates[resourceIndex];
@@ -954,18 +978,36 @@ void FG::FrameGraph::InsertBarriers() {
                                 == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
                                 newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                                 newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                newBarrier.srcAccessMask =
+                                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
                                 newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                                 newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                            }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                newBarrier.dstAccessMask =
+                                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                            } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                                 newBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                newBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                newBarrier.srcStageMask =
+                                        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                newBarrier.srcAccessMask =
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                                 newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                newBarrier.dstStageMask =
+                                        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                newBarrier.dstAccessMask =
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                             }
+                            resourceStates[resourceIndex].writable = true;
+                            resourceStates[resourceIndex].readable = false;
+                            renderPass->AddPreBarrier(newBarrier);
+                            auto index = (&resourceIndex - renderPass->GetInputResources().data());
+                            auto outputResourceIndex = renderPass->GetOutputResources()[index];
+                            resourceStates[outputResourceIndex].writable = true;
+                            resourceStates[outputResourceIndex].readable = false;
                         }
                         if (resourceState.readable == true && resourceState.writable == false) {
                             if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
@@ -975,57 +1017,160 @@ void FG::FrameGraph::InsertBarriers() {
                                 newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
                                 newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                                 newBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                            }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+                                newBarrier.dstAccessMask =
+                                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                            } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                                 newBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                                 newBarrier.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
                                 newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
                                 newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                newBarrier.dstStageMask =
+                                        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                newBarrier.dstAccessMask =
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                             }
+                            resourceStates[resourceIndex].writable = true;
+                            resourceStates[resourceIndex].readable = false;
+                            renderPass->AddPreBarrier(newBarrier);
+                            auto index = (&resourceIndex - renderPass->GetInputResources().data());
+                            auto outputResourceIndex = renderPass->GetOutputResources()[index];
+                            resourceStates[outputResourceIndex].writable = true;
+                            resourceStates[outputResourceIndex].readable = false;
                         }
-                        resourceStates[resourceIndex].writable = true;
-                        resourceStates[resourceIndex].readable = false;
-                        renderPass->AddPreBarrier(newBarrier);
-                        auto index = (&resourceIndex - renderPass->GetInputResources().data());
-                        auto outputResourceIndex = renderPass->GetOutputResources()[index];
-                        resourceStates[outputResourceIndex].writable = true;
-                        resourceStates[outputResourceIndex].readable = false;
                     }
                 }
-                for (auto& resourceIndex : renderPass->GetReadResources()) {
+                for (auto &resourceIndex: renderPass->GetReadResources()) {
                     auto resourceState = &resourceStates[resourceIndex];
                     auto resource = resourceManager.FindResource(resourceIndex);
+                    //得到prePassType， 因为prePass的唯一性可确定
+                    auto prePassIndex = *resource->GetOutputRenderPass().begin();
+                    auto prePassType = renderPassManager.FindRenderPass(prePassIndex)->GetPassType();
                     //不需要考虑外部导入的Import Texture， 其在生成时就实现可读（集成再构建Mipmap）
                     //此处先不考虑计算着色器, 所以没有Buffer
                     BarrierInfo newBarrier = {};
                     newBarrier.resourceID = resourceIndex;
-                    if (resource) {
-                        if(resource->GetType() == ResourceType::Texture){
-                            auto description = resource->GetDescription<TextureDescription>();
-                            newBarrier.isImage = true;
-                            if(resourceState->readable == false && resourceState->writable == true){
-                                if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-                                    == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                                }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
-                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                    newBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                                    newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                    if (resource->GetType() == ResourceType::Texture) {
+                        auto description = resource->GetDescription<TextureDescription>();
+                        if (curPassType == PassType::Graphics) {
+                            if (prePassType == PassType::Graphics) {
+                                newBarrier.isImage = true;
+                                if (resourceState->readable == false && resourceState->writable == true) {
+                                    if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                        == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                        newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                        newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                        newBarrier.srcAccessMask =
+                                                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                        newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                        newBarrier.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                                        newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                    } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                        newBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                                        newBarrier.srcStageMask =
+                                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                        newBarrier.srcAccessMask =
+                                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                        newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                        newBarrier.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                                        newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                    }
+                                    resourceStates[resourceIndex].readable = true;
+                                    resourceStates[resourceIndex].writable = false;
+                                    renderPass->AddPreBarrier(newBarrier);
+                                }
+                            } else if (prePassType == PassType::Compute) {
+                                if (resource->GetType() == ResourceType::Texture) {
+                                    newBarrier.isImage = true;
+                                    if (resourceState->readable == true && resourceState->writable == true) {
+                                        if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                            == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                            newBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+                                            newBarrier.srcStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                            newBarrier.srcAccessMask =
+                                                    VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+                                            newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                            newBarrier.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                                            newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                        }
+                                        resourceStates[resourceIndex].readable = true;
+                                        resourceStates[resourceIndex].writable = false;
+                                        renderPass->AddPreBarrier(newBarrier);
+                                    }
                                 }
                             }
-                            resourceStates[resourceIndex].readable = true;
-                            resourceStates[resourceIndex].writable = false;
-                            renderPass->AddPreBarrier(newBarrier);
+                        }else if (curPassType == PassType::Compute) {
+                            if (prePassType == PassType::Graphics) {
+                                if (resource->GetType() == ResourceType::Texture) {
+                                    newBarrier.isImage = true;
+                                    if (description->usages & VK_IMAGE_USAGE_STORAGE_BIT) { // 作为StorageImage 输入
+                                        if (resourceState->readable == false && resourceState->writable == true) {
+                                            if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                                == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                                newBarrier.srcAccessMask =
+                                                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                                newBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                                newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                                            } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                                LOG_ERROR("Depth Image's Usage is not STORAGE");
+                                            }
+                                            resourceStates[resourceIndex].readable = true;
+                                            resourceStates[resourceIndex].writable = true;
+                                            renderPass->AddPreBarrier(newBarrier);
+                                        } else if (resourceState->readable == true && resourceState->writable == false) {
+                                            newBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                            newBarrier.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                                            newBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                            newBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                                            newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                            newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                                            resourceStates[resourceIndex].readable = true;
+                                            resourceStates[resourceIndex].writable = true;
+                                            renderPass->AddPreBarrier(newBarrier);
+                                        }
+                                    }else { //作为纹理输入
+                                        if (resourceState->readable == false && resourceState->writable == true) { //唯一的差别是阶段
+                                            if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                                == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                                newBarrier.srcAccessMask =
+                                                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                                newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                                newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                            } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                                                newBarrier.srcStageMask =
+                                                        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                                        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                                newBarrier.srcAccessMask =
+                                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                                                newBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                                newBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                                            }
+                                            resourceStates[resourceIndex].readable = true;
+                                            resourceStates[resourceIndex].writable = false;
+                                            renderPass->AddPreBarrier(newBarrier);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
