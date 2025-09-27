@@ -69,7 +69,7 @@ void LTCScene::CreateFrameGraphResource() {
             resource->SetName("colorAttachment");
             resource->SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
-                    api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1, 1, vulkanRenderAPI.GetSampleCount(),
+                    api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1, 8 ,1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                     )
                 );
@@ -82,7 +82,7 @@ void LTCScene::CreateFrameGraphResource() {
         .SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                 vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                vulkanRenderAPI.GetDepthFormat() , 1, 1, vulkanRenderAPI.GetSampleCount(),
+                vulkanRenderAPI.GetDepthFormat() , 1,8, 1, vulkanRenderAPI.GetSampleCount(),
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                 )
             );
@@ -94,7 +94,7 @@ void LTCScene::CreateFrameGraphResource() {
         resource->SetName("colorAttachment1");
         resource->SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
-                api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1, 1, vulkanRenderAPI.GetSampleCount(),
+                api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1,8, 1, vulkanRenderAPI.GetSampleCount(),
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                 )
             );
@@ -107,7 +107,7 @@ void LTCScene::CreateFrameGraphResource() {
         .SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                 vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                vulkanRenderAPI.GetDepthFormat() , 1, 1, vulkanRenderAPI.GetSampleCount(),
+                vulkanRenderAPI.GetDepthFormat() , 1,8, 1, vulkanRenderAPI.GetSampleCount(),
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                 )
             );
@@ -212,7 +212,7 @@ void LTCScene::CreateFrameGraphResource() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
         //绑定对应imageView
         FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-        FrameWork::CaIMaterial::Get(presentMaterialID)->SetTexture("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachmentID1));
+        FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachmentID1));
         FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
         vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
             });
@@ -233,8 +233,8 @@ void LTCScene::CreateFrameGraphResource() {
     });
 
     renderPassManager.FindRenderPass(ltcFacePass)->SetCreateResource(colorAttachmentID).SetCreateResource(depthAttachmentID);
-    renderPassManager.FindRenderPass(ltcLightPass)->SetInputResource(colorAttachmentID).SetInputResource(depthAttachmentID)
-    .SetOutputResource(colorAttachmentID1).SetOutputResource(depthAttachmentID1);
+    renderPassManager.FindRenderPass(ltcLightPass)->SetInputOutputResources(colorAttachmentID, colorAttachmentID1)
+    .SetInputOutputResources(depthAttachmentID,depthAttachmentID1);
     renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachmentID).SetReadResource(
     colorAttachmentID1);
 

@@ -16,7 +16,6 @@ namespace FrameWork {
         static CaIMaterial* Get(uint32_t id);
         static void DestroyAll();
         static bool exist(uint32_t id);
-        static void PendingSetAttachments(); //帧头执行，意思是等待前面的实现完成
 
         ~CaIMaterial();
 
@@ -25,7 +24,7 @@ namespace FrameWork {
 
 
         template<typename Param>
-        CaIMaterial& SetParam(const std::string& name, const Param& param, uint32_t index) {
+        CaIMaterial& SetParam(const std::string& name, const Param& param, uint32_t index = 0) {
             if (CaIShader::Get(shaderRef) == nullptr) {
                 LOG_ERROR("Can't set the param {} ,the material Shader has been destroyed", name);
                 return *this;
@@ -38,7 +37,7 @@ namespace FrameWork {
         }
 
         CaIMaterial &SetTexture(const std::string &name, uint32_t id) ;
-        void SetAttachment(const std::string& name, uint32_t id) ; //因为有时候会将Attachment作为纹理输入比如呈现或者后处理，飞行帧资源上不同
+        CaIMaterial& SetAttachment(const std::string& name, uint32_t id) ; //因为有时候会将Attachment作为纹理输入比如呈现或者后处理，飞行帧资源上不同
 
         [[nodiscard]] CaIShader* GetShader() const;
 
@@ -52,7 +51,6 @@ namespace FrameWork {
         CaIMaterial& operator=(const CaIMaterial&) = delete;
         CaIMaterial(CaIMaterial&&) = default;
         CaIMaterial& operator=(CaIMaterial&&) = default;
-        void PendingSetAttachment_(); //在帧头部之执行
         inline static std::vector<CaIMaterial*> caiMaterialPools{};
         uint32_t shaderRef {UINT32_MAX};
         std::queue<std::pair<std::string, uint32_t>> pendingAttachments{};

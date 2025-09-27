@@ -33,6 +33,12 @@ FG::RenderPass & FG::RenderPass::SetOutputResource(uint32_t index) {
     return *this;
 }
 
+FG::RenderPass & FG::RenderPass::SetInputOutputResources(uint32_t input, uint32_t output) {
+    SetInputResource(input);
+    SetOutputResource(output);
+    return *this;
+}
+
 std::vector<uint32_t> & FG::RenderPass::GetOutputResources() {
     return outputAttachmentResources;
 }
@@ -116,6 +122,10 @@ std::function<void(VkCommandBuffer)> & FG::RenderPass::GetExec() {
 
 VkRenderPass& FG::RenderPass::GetVkRenderPass() {
     return renderPass;
+}
+
+FG::PassType FG::RenderPass::GetPassType() const {
+    return passType;
 }
 
 FG::RenderPass & FG::RenderPass::SetName(const std::string &name) {

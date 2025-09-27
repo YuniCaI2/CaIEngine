@@ -33,13 +33,14 @@ namespace FG {
     struct TextureDescription : public BaseDescription {
         TextureDescription() = default;
         TextureDescription(
-            uint32_t width_, uint32_t height_, VkFormat format_, uint32_t mipLevels, uint32_t arraySize,
+            uint32_t width_, uint32_t height_, VkFormat format_, uint32_t mipLevels, uint32_t resolveMipLevels, uint32_t arraySize,
             VkSampleCountFlagBits samples_, VkImageUsageFlags usage_
-            ) : width(width_), height(height_), format(format_), mipLevels(mipLevels), arrayLayers(arraySize),samples(samples_), usages(usage_) {}
+            ) : width(width_), height(height_), format(format_), mipLevels(mipLevels), resolveMipLevels(resolveMipLevels), arrayLayers(arraySize),samples(samples_), usages(usage_) {}
         uint32_t width{};
         uint32_t height{};
         VkFormat format{};
         uint32_t mipLevels{};
+        uint32_t resolveMipLevels{UINT32_MAX};
         uint32_t arrayLayers{};
         VkSampleCountFlagBits samples{};
         VkImageUsageFlags usages{};

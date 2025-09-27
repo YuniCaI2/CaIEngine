@@ -21,6 +21,10 @@ namespace FG {
         VkPipelineStageFlags dstStageMask{};
         bool isImage{};
     };
+    enum class PassType {
+        Graphics,
+        Compute
+    };
 
     class RenderPass {
     public:
@@ -28,10 +32,10 @@ namespace FG {
         std::vector<uint32_t>& GetCreateResources();
 
         //input和output要求一一对应，简化优化
-        RenderPass& SetInputResource(uint32_t index);
         std::vector<uint32_t>& GetInputResources();
-        RenderPass& SetOutputResource(uint32_t index);
         std::vector<uint32_t>& GetOutputResources();
+        //Input 和 Output 紧耦合防止出错
+        RenderPass& SetInputOutputResources(uint32_t input, uint32_t output);
 
         RenderPass& SetReadResource(uint32_t index);
         std::vector<uint32_t>& GetReadResources();
@@ -55,9 +59,13 @@ namespace FG {
         std::string GetName() const;
 
         VkRenderPass& GetVkRenderPass();
+        PassType GetPassType() const;
     private:
+        RenderPass& SetInputResource(uint32_t index);
+        RenderPass& SetOutputResource(uint32_t index);
         friend class RenderPassManager;
         std::string name;
+        PassType passType {PassType::Graphics};//提前知道Pass类型以便与Barrier插入时调整Layout
         VkRenderPass renderPass{};
         std::unordered_set<uint32_t> renderPassDependencies;
         std::vector<uint32_t> createResources;

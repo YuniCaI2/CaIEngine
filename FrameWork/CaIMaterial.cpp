@@ -48,14 +48,6 @@ bool FrameWork::CaIMaterial::exist(uint32_t id) {
     return true;
 }
 
-void FrameWork::CaIMaterial::PendingSetAttachments() {
-    for (auto& m: caiMaterialPools) {
-        if (m != nullptr) {
-            m->PendingSetAttachment_();
-        }
-    }
-}
-
 FrameWork::CaIMaterial::CaIMaterial(uint32_t shaderRef) {
     this->shaderRef = shaderRef;
     vulkanRenderAPI.CreateMaterialData(*this);
@@ -121,76 +113,58 @@ FrameWork::CaIMaterial &FrameWork::CaIMaterial::SetTexture(const std::string &na
     return *this;
 }
 
-void FrameWork::CaIMaterial::SetAttachment(const std::string &name, uint32_t id) {
+FrameWork::CaIMaterial& FrameWork::CaIMaterial::SetAttachment(const std::string &name, uint32_t id) {
     //Update DescriptorSet
-    auto pair = std::make_pair(name, id);
-    pendingAttachments.push(pair);
-}
-
-void FrameWork::CaIMaterial::PendingSetAttachment_() {
-    bool pending = false;
-    if (! pendingAttachments.empty()) {
-        vkQueueWaitIdle(vulkanRenderAPI.GetVulkanGraphicsQueue());
-        pending = true;
+    if (!CaIShader::exist(shaderRef)) {
+        LOG_ERROR("Failed to set texture for material \"{}\" ", name);
+        return *this;
     }
-    while (!pendingAttachments.empty()) {
-        auto [name, id] = pendingAttachments.front();
-        if (!CaIShader::exist(shaderRef)) {
-            LOG_ERROR("Failed to set texture for material \"{}\" ", name);
-            return;
+    auto shaderInfo = CaIShader::Get(shaderRef)->GetShaderInfo();
+    auto materialData = vulkanRenderAPI.getByIndex<FrameWork::MaterialData>(dataID);
+    uint32_t binding = -1;
+    for (int i = 0; i < shaderInfo.vertProperties.textureProperties.size(); i++) {
+        if (name == shaderInfo.vertProperties.textureProperties[i].name) {
+            binding = shaderInfo.vertProperties.textureProperties[i].binding;
+            break;
         }
-        auto shaderInfo = CaIShader::Get(shaderRef)->GetShaderInfo();
-        auto materialData = vulkanRenderAPI.getByIndex<FrameWork::MaterialData>(dataID);
-        uint32_t binding = -1;
-        for (int i = 0; i < shaderInfo.vertProperties.textureProperties.size(); i++) {
-            if (name == shaderInfo.vertProperties.textureProperties[i].name) {
-                binding = i;
+    }
+
+    if (binding == -1)
+        for (int i = 0; i < shaderInfo.fragProperties.textureProperties.size(); i++) {
+            if (name == shaderInfo.fragProperties.textureProperties[i].name) {
+                binding = shaderInfo.fragProperties.textureProperties[i].binding;
                 break;
             }
         }
 
-        if (binding == -1)
-            for (int i = 0; i < shaderInfo.fragProperties.textureProperties.size(); i++) {
-                if (name == shaderInfo.fragProperties.textureProperties[i].name) {
-                    binding = i;
-                    break;
-                }
-            }
+    auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(id);
+    if (texture == nullptr) {
+        LOG_ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
+        return *this;
+    }
+    if (texture->inUse == false) {
+        LOG_ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
+        return *this;
+    }
 
-        auto attachment = vulkanRenderAPI.getByIndex<FrameWork::VulkanAttachment>(id);
-        if (attachment == nullptr) {
-            LOG_ERROR("Failed to set texture for material \"{}\", the texture is nullptr ", name);
-            return;
-        }
-        if (attachment->inUse == false) {
-            LOG_ERROR("Failed set texture name: \" {} \", the texture inUse == false", name);
-            return;
-        }
-        for (int i = 0; i < materialData->descriptorSets.size(); i++) {
-            auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(attachment->attachmentsArray[i]);
-            VkDescriptorImageInfo descriptorInfo = {
-                .sampler = texture->sampler,
-                .imageView = texture->imageView,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-            };
-            VkWriteDescriptorSet descriptorWrite = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext = nullptr,
-                .dstSet = materialData->descriptorSets[i],
-                .dstBinding = binding,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .pImageInfo = &descriptorInfo,
-            };
-            vkUpdateDescriptorSets(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                                   1, &descriptorWrite, 0, nullptr);
-        }
-        pendingAttachments.pop();
-    }
-    if (pending) {
-        vkQueueWaitIdle(vulkanRenderAPI.GetVulkanGraphicsQueue());
-    }
+    VkDescriptorImageInfo descriptorInfo = {
+        .sampler = texture->sampler,
+        .imageView = texture->imageView,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    VkWriteDescriptorSet descriptorWrite = {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext = nullptr,
+        .dstSet = materialData->descriptorSets[vulkanRenderAPI.GetCurrentFrame()],
+        .dstBinding = binding,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &descriptorInfo,
+    };
+    vkUpdateDescriptorSets(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+                           1, &descriptorWrite, 0, nullptr);
+    return *this;
 }
 
 FrameWork::CaIShader *FrameWork::CaIMaterial::GetShader() const {

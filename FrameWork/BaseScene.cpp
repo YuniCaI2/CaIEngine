@@ -77,7 +77,7 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    VK_FORMAT_R8G8B8A8_UNORM, 8, 1, vulkanRenderAPI.GetSampleCount(),
+                    VK_FORMAT_R8G8B8A8_UNORM, 1, 8, 1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                     )
                 );
@@ -90,7 +90,7 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    vulkanRenderAPI.GetDepthFormat() , 1, 1, vulkanRenderAPI.GetSampleCount(),
+                    vulkanRenderAPI.GetDepthFormat() , 1, 8, 1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                     )
                 );
@@ -136,7 +136,7 @@ void BaseScene::CreateFrameGraphResource() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(presentMaterialID)->SetTexture("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachment));
+            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachment));
             FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
         });

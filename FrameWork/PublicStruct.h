@@ -346,6 +346,7 @@ namespace FrameWork {
         uint32_t z = 1;
     };
 
+
     struct SSBO {
         std::string name{};
         std::string structName{}; //存储StorageBuffer的Struct

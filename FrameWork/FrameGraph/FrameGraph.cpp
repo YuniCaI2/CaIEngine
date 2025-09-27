@@ -95,7 +95,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
         subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
             ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
         subresourceRange.layerCount = description->arrayLayers;
-        subresourceRange.levelCount = description->mipLevels;
+        subresourceRange.levelCount = description->resolveMipLevels;
         subresourceRange.baseMipLevel = 0;
         subresourceRange.baseArrayLayer = 0;
 
@@ -868,50 +868,76 @@ void FG::FrameGraph::InsertBarriers() {
             auto renderPass = renderPassManager.FindRenderPass(pass);
             //这里先只考虑graphics如果考虑compute 需要再讨论，因为图形管线要求的布局和compute不同, 此处先不考虑Buffer，因为Buffer以Compute Pipeline管理
             if (renderPass != nullptr) {
+                //得到当前RenderPassType
+                auto curPassType = renderPass->GetPassType();
                 for (auto& resourceIndex : renderPass->GetCreateResources()) {
                     auto resource = resourceManager.FindResource(resourceIndex);
-                    if (resource) {
-                        BarrierInfo newBarrier  = {};
-                        newBarrier.resourceID = resourceIndex;
-                        //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
-                        if (resource->GetType() == ResourceType::Texture) {
-                            auto description = resource->GetDescription<TextureDescription>();
-                            newBarrier.isImage = true;
-                            newBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                            newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                            newBarrier.srcAccessMask = 0;
-                            if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                                newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                newBarrier.dstStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-                            }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                                newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                                newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                            }
-                            resourceStates[resourceIndex].writable = true;
-                            resourceStates[resourceIndex].readable = false;
-                            renderPass->AddPreBarrier(newBarrier);
-
-                            if (resource->isPresent) {
+                    if (curPassType == PassType::Graphics) {
+                        if (resource) {
+                            BarrierInfo newBarrier  = {};
+                            newBarrier.resourceID = resourceIndex;
+                            //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
+                            if (resource->GetType() == ResourceType::Texture) {
+                                auto description = resource->GetDescription<TextureDescription>();
                                 newBarrier.isImage = true;
-                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                                newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                                newBarrier.srcAccessMask = 0;
                                 if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                                    newBarrier.dstStageMask =  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                                    newBarrier.dstAccessMask = 0;
+                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                    newBarrier.dstStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                    newBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                }else if  ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                    newBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                                    newBarrier.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                                    newBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                                 }
-                                resourceStates[resourceIndex].writable = false;
+                                resourceStates[resourceIndex].writable = true;
                                 resourceStates[resourceIndex].readable = false;
-                                renderPass->AddPostBarrier(newBarrier);
+                                renderPass->AddPreBarrier(newBarrier);
+
+                                if (resource->isPresent) {
+                                    newBarrier.isImage = true;
+                                    newBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                    newBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                                    newBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                                    if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                        newBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                                        newBarrier.dstStageMask =  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                                        newBarrier.dstAccessMask = 0;
+                                    }
+
+                                    resourceStates[resourceIndex].writable = false;
+                                    resourceStates[resourceIndex].readable = false;
+                                    renderPass->AddPostBarrier(newBarrier);
+                                }
+                            }
+                        }
+                    }else if (curPassType == PassType::Compute) {
+                         if (resource) {
+                            BarrierInfo newBarrier  = {};
+                            newBarrier.resourceID = resourceIndex;
+                            //只考虑Image，因为主要原因是布局转换，Buffer不用考虑布局
+                            if (resource->GetType() == ResourceType::Texture) {
+                                newBarrier.isImage = true;
+                                newBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                                newBarrier.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                                newBarrier.srcAccessMask = 0;
+                                newBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; //计算着色器所用
+                                newBarrier.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                                newBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
+                                resourceStates[resourceIndex].writable = true;
+                                resourceStates[resourceIndex].readable = true;
+                                renderPass->AddPreBarrier(newBarrier);
+
+                                //交换链显然不会填进去
                             }
                         }
                     }
                 }
                 //作为附件输入,此处也不考虑Buffer，如果加入compute Pipeline需要考虑其前驱节点,因为要求的布局不同
-                for (auto& resourceIndex : renderPass->GetInputResources()) {
+                for (auto& resourceIndex : renderPass->GetInputResources()) { // 计算着色器没有Input的情况,Input 的含义就是作为帧缓冲此处抽象
                     auto resource = resourceManager.FindResource(resourceIndex);
                     if(resource->isPresent){
                         LOG_ERROR("The resource name : {} is SwapChain, can't be used as Input Attachment !", resource->GetName());

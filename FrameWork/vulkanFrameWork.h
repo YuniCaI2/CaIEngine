@@ -30,6 +30,10 @@ namespace FG {
     struct BaseDescription;
 }
 
+namespace FrameWork {
+    class CompMaterial;
+}
+
 class VulkanSwapChain;
 
 class vulkanFrameWork {
@@ -379,6 +383,8 @@ public:
     void CreateMaterial(uint32_t &materialIdx, const std::vector<FrameWork::TextureFullData> &texDatas);
 
     void CreateMaterialData(FrameWork::CaIMaterial& caiMaterial);
+
+    void CreateCompMaterialData(FrameWork::CompMaterial& compMaterial);
 
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer> &uniformBuffer, const std::vector<void *> &data,
                              const std::vector<uint32_t> &sizes, uint32_t offset);

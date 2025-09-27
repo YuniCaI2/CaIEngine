@@ -11,6 +11,7 @@
 #include <array>
 #include <vector>
 
+#include "CompMaterial.h"
 #include "CompShader.h"
 #include "Logger.h"
 #include "ShaderParse.h"
@@ -801,22 +802,22 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG
         resolveID = getNextIndex<FrameWork::Texture>();
         auto resolve = getByIndex<FrameWork::Texture>(resolveID);
         vulkanDevice->createImage(&resolve->image, VkExtent2D(texDesc->width, texDesc->height),
-            texDesc->mipLevels, texDesc->arrayLayers, VK_SAMPLE_COUNT_1_BIT, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
-        texDesc->usages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            texDesc->resolveMipLevels, texDesc->arrayLayers, VK_SAMPLE_COUNT_1_BIT, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
+        texDesc->usages , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
             CreateImageView(resolve->image, resolve->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
         }else {
             CreateImageView(resolve->image, resolve->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
         }
         resolve->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
-        resolve->sampler = CreateSampler(texDesc->mipLevels);
+        resolve->sampler = CreateSampler(texDesc->resolveMipLevels);
         //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
         resolve->inUse = true;
-        if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->mipLevels > 1) {
+        if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->resolveMipLevels > 1) {
             //为各个Mipmap预先生成好对应的ImageView
             //因为多采样时原图不能有mipmap，所以此处对应resolve的mipmap
-            resolve->mipMapViews.resize(texDesc->mipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
-            for (uint32_t i = 0; i < texDesc->mipLevels; i++) {
+            resolve->mipMapViews.resize(texDesc->resolveMipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
+            for (uint32_t i = 0; i < texDesc->resolveMipLevels; i++) {
                 VkImageSubresourceRange subresourceRange = {
                     .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                     .baseMipLevel = i,
@@ -2305,6 +2306,7 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, const std::vector<Fr
     }
 }
 
+
 void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
     auto shaderRef = caiMaterial.GetShader();
     caiMaterial.dataID = getNextIndex<FrameWork::MaterialData>();
@@ -2382,6 +2384,77 @@ void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
         //对于纹理，后续需要添加鲁棒性，可以使用一个默认纹理来防止验证层报错
     }
 
+}
+
+void vulkanFrameWork::CreateCompMaterialData(FrameWork::CompMaterial &compMaterial) {
+    auto shaderRef = compMaterial.GetShader();
+    compMaterial.compDataID = getNextIndex<FrameWork::CompMaterialData>();
+    auto compData = getByIndex<FrameWork::CompMaterialData>(compMaterial.compDataID);
+    compData->inUse = true;
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef->GetPipelineID());
+    auto shaderInfo = shaderRef->GetShaderInfo();
+
+
+    //创建uniformBuffer
+    if (!shaderInfo.shaderProperties.baseProperties.empty()) {
+        compData->uniformBuffers.resize(MAX_FRAME);
+    }
+
+    for (int i = 0; i < MAX_FRAME; i++) {
+        if (!shaderInfo.shaderProperties.baseProperties.empty()) {
+            compData->uniformBuffers[i] =
+                CreateUniformBuffer(shaderInfo.shaderProperties.baseProperties);
+        }
+    }
+
+    //Allocate DescriptorSet
+    compData->descriptorSets.resize(MAX_FRAME);
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+    std::vector<VkDescriptorType> descriptorTypes;
+
+    if (!shaderInfo.shaderProperties.baseProperties.empty()) {
+        descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    }
+    if (!shaderInfo.shaderProperties.textureProperties.empty()) {
+        descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    }
+    if (!shaderInfo.ssbos.empty()) {
+        for (auto& ssbo : shaderInfo.ssbos) {
+            if (ssbo.type == StorageObjectType::Buffer) {
+                descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            }else {
+                descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            }
+        }
+    }
+
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        vulkanDescriptorPool.AllocateDescriptorSet(pipeline->descriptorSetLayouts.back(),
+            descriptorTypes, compData->descriptorSets[i]
+        );
+
+        if (!compData->uniformBuffers.empty()) {
+            VkWriteDescriptorSet descriptorWrite = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = compData->descriptorSets[i],
+                .dstBinding = shaderInfo.shaderProperties.baseProperties[0].binding, //绑定点是首位
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &compData->uniformBuffers[i].descriptor,
+             };
+            descriptorWrites.push_back(descriptorWrite);
+        }
+
+        vkUpdateDescriptorSets(device,
+        static_cast<uint32_t>(descriptorWrites.size()),
+        descriptorWrites.data(), 0, nullptr
+        );
+    }
+
+    //Texture 和 SSBO需要在后续Set绑定
 }
 
 void vulkanFrameWork::UpdateUniformBuffer(const std::vector<FrameWork::Buffer> &uniformBuffer, const std::vector<void *> &data,
@@ -3060,7 +3133,6 @@ void vulkanFrameWork::windowResize() {
 
 
 void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
-    FrameWork::CaIMaterial::PendingSetAttachments(); //帧头执行保证切换descriptorSet的安全性
     vkWaitForFences(device, 1, &waitFences[currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &waitFences[currentFrame]);
     frameCounter++;
