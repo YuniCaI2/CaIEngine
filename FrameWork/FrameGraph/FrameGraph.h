@@ -31,8 +31,8 @@ namespace FG {
         VkRenderingAttachmentInfo CreateInputAttachmentInfo(uint32_t resourceIndex);
         //根据图的拓扑结构创建图的结构
         //为裁剪后的节点创建RenderPass
-        void InsertBarriers();
     private:
+        void InsertBarriers2();
         void InsertImageBarrier(VkCommandBuffer cmdBuffer, const BarrierInfo& barrier);
         std::vector<uint32_t> resourceNodes{};
         std::vector<uint32_t> usingResourceNodes{};
