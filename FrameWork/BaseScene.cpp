@@ -58,10 +58,10 @@ void BaseScene::CreateFrameGraphResource() {
     std::string testShaderPath = "../resources/CaIShaders/TestFrameGraph/forward.caishader";
     std::string testCompShaderPath = "../resources/CaIShaders/Bloom/downSample.compshader";
 
-    FrameWork::CaIShader::Create(caiShaderID, shaderPath);
-    FrameWork::CaIShader::Create(testShader, testShaderPath);
+    FrameWork::CaIShader::Create(caiShaderID, shaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
     FrameWork::CompShader::Create(compShaderID, testCompShaderPath);
-    vulkanRenderAPI.LoadVulkanModel(vulkanModelID, "cocona", ModelType::OBJ, DiffuseColor, {0,0, 0}, 1.0f);
+    vulkanRenderAPI.LoadVulkanModel(vulkanModelID, "cocona", ModelType::OBJ, DiffuseColor,
+        {0,0, 0}, 1.0f);
     auto model = vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(vulkanModelID);
     // 绑定静态纹理
      materials.resize(model->meshIDs.size());
@@ -70,7 +70,7 @@ void BaseScene::CreateFrameGraphResource() {
          FrameWork::CaIMaterial::Get(materials[i])->SetTexture("colorSampler", model->textures[i][DiffuseColor]);
      }
     std::string presentShaderPath = "../resources/CaIShaders/Present/Present.caishader";
-    FrameWork::CaIShader::Create(presentShaderID, presentShaderPath, VK_FORMAT_R8G8B8A8_UNORM);
+    FrameWork::CaIShader::Create(presentShaderID, presentShaderPath, vulkanRenderAPI.GetVulkanSwapChain().colorFormat);
     FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
 
     //创建FrameGraph资源
