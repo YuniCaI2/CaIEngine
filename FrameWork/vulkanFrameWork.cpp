@@ -400,6 +400,16 @@ void vulkanFrameWork::DestroyAll() {
     //手动释放智能指针，因为API是手动释放的
     FrameWork::CaIShader::DestroyAll();
     FrameWork::CaIMaterial::DestroyAll();
+    FrameWork::CompShader::DestroyAll();
+    FrameWork::CompMaterial::DestroyAll();
+
+    //释放CompMaterial
+    for (int i = 0; i < compMaterialDatas_.size(); i++) {
+        destroyByIndex<FrameWork::CompMaterialData>(i);
+        delete compMaterialDatas_[i];
+        compMaterialDatas_[i] = nullptr;
+    }
+
     for (int i = 0; i < materialDatas_.size(); i++) {
         destroyByIndex<FrameWork::MaterialData>(i);
         delete materialDatas_[i];
@@ -692,7 +702,8 @@ FrameWork::Buffer vulkanFrameWork::CreateUniformBuffer(const std::vector<FrameWo
         return uniformBuffer;
     }
     uniformBuffer.size = static_cast<VkDeviceSize>(properties.back().offset + properties.back().size);
-    vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer,
+    vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer,
         uniformBuffer.size, nullptr
         );
     uniformBuffer.map();
@@ -2404,6 +2415,7 @@ void vulkanFrameWork::CreateCompMaterialData(FrameWork::CompMaterial &compMateri
         if (!shaderInfo.shaderProperties.baseProperties.empty()) {
             compData->uniformBuffers[i] =
                 CreateUniformBuffer(shaderInfo.shaderProperties.baseProperties);
+            LOG_DEBUG("Create uniform buffer");
         }
     }
 
@@ -2825,6 +2837,7 @@ void vulkanFrameWork::CheckDelete() {
     processReleaseQueue<FrameWork::VulkanPipeline>(pipelineReleaseQueue);
     processReleaseQueue<FrameWork::MaterialData>(materialDataReleaseQueue);
     processReleaseQueue<FrameWork::VulkanModelData>(modelDataReleaseQueue);
+    processReleaseQueue<FrameWork::CompMaterialData>(compMaterialDataReleaseQueue);
 }
 
 void vulkanFrameWork::SetWindowResizedCallBack(const WindowResizedCallback &callback) {

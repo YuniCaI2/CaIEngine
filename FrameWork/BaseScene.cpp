@@ -8,7 +8,7 @@
 
 #include "CompShader.h"
 #include "FrameGraph/FrameGraph.h"
-
+#include "CompMaterial.h"
 
 BaseScene::BaseScene(FrameWork::Camera& camera) {
     // CreateDescriptorSetLayout();
@@ -60,6 +60,10 @@ void BaseScene::CreateFrameGraphResource() {
 
     FrameWork::CaIShader::Create(caiShaderID, shaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
     FrameWork::CompShader::Create(compShaderID, testCompShaderPath);
+    compMaterials.resize(8);
+    for (auto& compMaterial : compMaterials) {
+        FrameWork::CompMaterial::Create(compMaterial, compShaderID);
+    }
     vulkanRenderAPI.LoadVulkanModel(vulkanModelID, "cocona", ModelType::OBJ, DiffuseColor,
         {0,0, 0}, 1.0f);
     auto model = vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(vulkanModelID);
@@ -86,6 +90,24 @@ void BaseScene::CreateFrameGraphResource() {
                 );
         }
         );
+
+    generateMipAttachments.resize(7); // + 原图 = 8
+    for (int i = 0; i < 7; i++) {
+        colorAttachment = resourceManager.RegisterResource(
+            [&](std::unique_ptr<FG::ResourceDescription>& desc) {
+                std::string name = "mipmap" + std::to_string(i);
+                desc->SetName(name)
+                .SetDescription<FG::TextureDescription>(
+                    std::make_unique<FG::TextureDescription>(
+                        vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
+                        VK_FORMAT_R16G16B16A16_SFLOAT, 1, 8, 1, vulkanRenderAPI.GetSampleCount(),
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                        )
+                    );
+            }
+            );
+    }
+
 
     depthAttachment = resourceManager.RegisterResource(
         [&](std::unique_ptr<FG::ResourceDescription>& desc) {
@@ -133,6 +155,19 @@ void BaseScene::CreateFrameGraphResource() {
 
         });
     });
+
+    std::vector<uint32_t> generateMipmapRenderPasses(7);
+    for (int i = 0; i < 7; i++) {
+        generateMipmapRenderPasses[i] = renderPassManager.RegisterRenderPass(
+            [&](std::unique_ptr<FG::RenderPass>& renderPass) {
+                std::string name = "generateMipmapRenderPass" + std::to_string(i);
+                renderPass->SetName(name)
+                .SetExec([&](VkCommandBuffer cmdBuffer) {
+                    FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
+                });
+            }
+            );
+    }
 
     auto presentPass = renderPassManager.RegisterRenderPass([this](auto &renderPass) {
         renderPass->SetName("presentPass");

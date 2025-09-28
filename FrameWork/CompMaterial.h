@@ -16,7 +16,7 @@ namespace FrameWork {
     class CompMaterial {
     public:
         static CompMaterial* Create(uint32_t& materialID, uint32_t& shaderID);
-        static CompMaterial* Destroy(const uint32_t& id);
+        static void Destroy(const uint32_t& id);
         static CompMaterial* Get(uint32_t& id);
         static void DestroyAll();
         static bool exist(uint32_t id);

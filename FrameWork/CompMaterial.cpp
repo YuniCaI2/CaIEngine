@@ -17,12 +17,13 @@ FrameWork::CompMaterial * FrameWork::CompMaterial::Create(uint32_t& materialID, 
     return compMaterialPool.back();
 }
 
-FrameWork::CompMaterial * FrameWork::CompMaterial::Destroy(const uint32_t &id) {
+void FrameWork::CompMaterial::Destroy(const uint32_t &id) {
     if (id >= compMaterialPool.size()) {
         LOG_ERROR("Comp Material ID: {}  out of range", id);
-        return nullptr;
+        return;
     }
-    return compMaterialPool[id];
+    delete compMaterialPool[id];
+    compMaterialPool[id] = nullptr;
 }
 
 FrameWork::CompMaterial * FrameWork::CompMaterial::Get(uint32_t &id) {
@@ -48,7 +49,7 @@ bool FrameWork::CompMaterial::exist(uint32_t id) {
 
 FrameWork::CompMaterial::~CompMaterial() {
     if (compDataID != UINT32_MAX) {
-        vulkanRenderAPI.DeleteMaterialData(compDataID);
+        vulkanRenderAPI.DeleteCompMaterialData(compDataID);
     }
 }
 
@@ -236,7 +237,7 @@ SetStorageBuffer(const std::string &name, uint32_t id, bool isStatic) {
 
 
 FrameWork::CompShader * FrameWork::CompMaterial::GetShader() const {
-    return nullptr;
+    return CompShader::Get(shaderRef);
 }
 
 void FrameWork::CompMaterial::Bind(const VkCommandBuffer &commandBuffer) const {

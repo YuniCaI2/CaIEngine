@@ -75,9 +75,12 @@ private:
     uint32_t testShader = -1;
     uint32_t compShaderID = -1;
 
+
     uint32_t colorAttachment = 0;
     uint32_t depthAttachment = 0;
     uint32_t swapChainAttachment = 0;
+    std::vector<uint32_t> generateMipAttachments;
+    std::vector<uint32_t> compMaterials;//和pass对应起来
 };
 
 
