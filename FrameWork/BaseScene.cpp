@@ -6,6 +6,7 @@
 #include "vulkanFrameWork.h"
 #include <iostream>
 
+#include "CompShader.h"
 #include "FrameGraph/FrameGraph.h"
 
 
@@ -55,9 +56,11 @@ void BaseScene::CreateFrameGraphResource() {
     //创建持久资源
     std::string shaderPath = "../resources/CaIShaders/BaseScene/BaseScene.caishader";
     std::string testShaderPath = "../resources/CaIShaders/TestFrameGraph/forward.caishader";
+    std::string testCompShaderPath = "../resources/CaIShaders/Bloom/downSample.compshader";
 
     FrameWork::CaIShader::Create(caiShaderID, shaderPath);
     FrameWork::CaIShader::Create(testShader, testShaderPath);
+    FrameWork::CompShader::Create(compShaderID, testCompShaderPath);
     vulkanRenderAPI.LoadVulkanModel(vulkanModelID, "cocona", ModelType::OBJ, DiffuseColor, {0,0, 0}, 1.0f);
     auto model = vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(vulkanModelID);
     // 绑定静态纹理

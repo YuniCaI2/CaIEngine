@@ -996,7 +996,6 @@ void FG::FrameGraph::InsertBarriers2() {
                 auto desc = resource->GetDescription<TextureDescription>();
                 auto aspect = desc->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ? 0 : 1;
                 if (resource->GetType() == ResourceType::Texture) {
-                    auto prePassType = renderPassManager.FindRenderPass(*resource->GetOutputRenderPass().begin())->GetPassType();
                     resourceStates[resourceIndex].readable = false;
                     resourceStates[resourceIndex].writable = true;
                     auto dst = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];

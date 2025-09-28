@@ -73,6 +73,7 @@ private:
     std::vector<uint32_t> materials; //这个对应每个mesh
     uint32_t presentShaderID = -1;
     uint32_t testShader = -1;
+    uint32_t compShaderID = -1;
 
     uint32_t colorAttachment = 0;
     uint32_t depthAttachment = 0;

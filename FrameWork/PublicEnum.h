@@ -235,6 +235,11 @@ enum class StorageObjectType {
     Buffer
 };
 
+enum class StorageImageFormat {
+    RGBA8,
+    RGBA16F
+};
+
 #endif //PUBLICENUM_H
 
 

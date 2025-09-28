@@ -1,0 +1,26 @@
+#version 450 core
+
+layout (binding = 0) uniform UniformBufferObject {
+    float srcLod;
+    vec2 invDstScale;
+    vec2 dstScale;
+} _UBO;
+
+layout (binding = 1) uniform sampler2D srcImage;
+
+
+layout(binding = 2, rgba16f) uniform writeonly image2D dstImage;
+
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
+
+    void main(){
+        ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+
+        if (any(greaterThanEqual(p, _UBO.dstScale))) return;
+
+        vec2 uv = (vec2(p) + 0.5) * _UBO.invDstScale; //提前算好1 / _UBO.dstScale
+        vec3 c  = textureLod(srcImage , uv, _UBO.srcLod).rgb;
+
+        imageStore(dstImage , p, vec4(c, 1.0));
+    }

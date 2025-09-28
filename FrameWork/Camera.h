@@ -68,7 +68,7 @@ namespace FrameWork {
                 float xPos = static_cast<float>(xpos);
                 float yPos = static_cast<float>(ypos);
                 //中键用来移动视角
-                if (inputManager.GetMouseButton(MouseButton::Mid) == GLFW_PRESS) {
+                if (inputManager.GetMouseButton(MouseButton::Left) == GLFW_PRESS) {
                     if (firstMouse) {
 
                         lastX = xPos;

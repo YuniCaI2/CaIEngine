@@ -196,16 +196,21 @@ std::vector<FrameWork::SSBO> FrameWork::ShaderParse::GetSSBOs(const std::string 
 
             if (storageObjectTypeMap.contains(words[1])) {
                 ssbo.type = storageObjectTypeMap[words[1]];
+                if (words.size() < 4 || !storageImageFormatMap.contains(words[2])) {
+                    LOG_ERROR("Can't find suitable storage image format");
+                }
+                ssbo.storageImageFormat = storageImageFormatMap[words[2]];
+                ssbo.name = words[3];
+
             }else {
                 if (callingBlock.find(words[1]) != std::string::npos) {
                     ssbo.structName = words[1];
                     ssbo.type = StorageObjectType::Buffer;
+                    ssbo.name = words[2];
                 }else {
                     LOG_ERROR("Can't find suitable type for {}", words[1]);
                 }
             }
-
-            ssbo.name = words[2];
         }
         ssbos.push_back(ssbo);
     }
@@ -657,7 +662,7 @@ std::string FrameWork::ShaderParse::TranslateCompToVulkan(const std::string &cod
             ssbo.type == StorageObjectType::Image3D ||
             ssbo.type == StorageObjectType::ImageCube) {
             vulkanCode += "layout(binding = " + std::to_string(ssbo.binding);
-            vulkanCode += ", rgba8) ";
+            vulkanCode += ", " + storageImageFormatToString[ssbo.storageImageFormat] + ") ";
             vulkanCode += "uniform ";
             vulkanCode += ssboOpToString[ssbo.ssboOP] + " " +
                 storageTypeToStringType[ssbo.type] + " " + ssbo.name + ";\n";

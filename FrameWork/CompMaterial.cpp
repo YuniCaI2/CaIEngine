@@ -174,6 +174,10 @@ SetStorageImage2D(const std::string &name, uint32_t id, uint32_t baseMipmap, boo
     }
 
     auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(id);
+    if (baseMipmap >= texture->image.mipLevels) {
+        LOG_ERROR("The Base Mimap: {} > image mipmap Level : {}", baseMipmap, texture->image.mipLevels);
+        return *this;
+    }
     if (texture == nullptr) {
         LOG_ERROR("Failed to set storageImage for material \"{}\", the storageImage is nullptr ", name);
         return *this;

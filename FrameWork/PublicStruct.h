@@ -351,6 +351,7 @@ namespace FrameWork {
         std::string name{};
         std::string structName{}; //存储StorageBuffer的Struct
         StorageObjectType type{};
+        StorageImageFormat storageImageFormat{StorageImageFormat::RGBA8};
         SSBO_OP ssboOP;
         uint32_t binding = 0;
     };

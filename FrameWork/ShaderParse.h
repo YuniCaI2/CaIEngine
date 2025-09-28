@@ -125,6 +125,11 @@ namespace FrameWork {
             {"Buffer", StorageObjectType::Buffer},
         };
 
+        inline static std::unordered_map<std::string, StorageImageFormat> storageImageFormatMap = {
+            {"RGBA8", StorageImageFormat::RGBA8},
+            {"RGBA16F", StorageImageFormat::RGBA16F},
+        };
+
         inline static std::unordered_map<BlendOption, VkBlendOp> blendOpToVulkanBlendOp = {
             {BlendOption::ADD, VK_BLEND_OP_ADD}, {BlendOption::MAX, VK_BLEND_OP_MAX},
             {BlendOption::MIN, VK_BLEND_OP_MIN}, {BlendOption::SUBTRACT, VK_BLEND_OP_SUBTRACT},
@@ -189,7 +194,11 @@ namespace FrameWork {
             {StorageObjectType::Image3D, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE},
             {StorageObjectType::ImageCube, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE},
             {StorageObjectType::Buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}
+        };
 
+        inline static std::unordered_map<StorageImageFormat, std::string> storageImageFormatToString = {
+            {StorageImageFormat::RGBA8, "rgba8"},
+            {StorageImageFormat::RGBA16F, "rgba16f"},
         };
 
     };

@@ -1,0 +1,30 @@
+Settings{
+    localX 16
+    localY 16
+    localZ 1
+}
+
+Properties{
+    float srcLod
+    vec2 invDstScale
+    vec2 dstScale
+    sampler2D srcImage
+}
+
+
+SSBO{
+    Write Image2D RGBA16F dstImage
+}
+
+Program{
+    void main(){
+        ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+
+        if (any(greaterThanEqual(p, dstScale))) return;
+
+        vec2 uv = (vec2(p) + 0.5) * invDstScale; //提前算好1 / dstScale
+        vec3 c  = textureLod(srcImage , uv, srcLod).rgb;
+
+        imageStore(dstImage , p, vec4(c, 1.0));
+    }
+}
