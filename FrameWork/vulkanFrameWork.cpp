@@ -866,10 +866,10 @@ void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView
     viewCreateInfo.subresourceRange.baseArrayLayer = 0;
     viewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
-    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
     VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView));
 }
@@ -884,10 +884,10 @@ void vulkanFrameWork::CreateImageView(FrameWork::VulkanImage &image, VkImageView
 
     viewCreateInfo.subresourceRange = subresourceRange;
 
-    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
 
     VK_CHECK_RESULT(vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView));
