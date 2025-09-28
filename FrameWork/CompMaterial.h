@@ -28,7 +28,7 @@ namespace FrameWork {
         ~CompMaterial();
 
         template<typename Param>
-        CompMaterial& SetParam(const std::string& name, Param& param, uint32_t index = 0) {
+        CompMaterial& SetParam(const std::string& name, const Param& param, uint32_t index = 0) {
             if (CompShader::Get(shaderRef) == nullptr) {
                 LOG_ERROR("CompShader::SetMaterial: CompShader is nullptr , id : {}", shaderRef);
             }

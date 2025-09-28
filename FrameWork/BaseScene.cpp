@@ -60,7 +60,7 @@ void BaseScene::CreateFrameGraphResource() {
 
     FrameWork::CaIShader::Create(caiShaderID, shaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
     FrameWork::CompShader::Create(compShaderID, testCompShaderPath);
-    compMaterials.resize(8);
+    compMaterials.resize(7);
     for (auto& compMaterial : compMaterials) {
         FrameWork::CompMaterial::Create(compMaterial, compShaderID);
     }
@@ -99,8 +99,8 @@ void BaseScene::CreateFrameGraphResource() {
                 desc->SetName(name)
                 .SetDescription<FG::TextureDescription>(
                     std::make_unique<FG::TextureDescription>(
-                        vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                        VK_FORMAT_R16G16B16A16_SFLOAT, 1, 8, 1, vulkanRenderAPI.GetSampleCount(),
+                        vulkanRenderAPI.GetFrameWidth() / std::pow(2, i + 1), vulkanRenderAPI.GetFrameHeight() / std::pow(2, i + 1),
+                        VK_FORMAT_R16G16B16A16_SFLOAT, 1, 8, 1, VK_SAMPLE_COUNT_1_BIT,
                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                         )
                     );
@@ -161,9 +161,27 @@ void BaseScene::CreateFrameGraphResource() {
         generateMipmapRenderPasses[i] = renderPassManager.RegisterRenderPass(
             [&](std::unique_ptr<FG::RenderPass>& renderPass) {
                 std::string name = "generateMipmapRenderPass" + std::to_string(i);
+                auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
+                auto desc = resourceManager.FindResource(generateMipAttachments[i])->GetDescription<FG::TextureDescription>();
+
                 renderPass->SetName(name)
                 .SetExec([&](VkCommandBuffer cmdBuffer) {
                     FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
+                    if (i != 0) {
+                        compMaterial->SetTexture(
+                            "srcImage", resourceManager.GetVulkanIndex(generateMipAttachments[i]));
+                    }else {
+                        compMaterial->SetTexture(
+                            "srcImage", resourceManager.GetVulkanResolveIndex(colorAttachment));
+                    }
+                    compMaterial->SetStorageImage2D(
+                        "dstImage", resourceManager.GetVulkanIndex(generateMipAttachments[i]), i);
+                    compMaterial->SetParam("srcLod", i);
+                    compMaterial->SetParam("dstScale", glm::vec2(desc->width, desc->height));
+                    compMaterial->SetParam("invDstScale", glm::vec2(1.0f / desc->width, 1.0f / desc->height));
+                    compMaterial->Bind(cmdBuffer);
+                    vkCmdDispatch(cmdBuffer, (desc->width + 15) / 16,
+                        (desc->height + 15) / 16, 1);
                 });
             }
             );
@@ -174,7 +192,7 @@ void BaseScene::CreateFrameGraphResource() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachment));
+            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(generateMipAttachments.back()));
             FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
         });
@@ -199,8 +217,14 @@ void BaseScene::CreateFrameGraphResource() {
     });
 
     renderPassManager.FindRenderPass(forwardPass)->SetCreateResource(colorAttachment).SetCreateResource(depthAttachment);
+    for (int i = 0; i < generateMipmapRenderPasses.size(); i++) {
+        if (i != 0)
+            renderPassManager.FindRenderPass(generateMipmapRenderPasses[i])->SetInputOutputResources(generateMipAttachments[i - 1], generateMipAttachments[i]);
+        else
+            renderPassManager.FindRenderPass(generateMipmapRenderPasses[i])->SetInputOutputResources(colorAttachment, generateMipAttachments[i]);
+    }
     renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(
-        colorAttachment);
+        generateMipmapRenderPasses.back());
 
     frameGraph->Compile();
 }
