@@ -102,22 +102,19 @@ void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
 
     auto* desc = group->description;
     if (desc->GetResourceType() == ResourceType::Texture) {
-        auto it = reuseResourcePool.find(index);
-        if (it != reuseResourcePool.end()) {
-            auto& dq = it->second;
             // 从队列中**扫描**第一个到期且兼容的资源
-            for (auto iter = dq.begin(); iter != dq.end(); ++iter) {
-                if (iter->second == 0) {
-                    if (desc->Equal(iter->first.baseDescription)) {
-                        group->vulkanIndex = iter->first.resourceIndex;
-                        group->resolveVulkanIndex = iter->first.resolveIndex;
-                        dq.erase(iter);
+            for (auto iter = reuseResourcePool.begin(); iter != reuseResourcePool.end(); ++iter) {
+                auto& [resource, i] = *iter;
+                if (i == 0) {
+                    if (desc->Equal(resource.baseDescription)) {
+                        group->vulkanIndex = resource.resourceIndex;
+                        group->resolveVulkanIndex = resource.resolveIndex;
                         group->isReset = false;
+                        reuseResourcePool.erase(iter);
                         return;
                     }
                 }
             }
-        }
     } else {
         LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
     }
@@ -151,7 +148,7 @@ void FG::ResourceManager::ResetVulkanResources() {
 void FG::ResourceManager::ResetVulkanResource(uint32_t aliasIndex) {
     auto& group = aliasGroups[aliasIndex];
     if (group->vulkanIndex != UINT32_MAX) {
-        reuseResourcePool[aliasIndex].emplace_back(
+        reuseResourcePool.emplace(
             ReuseResource{ group->vulkanIndex, group->resolveVulkanIndex, group->description}, MAX_FRAME);
         group->vulkanIndex = UINT32_MAX;
         group->resolveVulkanIndex = UINT32_MAX;
@@ -160,10 +157,9 @@ void FG::ResourceManager::ResetVulkanResource(uint32_t aliasIndex) {
 }
 
 void FG::ResourceManager::UpdateReusePool() {
-    for (auto& [alias, dq] : reuseResourcePool) {
-        for (auto& res : dq) {
-            if (res.second > 0) res.second--;
-        }
+    for (auto& [resource, frame] : reuseResourcePool) {
+        if (frame > 0)
+            frame--;
     }
 
     //超时销毁先不添加，因为现在是静态的

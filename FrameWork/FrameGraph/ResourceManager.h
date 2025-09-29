@@ -198,10 +198,23 @@ namespace FG {
             uint32_t resourceIndex = 0; //这里指的是Vulkan实际的物理资源
             uint32_t resolveIndex = 0;
             BaseDescription* baseDescription = nullptr; //存储Desc用于比较
+
+            bool operator==(const ReuseResource & r) const {
+                return resourceIndex == r.resourceIndex && resolveIndex == r.resolveIndex && baseDescription == r.baseDescription;
+            }
+        };
+
+        struct ReuseResourceHash {
+            size_t operator()(const ReuseResource& r) const noexcept {
+                size_t h1 = std::hash<uint32_t>{}(r.resourceIndex);
+                size_t h2 = std::hash<uint32_t>{}(r.resolveIndex);
+                size_t h3 = std::hash<BaseDescription*>{}(r.baseDescription);
+                return h1 ^ (h2 ^ h3 + 0x9e3779b97f4a7c15ULL + (h1<< 8) + (h1>>2) + (h3 >> 1));
+            }
         };
 
         std::mutex reusePoolMutex;
-        std::unordered_map<uint32_t, std::deque<std::pair<ReuseResource, int>>> reuseResourcePool;
+        std::unordered_map<ReuseResource, int, ReuseResourceHash> reuseResourcePool;
 
         std::unordered_map<uint32_t, uint32_t> resourceDescriptionToAliasGroup;
     };
