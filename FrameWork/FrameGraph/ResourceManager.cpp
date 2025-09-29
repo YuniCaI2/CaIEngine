@@ -3,7 +3,7 @@
 //
 
 #include "ResourceManager.h"
-
+#include "ThreadPool.h"
 
 
 uint32_t FG::ResourceManager::RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>&)> &Func) {
@@ -98,20 +98,56 @@ bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasInd
 
 void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     //先不支持Buffer的创建，因为RenderAPI现无对应的接口
+    auto& group = aliasGroups[index];
+    // std::unique_lock<std::mutex> groupLock(group->mutex);
+    if (group->vulkanIndex != UINT32_MAX) {
+        return;
+    }
+
     auto description = aliasGroups[index]->description;
     if (description->GetResourceType() == ResourceType::Texture) {
+        // std::unique_lock<std::mutex> lk(reusePoolMutex);
         if (reuseResourcePool.contains(index) && !reuseResourcePool[index].empty()
             && reuseResourcePool[index].front().second == 0) {
-            aliasGroups[index]->vulkanIndex = reuseResourcePool[index].front().first.resourceIndex;
-            aliasGroups[index]->resolveVulkanIndex = reuseResourcePool[index].front().first.resolveIndex;
+            group->vulkanIndex = reuseResourcePool[index].front().first.resourceIndex;
+            group->resolveVulkanIndex = reuseResourcePool[index].front().first.resolveIndex;
             reuseResourcePool[index].pop_front();
-        }else {
-            vulkanRenderAPI.CreateTexture(aliasGroups[index]->vulkanIndex , aliasGroups[index]->resolveVulkanIndex, description);
+            // lk.unlock();
+            group->isReset = false;
+            return;
         }
     }else {
         LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
     }
-    aliasGroups[index]->isReset = false;
+
+    // groupLock.unlock();
+    uint32_t vulkanIndex, resolveVulkanIndex;
+    vulkanRenderAPI.CreateTexture(vulkanIndex, resolveVulkanIndex, description);
+    // 重新获取锁来更新结果
+    // groupLock.lock();
+    group->vulkanIndex = vulkanIndex;
+    group->resolveVulkanIndex = resolveVulkanIndex;
+    group->isReset = false;
+}
+
+void FG::ResourceManager::CreateVulkanResources(ThreadPool& threadPool) {
+    // std::vector<std::future<void>> futures;
+    // futures.reserve(aliasGroups.size());
+    // for (int i = 0; i < aliasGroups.size(); ++i) {
+    //     futures.push_back(
+    //         threadPool.Enqueue(
+    //             [this, i]() {
+    //                 this->CreateVulkanResource(i);
+    //             }
+    //             )
+    //         );
+    // }
+    // for (auto& future : futures) {
+    //     future.wait();
+    // }
+    for (int i = 0; i < aliasGroups.size(); ++i) {
+        CreateVulkanResource(i);
+    }
 }
 
 void FG::ResourceManager::ResetVulkanResources() {
@@ -149,34 +185,12 @@ uint32_t FG::ResourceManager::GetVulkanIndex(const std::string& name) {
 }
 
 uint32_t FG::ResourceManager::GetVulkanIndex(uint32_t resourceIndex) {
-    {
-        if(resourceDescriptions[resourceIndex]->isExternal){
-            return resourceDescriptions[resourceIndex]->vulkanIndex;
-        }
+    if (resourceDescriptions[resourceIndex]->isExternal) return resourceDescriptions[resourceIndex]->vulkanIndex;
+    auto ag = resourceDescriptionToAliasGroup[resourceIndex];
+    auto& a = aliasGroups[ag];
 
-        if(!resourceDescriptionToAliasGroup.contains(resourceIndex)){
-            LOG_ERROR("The resourceIndex : {} didn't create vulkan resource !",
-                resourceDescriptions[resourceIndex]->GetName());
-            return -1;
-        }
+    return a->vulkanIndex;
 
-        auto aliasGroupIndex = resourceDescriptionToAliasGroup[resourceIndex];
-        auto& alias = aliasGroups[aliasGroupIndex];
-
-        // 如果不需要重置，直接返回
-        if (!alias->isReset) {
-            return alias->vulkanIndex;
-        }
-    }
-
-    auto aliasGroupIndex = resourceDescriptionToAliasGroup[resourceIndex];
-    auto& alias = aliasGroups[aliasGroupIndex];
-
-    std::lock_guard lock(*alias->mutexPtr);
-    if (alias->isReset) {
-        CreateVulkanResource(aliasGroupIndex);
-    }
-    return aliasGroups[aliasGroupIndex]->vulkanIndex;
 }
 
 uint32_t FG::ResourceManager::GetVulkanResolveIndex(uint32_t resourceIndex) {
@@ -185,10 +199,10 @@ uint32_t FG::ResourceManager::GetVulkanResolveIndex(uint32_t resourceIndex) {
         return -1;
     }
     if (resourceDescriptions[resourceIndex]->GetType() == ResourceType::Texture) {
-        auto aliasGroupIndex = resourceDescriptionToAliasGroup[resourceIndex];
-        auto& alias = aliasGroups[aliasGroupIndex];
-        std::lock_guard lock(*alias->mutexPtr);
-        return aliasGroups[aliasGroupIndex]->resolveVulkanIndex;
+        auto ag = resourceDescriptionToAliasGroup[resourceIndex];
+        auto& a = aliasGroups[ag];
+
+        return a->resolveVulkanIndex;
     }else {
         LOG_ERROR("The resource type is Buffer ,didnt have resolve index");
         return -1;

@@ -69,7 +69,7 @@ void LTCScene::CreateFrameGraphResource() {
             resource->SetName("colorAttachment");
             resource->SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
-                    api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1, 8 ,1, vulkanRenderAPI.GetSampleCount(),
+                    api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1, 1 ,1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                     )
                 );
@@ -82,7 +82,7 @@ void LTCScene::CreateFrameGraphResource() {
         .SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                 vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                vulkanRenderAPI.GetDepthFormat() , 1,8, 1, vulkanRenderAPI.GetSampleCount(),
+                vulkanRenderAPI.GetDepthFormat() , 1,1, 1, vulkanRenderAPI.GetSampleCount(),
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                 )
             );
@@ -94,7 +94,7 @@ void LTCScene::CreateFrameGraphResource() {
         resource->SetName("colorAttachment1");
         resource->SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
-                api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1,8, 1, vulkanRenderAPI.GetSampleCount(),
+                api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1,1, 1, vulkanRenderAPI.GetSampleCount(),
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
                 )
             );
@@ -107,7 +107,7 @@ void LTCScene::CreateFrameGraphResource() {
         .SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                 vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                vulkanRenderAPI.GetDepthFormat() , 1,8, 1, vulkanRenderAPI.GetSampleCount(),
+                vulkanRenderAPI.GetDepthFormat() , 1,1, 1, vulkanRenderAPI.GetSampleCount(),
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                 )
             );

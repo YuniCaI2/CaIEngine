@@ -68,6 +68,7 @@ private:
     //持久资源
     uint32_t vulkanModelID = -1;
     uint32_t presentMaterialID = -1;
+    uint32_t resolveMaterialID = -1; // 本质和present
     //这边是一个模型对应一个Material
     uint32_t caiShaderID = -1;
     std::vector<uint32_t> materials; //这个对应每个mesh
@@ -78,6 +79,7 @@ private:
 
     uint32_t colorAttachment = 0;
     uint32_t depthAttachment = 0;
+    uint32_t resolveAttachment = 0;
     uint32_t swapChainAttachment = 0;
     std::vector<uint32_t> generateMipAttachments;
     std::vector<uint32_t> compMaterials;//和pass对应起来

@@ -2415,7 +2415,6 @@ void vulkanFrameWork::CreateCompMaterialData(FrameWork::CompMaterial &compMateri
         if (!shaderInfo.shaderProperties.baseProperties.empty()) {
             compData->uniformBuffers[i] =
                 CreateUniformBuffer(shaderInfo.shaderProperties.baseProperties);
-            LOG_DEBUG("Create uniform buffer");
         }
     }
 

@@ -60,22 +60,24 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
     if (!barrier.isImage) return;
     auto resource = resourceManager.FindResource(barrier.resourceID);
     auto description = resource->GetDescription<TextureDescription>();
+    auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+        resourceManager.GetVulkanIndex(barrier.resourceID));
+
 
 
     VkImageSubresourceRange subresourceRange{};
     subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                                      ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                      ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
                                       : VK_IMAGE_ASPECT_COLOR_BIT;
     subresourceRange.layerCount = description->arrayLayers;
-    subresourceRange.levelCount = (description->samples == VK_SAMPLE_COUNT_1_BIT) ? description->mipLevels : 1;
+    subresourceRange.levelCount = description->mipLevels;
     //这里是保证在MSAA时，mipLevel对应是resolve
     subresourceRange.baseMipLevel = 0;
     subresourceRange.baseArrayLayer = 0;
 
     VkImageMemoryBarrier vkBarrier{};
     vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    vkBarrier.image = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-        resourceManager.GetVulkanIndex(barrier.resourceID))->image.image;
+    vkBarrier.image = texture->image.image;
     vkBarrier.oldLayout = barrier.oldLayout;
     vkBarrier.newLayout = barrier.newLayout;
     vkBarrier.srcAccessMask = barrier.srcAccessMask;
@@ -93,9 +95,11 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
                          1, &vkBarrier);
 
     if (description->samples != VK_SAMPLE_COUNT_1_BIT) {
+        auto resolveTexture =vulkanRenderAPI.getByIndex<FrameWork::Texture>(
+            resourceManager.GetVulkanResolveIndex(barrier.resourceID));
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                                          ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                          ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
                                           : VK_IMAGE_ASPECT_COLOR_BIT;
         subresourceRange.layerCount = description->arrayLayers;
         subresourceRange.levelCount = description->resolveMipLevels;
@@ -104,8 +108,7 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
 
         VkImageMemoryBarrier vkBarrier = {};
         vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        vkBarrier.image = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-            resourceManager.GetVulkanResolveIndex(barrier.resourceID))->image.image;
+        vkBarrier.image = resolveTexture->image.image;
         vkBarrier.oldLayout = barrier.oldLayout;
         vkBarrier.newLayout = barrier.newLayout;
         vkBarrier.srcAccessMask = barrier.srcAccessMask;
@@ -126,134 +129,171 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
 
 FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
     struct RenderPassData {
-        VkCommandBuffer secondaryCmd;
-        std::vector<VkRenderingAttachmentInfo> colorAttachments;
-        VkRenderingAttachmentInfo depthAttachment;
-        std::vector<VkFormat> colorFormats;
+        VkCommandBuffer secondaryCmd{};
+        std::vector<VkRenderingAttachmentInfo> colorAttachments{};
+        VkRenderingAttachmentInfo depthAttachment{};
+        std::vector<VkFormat> colorFormats{};
         VkFormat depthFormat{VK_FORMAT_UNDEFINED};
-        bool hasDepth;
-        uint32_t width;
-        uint32_t height;
-        uint32_t passIndex;
+        bool hasDepth{};
+        uint32_t width{};
+        uint32_t height{};
+        uint32_t passIndex{};
         uint32_t arrayLayer{1};
+        PassType passType{};
     };
 
     updateBeforeRendering();
     std::vector<std::future<RenderPassData> > futures;
     futures.reserve(usingPassNodes.size());
     resourceManager.ResetVulkanResources();
+    resourceManager.CreateVulkanResources(threadPool);
 
     // 为每个 pass 创建 secondary command buffer
     for (auto &t: timeline) {
         for (auto &passIndex: t) {
             auto renderPass = renderPassManager.FindRenderPass(passIndex);
-            futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
-                RenderPassData data;
-                data.passIndex = passIndex;
-                data.hasDepth = false;
-                data.width = vulkanRenderAPI.windowWidth;
-                data.height = vulkanRenderAPI.windowHeight;
-                data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
-                // 收集附件格式信息
-                VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
+            auto type = renderPass->GetPassType();
+            if (type == PassType::Graphics) {
+                futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                    RenderPassData data;
+                    data.passIndex = passIndex;
+                    data.hasDepth = false;
+                    data.width = vulkanRenderAPI.windowWidth;
+                    data.height = vulkanRenderAPI.windowHeight;
+                    data.passType = PassType::Graphics;
+                    data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+                    // 收集附件格式信息
+                    VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
-                auto &resourceCreateIndices = renderPass->GetCreateResources();
-                auto &resourceInputIndices = renderPass->GetInputResources();
+                    auto &resourceCreateIndices = renderPass->GetCreateResources();
+                    auto &resourceInputIndices = renderPass->GetInputResources();
 
-                // 处理创建的资源
-                for (auto &resourceIndex: resourceCreateIndices) {
-                    auto resource = resourceManager.FindResource(resourceIndex);
+                    // 处理创建的资源
+                    for (auto &resourceIndex: resourceCreateIndices) {
+                        auto resource = resourceManager.FindResource(resourceIndex);
 
-                    if (resource && resource->GetType() == ResourceType::Texture) {
-                        auto description = resource->GetDescription<TextureDescription>();
-                        sampleCount = description->samples;
-                        data.width = description->width;
-                        data.height = description->height;
-                        data.arrayLayer = description->arrayLayers;
+                        if (resource && resource->GetType() == ResourceType::Texture) {
+                            auto description = resource->GetDescription<TextureDescription>();
+                            sampleCount = description->samples;
+                            data.width = description->width;
+                            data.height = description->height;
+                            data.arrayLayer = description->arrayLayers;
 
-                        if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                            data.colorFormats.push_back(description->format);
-                            data.colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
-                        } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
-                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                            data.depthFormat = description->format;
-                            data.depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
-                            data.hasDepth = true;
+                            if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                data.colorFormats.push_back(description->format);
+                                data.colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
+                            } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                data.depthFormat = description->format;
+                                data.depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
+                                data.hasDepth = true;
+                            }
                         }
                     }
-                }
 
-                // 处理输入资源
-                for (auto &resourceIndex: resourceInputIndices) {
-                    auto resource = resourceManager.FindResource(resourceIndex);
-                    if (resource && resource->GetType() == ResourceType::Texture) {
-                        auto description = resource->GetDescription<TextureDescription>();
-                        sampleCount = description->samples;
-                        data.width = description->width;
-                        data.height = description->height;
-                        data.arrayLayer = description->arrayLayers;
-                        if (description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-                            data.colorFormats.push_back(description->format);
-                            data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
-                        } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
-                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                            data.depthFormat = description->format;
-                            data.depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
-                            data.hasDepth = true;
+                    // 处理输入资源
+                    for (auto &resourceIndex: resourceInputIndices) {
+                        auto resource = resourceManager.FindResource(resourceIndex);
+                        if (resource && resource->GetType() == ResourceType::Texture) {
+                            auto description = resource->GetDescription<TextureDescription>();
+                            sampleCount = description->samples;
+                            data.width = description->width;
+                            data.height = description->height;
+                            data.arrayLayer = description->arrayLayers;
+                            if (description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                                data.colorFormats.push_back(description->format);
+                                data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
+                            } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                                data.depthFormat = description->format;
+                                data.depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
+                                data.hasDepth = true;
+                            }
                         }
                     }
-                }
 
-                // 设置继承信息
-                VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo{};
-                inheritanceRenderingInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
-                inheritanceRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorFormats.size());
-                inheritanceRenderingInfo.pColorAttachmentFormats = data.colorFormats.empty()
-                                                                       ? nullptr
-                                                                       : data.colorFormats.data();
-                inheritanceRenderingInfo.depthAttachmentFormat = data.depthFormat;
-                inheritanceRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-                inheritanceRenderingInfo.rasterizationSamples = sampleCount;
-                inheritanceRenderingInfo.viewMask = 0;
+                    // 设置继承信息
+                    VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo{};
+                    inheritanceRenderingInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
+                    inheritanceRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorFormats.size());
+                    inheritanceRenderingInfo.pColorAttachmentFormats = data.colorFormats.empty()
+                                                                           ? nullptr
+                                                                           : data.colorFormats.data();
+                    inheritanceRenderingInfo.depthAttachmentFormat = data.depthFormat;
+                    inheritanceRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+                    inheritanceRenderingInfo.rasterizationSamples = sampleCount;
+                    inheritanceRenderingInfo.viewMask = 0;
 
-                VkCommandBufferInheritanceInfo inheritanceInfo{};
-                inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-                inheritanceInfo.pNext = &inheritanceRenderingInfo;
-                inheritanceInfo.renderPass = VK_NULL_HANDLE;
-                inheritanceInfo.framebuffer = VK_NULL_HANDLE;
+                    VkCommandBufferInheritanceInfo inheritanceInfo{};
+                    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+                    inheritanceInfo.pNext = &inheritanceRenderingInfo;
+                    inheritanceInfo.renderPass = VK_NULL_HANDLE;
+                    inheritanceInfo.framebuffer = VK_NULL_HANDLE;
 
-                // 开始记录 Secondary Command Buffer
-                VkCommandBufferBeginInfo cmdBufInfo{};
-                cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-                cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-                cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
+                    // 开始记录 Secondary Command Buffer
+                    VkCommandBufferBeginInfo cmdBufInfo{};
+                    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                    cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+                    cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
 
-                vkBeginCommandBuffer(data.secondaryCmd, &cmdBufInfo);
+                    vkBeginCommandBuffer(data.secondaryCmd, &cmdBufInfo);
 
-                // 设置 Viewport 和 Scissor
-                VkViewport viewport{};
-                viewport.x = 0.0f;
-                viewport.y = 0.0f;
-                viewport.width = static_cast<float>(data.width);
-                viewport.height = static_cast<float>(data.height);
-                viewport.minDepth = 0.0f;
-                viewport.maxDepth = 1.0f;
-                vkCmdSetViewport(data.secondaryCmd, 0, 1, &viewport);
+                    // 设置 Viewport 和 Scissor
+                    VkViewport viewport{};
+                    viewport.x = 0.0f;
+                    viewport.y = 0.0f;
+                    viewport.width = static_cast<float>(data.width);
+                    viewport.height = static_cast<float>(data.height);
+                    viewport.minDepth = 0.0f;
+                    viewport.maxDepth = 1.0f;
+                    vkCmdSetViewport(data.secondaryCmd, 0, 1, &viewport);
 
-                VkRect2D scissor{};
-                scissor.offset = {0, 0};
-                scissor.extent.width = data.width;
-                scissor.extent.height = data.height;
-                vkCmdSetScissor(data.secondaryCmd, 0, 1, &scissor);
+                    VkRect2D scissor{};
+                    scissor.offset = {0, 0};
+                    scissor.extent.width = data.width;
+                    scissor.extent.height = data.height;
+                    vkCmdSetScissor(data.secondaryCmd, 0, 1, &scissor);
 
-                // 执行渲染 Pass（不包括 barriers）
-                renderPass->GetExec()(data.secondaryCmd);
+                    // 执行渲染 Pass（不包括 barriers）
+                    renderPass->GetExec()(data.secondaryCmd);
 
-                vkEndCommandBuffer(data.secondaryCmd);
+                    vkEndCommandBuffer(data.secondaryCmd);
 
-                return data;
-            }));
+                    return data;
+                }));
+            }else if (type == PassType::Compute) {
+                futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                    RenderPassData data;
+                    data.passIndex = passIndex;
+                    data.hasDepth = false;
+                    data.width = vulkanRenderAPI.windowWidth;
+                    data.height = vulkanRenderAPI.windowHeight;
+                    data.passType = PassType::Compute;
+                    data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+                    // 收集附件格式信息
+                    // 不设置继承信息
+
+                    VkCommandBufferInheritanceInfo inherit{};
+                    inherit.sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+                    inherit.renderPass  = VK_NULL_HANDLE;    // 计算不在 RenderPass/Rendering 内
+                    inherit.subpass     = 0;
+                    inherit.framebuffer = VK_NULL_HANDLE;
+                    inherit.pNext       = nullptr;
+                    // 开始记录 Secondary Command Buffer
+                    VkCommandBufferBeginInfo cmdBufInfo{};
+                    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                    cmdBufInfo.flags = 0;
+                    cmdBufInfo.pInheritanceInfo = &inherit;
+
+                    vkBeginCommandBuffer(data.secondaryCmd, &cmdBufInfo);
+                    // 执行渲染 Pass（不包括 barriers）
+                    renderPass->GetExec()(data.secondaryCmd);
+                    vkEndCommandBuffer(data.secondaryCmd);
+
+                    return data;
+                }));
+            }
         }
     }
 
@@ -270,24 +310,29 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
                     InsertImageBarrier(commandBuffer, barrier);
             }
 
-            if (!data.colorAttachments.empty() || data.hasDepth) {
-                renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-                renderingInfo.pNext = nullptr;
-                renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT; //告訴他在二級緩衝區錄製
-                renderingInfo.renderArea.offset = {0, 0};
-                renderingInfo.renderArea.extent = {data.width, data.height};
-                renderingInfo.layerCount = data.arrayLayer;
-                renderingInfo.viewMask = 0;
-                renderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorAttachments.size());
-                renderingInfo.pColorAttachments =
-                        data.colorAttachments.empty() ? nullptr : data.colorAttachments.data();
-                renderingInfo.pDepthAttachment = data.hasDepth ? &data.depthAttachment : nullptr;
-                renderingInfo.pStencilAttachment = nullptr;
+            if (data.passType == PassType::Compute) {
+                    vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
+            } else if (data.passType == PassType::Graphics) {
+                if (!data.colorAttachments.empty() || data.hasDepth) {
+                    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+                    renderingInfo.pNext = nullptr;
+                    renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT; //告訴他在二級緩衝區錄製
+                    renderingInfo.renderArea.offset = {0, 0};
+                    renderingInfo.renderArea.extent = {data.width, data.height};
+                    renderingInfo.layerCount = data.arrayLayer;
+                    renderingInfo.viewMask = 0;
+                    renderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorAttachments.size());
+                    renderingInfo.pColorAttachments =
+                            data.colorAttachments.empty() ? nullptr : data.colorAttachments.data();
+                    renderingInfo.pDepthAttachment = data.hasDepth ? &data.depthAttachment : nullptr;
+                    renderingInfo.pStencilAttachment = nullptr;
 
-                vkCmdBeginRendering(commandBuffer, &renderingInfo);
-                vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
-                vkCmdEndRendering(commandBuffer);
+                    vkCmdBeginRendering(commandBuffer, &renderingInfo);
+                    vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
+                    vkCmdEndRendering(commandBuffer);
+                }
             }
+
 
             auto &postBarriers = renderPass->GetPostBarriers();
             for (auto &barrier: postBarriers) {
@@ -304,130 +349,216 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
 }
 
 //保留因为验证层不会输出在secondary的报错
-// FG::FrameGraph& FG::FrameGraph::Execute(const VkCommandBuffer& commandBuffer) {
+// FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
+//     struct RenderPassData {
+//         VkCommandBuffer secondaryCmd{};
+//         std::vector<VkRenderingAttachmentInfo> colorAttachments{};
+//         VkRenderingAttachmentInfo depthAttachment{};
+//         std::vector<VkFormat> colorFormats{};
+//         VkFormat depthFormat{VK_FORMAT_UNDEFINED};
+//         bool hasDepth{};
+//         uint32_t width{};
+//         uint32_t height{};
+//         uint32_t passIndex{};
+//         uint32_t arrayLayer{1};
+//         PassType passType{};
+//     };
+//
 //     updateBeforeRendering();
+//     resourceManager.ResetVulkanResources();
 //
-//     // 注意: 您可能需要检查 ResetCommandPool 的实现。
-//     // 如果它专门为二级命令缓冲池设计，现在可能需要调整或暂时禁用。
-//     ResetCommandPool();
+//     auto buildGraphicsPassData = [&](uint32_t passIndex) -> RenderPassData {
+//         RenderPassData data;
+//         auto renderPass = renderPassManager.FindRenderPass(passIndex);
+//         data.passIndex = passIndex;
+//         data.hasDepth  = false;
+//         data.width     = vulkanRenderAPI.windowWidth;
+//         data.height    = vulkanRenderAPI.windowHeight;
+//         data.passType  = PassType::Graphics;
+//         data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
 //
-//     resourceManager.ResetVulkanResource();
-//     resourceManager.CreateVulkanResource();
+//         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 //
-//     // 串行处理每个pass
-//     for (auto& t : timeline) {
-//         for (auto& passIndex : t) {
+//         auto &resourceCreateIndices = renderPass->GetCreateResources();
+//         auto &resourceInputIndices  = renderPass->GetInputResources();
+//
+//         // 处理创建的资源
+//         for (auto &resourceIndex : resourceCreateIndices) {
+//             auto resource = resourceManager.FindResource(resourceIndex);
+//             if (resource && resource->GetType() == ResourceType::Texture) {
+//                 auto description = resource->GetDescription<TextureDescription>();
+//                 sampleCount      = description->samples;
+//                 data.width       = description->width;
+//                 data.height      = description->height;
+//                 data.arrayLayer  = description->arrayLayers;
+//
+//                 if ((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+//                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+//                     data.colorFormats.push_back(description->format);
+//                     data.colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
+//                 } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+//                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+//                     data.depthFormat   = description->format;
+//                     data.depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
+//                     data.hasDepth = true;
+//                 }
+//             }
+//         }
+//
+//         // 处理输入资源
+//         for (auto &resourceIndex : resourceInputIndices) {
+//             auto resource = resourceManager.FindResource(resourceIndex);
+//             if (resource && resource->GetType() == ResourceType::Texture) {
+//                 auto description = resource->GetDescription<TextureDescription>();
+//                 sampleCount      = description->samples;
+//                 data.width       = description->width;
+//                 data.height      = description->height;
+//                 data.arrayLayer  = description->arrayLayers;
+//
+//                 if (description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+//                     data.colorFormats.push_back(description->format);
+//                     data.colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
+//                 } else if ((description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
+//                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+//                     data.depthFormat   = description->format;
+//                     data.depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
+//                     data.hasDepth = true;
+//                 }
+//             }
+//         }
+//
+//         // 设置继承信息
+//         VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo{};
+//         inheritanceRenderingInfo.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
+//         inheritanceRenderingInfo.colorAttachmentCount     = static_cast<uint32_t>(data.colorFormats.size());
+//         inheritanceRenderingInfo.pColorAttachmentFormats  = data.colorFormats.empty() ? nullptr : data.colorFormats.data();
+//         inheritanceRenderingInfo.depthAttachmentFormat    = data.depthFormat;
+//         inheritanceRenderingInfo.stencilAttachmentFormat  = VK_FORMAT_UNDEFINED;
+//         inheritanceRenderingInfo.rasterizationSamples     = sampleCount;
+//         inheritanceRenderingInfo.viewMask                 = 0;
+//
+//         VkCommandBufferInheritanceInfo inheritanceInfo{};
+//         inheritanceInfo.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+//         inheritanceInfo.pNext                = &inheritanceRenderingInfo;
+//         inheritanceInfo.renderPass           = VK_NULL_HANDLE;
+//         inheritanceInfo.framebuffer          = VK_NULL_HANDLE;
+//
+//         // 开始记录 Secondary Command Buffer
+//         VkCommandBufferBeginInfo cmdBufInfo{};
+//         cmdBufInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//         cmdBufInfo.flags            = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+//         cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
+//
+//         vkBeginCommandBuffer(data.secondaryCmd, &cmdBufInfo);
+//
+//         // 设置 Viewport 和 Scissor
+//         VkViewport viewport{};
+//         viewport.x        = 0.0f;
+//         viewport.y        = 0.0f;
+//         viewport.width    = static_cast<float>(data.width);
+//         viewport.height   = static_cast<float>(data.height);
+//         viewport.minDepth = 0.0f;
+//         viewport.maxDepth = 1.0f;
+//         vkCmdSetViewport(data.secondaryCmd, 0, 1, &viewport);
+//
+//         VkRect2D scissor{};
+//         scissor.offset = {0, 0};
+//         scissor.extent = {data.width, data.height};
+//         vkCmdSetScissor(data.secondaryCmd, 0, 1, &scissor);
+//
+//         // 执行渲染 Pass（不包括 barriers）
+//         renderPass->GetExec()(data.secondaryCmd);
+//
+//         vkEndCommandBuffer(data.secondaryCmd);
+//
+//         return data;
+//     };
+//
+//     auto buildComputePassData = [&](uint32_t passIndex) -> RenderPassData {
+//         RenderPassData data;
+//         auto renderPass = renderPassManager.FindRenderPass(passIndex);
+//         data.passIndex  = passIndex;
+//         data.hasDepth   = false;
+//         data.width      = vulkanRenderAPI.windowWidth;
+//         data.height     = vulkanRenderAPI.windowHeight;
+//         data.passType   = PassType::Compute;
+//         data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+//
+//         VkCommandBufferInheritanceInfo inherit{};
+//         inherit.sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+//         inherit.renderPass  = VK_NULL_HANDLE;
+//         inherit.subpass     = 0;
+//         inherit.framebuffer = VK_NULL_HANDLE;
+//         inherit.pNext       = nullptr;
+//
+//         VkCommandBufferBeginInfo cmdBufInfo{};
+//         cmdBufInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//         cmdBufInfo.flags            = 0;
+//         cmdBufInfo.pInheritanceInfo = &inherit;
+//
+//         vkBeginCommandBuffer(data.secondaryCmd, &cmdBufInfo);
+//         renderPass->GetExec()(data.secondaryCmd);
+//         vkEndCommandBuffer(data.secondaryCmd);
+//
+//         return data;
+//     };
+//
+//     // 单线程执行：按 timeline 顺序逐个构建并执行
+//     for (auto &t : timeline) {
+//         for (auto &passIndex : t) {
 //             auto renderPass = renderPassManager.FindRenderPass(passIndex);
 //
-//             // --- 数据准备：直接使用局部变量，不再需要 RenderPassData 结构体 ---
-//             std::vector<VkRenderingAttachmentInfo> colorAttachments;
-//             VkRenderingAttachmentInfo depthAttachment{}; // 使用 {} 初始化
-//             bool hasDepth = false;
-//             uint32_t width = vulkanRenderAPI.windowWidth;
-//             uint32_t height = vulkanRenderAPI.windowHeight;
-//             uint32_t arrayLayer = 1;
-//
-//             // --- 收集附件信息 ---
-//             auto& resourceCreateIndices = renderPass->GetCreateResources();
-//             auto& resourceInputIndices = renderPass->GetInputResources();
-//
-//             // 处理创建的资源
-//             for(auto& resourceIndex : resourceCreateIndices){
-//                 auto resource = resourceManager.FindResource(resourceIndex);
-//                 if(resource && resource->GetType() == ResourceType::Texture){
-//                     auto description = resource->GetDescription<TextureDescription>();
-//                     width = description->width;
-//                     height = description->height;
-//                     arrayLayer = description->arrayLayers;
-//
-//                     if((description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
-//                         colorAttachments.push_back(this->CreateCreateAttachmentInfo(resourceIndex));
-//                     } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
-//                         depthAttachment = this->CreateCreateAttachmentInfo(resourceIndex);
-//                         hasDepth = true;
-//                     }
+//             // Pre-barriers
+//             auto &preBarriers = renderPass->GetPreBarriers();
+//             for (auto &barrier : preBarriers) {
+//                 if (barrier.isImage) {
+//                     InsertImageBarrier(commandBuffer, barrier);
 //                 }
 //             }
 //
-//             // 处理输入资源
-//             for(auto& resourceIndex : resourceInputIndices){
-//                 auto resource = resourceManager.FindResource(resourceIndex);
-//                 if(resource && resource->GetType() == ResourceType::Texture){
-//                     auto description = resource->GetDescription<TextureDescription>();
-//                     if(description->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT){
-//                         colorAttachments.push_back(this->CreateInputAttachmentInfo(resourceIndex));
-//                     } else if(description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
-//                         depthAttachment = this->CreateInputAttachmentInfo(resourceIndex);
-//                         hasDepth = true;
-//                     }
-//                 }
-//             }
-//
-//             // --- 移除了二级命令缓冲区的分配、继承信息设置和 Begin/End 逻辑 ---
-//
-//             // 1. 插入 Pass 执行前的内存屏障
-//             auto& preBarriers = renderPass->GetPreBarriers();
-//             for (auto& barrier : preBarriers) {
-//                 InsertImageBarrier(commandBuffer, barrier);
-//             }
-//
-//             // 2. 根据有无附件，决定是开始动态渲染还是直接执行命令
-//             if (!colorAttachments.empty() || hasDepth) {
-//                 // 对于图形 Pass，开始动态渲染
-//                 VkRenderingInfo renderingInfo{};
-//                 renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-//                 renderingInfo.pNext = nullptr;
-//                 // [修改] flags 设置为 0，因为命令直接录制在主命令缓冲区
-//                 renderingInfo.flags = 0;
-//                 renderingInfo.renderArea.offset = {0, 0};
-//                 renderingInfo.renderArea.extent = {width, height};
-//                 renderingInfo.layerCount = arrayLayer;
-//                 renderingInfo.viewMask = 0;
-//                 renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
-//                 renderingInfo.pColorAttachments = colorAttachments.empty() ? nullptr : colorAttachments.data();
-//                 renderingInfo.pDepthAttachment = hasDepth ? &depthAttachment : nullptr;
-//                 renderingInfo.pStencilAttachment = nullptr;
-//
-//                 vkCmdBeginRendering(commandBuffer, &renderingInfo);
-//
-//                 // [修改] 直接在主命令缓冲区中设置视口和裁剪矩形
-//                 VkViewport viewport{};
-//                 viewport.x = 0.0f;
-//                 viewport.y = 0.0f;
-//                 viewport.width = static_cast<float>(width);
-//                 viewport.height = static_cast<float>(height);
-//                 viewport.minDepth = 0.0f;
-//                 viewport.maxDepth = 1.0f;
-//                 vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-//
-//                 VkRect2D scissor{};
-//                 scissor.offset = {0, 0};
-//                 scissor.extent.width = width;
-//                 scissor.extent.height = height;
-//                 vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-//
-//                 // [修改] 直接在主命令缓冲区中执行 Pass 的渲染命令
-//                 renderPass->GetExec()(commandBuffer);
-//
-//                 vkCmdEndRendering(commandBuffer);
-//
-//                 // [删除] vkCmdExecuteCommands 调用被移除
-//
+//             // 构建 secondary 并执行
+//             if (renderPass->GetPassType() == PassType::Compute) {
+//                 RenderPassData data = buildComputePassData(passIndex);
+//                 vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
 //             } else {
-//                 // 对于没有附件的 Pass (例如纯计算或传输)，直接执行其命令
-//                 renderPass->GetExec()(commandBuffer);
+//                 RenderPassData data = buildGraphicsPassData(passIndex);
+//
+//                 if (!data.colorAttachments.empty() || data.hasDepth) {
+//                     VkRenderingInfo renderingInfo{};
+//                     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+//                     renderingInfo.pNext = nullptr;
+//                     renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+//                     renderingInfo.renderArea.offset = {0, 0};
+//                     renderingInfo.renderArea.extent = {data.width, data.height};
+//                     renderingInfo.layerCount = data.arrayLayer;
+//                     renderingInfo.viewMask   = 0;
+//                     renderingInfo.colorAttachmentCount = static_cast<uint32_t>(data.colorAttachments.size());
+//                     renderingInfo.pColorAttachments    = data.colorAttachments.empty() ? nullptr : data.colorAttachments.data();
+//                     renderingInfo.pDepthAttachment     = data.hasDepth ? &data.depthAttachment : nullptr;
+//                     renderingInfo.pStencilAttachment   = nullptr;
+//
+//                     vkCmdBeginRendering(commandBuffer, &renderingInfo);
+//                     vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
+//                     vkCmdEndRendering(commandBuffer);
+//                 }
 //             }
 //
-//             // 3. 插入 Pass 执行后的内存屏障
-//             auto& postBarriers = renderPass->GetPostBarriers();
-//             for (auto& barrier : postBarriers) {
-//                 InsertImageBarrier(commandBuffer, barrier);
+//             // Post-barriers
+//             auto &postBarriers = renderPass->GetPostBarriers();
+//             for (auto &barrier : postBarriers) {
+//                 if (barrier.isImage) {
+//                     InsertImageBarrier(commandBuffer, barrier);
+//                 }
 //             }
 //         }
 //     }
 //
+//     // 更新释放别名池
+//     resourceManager.UpdateReusePool();
+//
 //     return *this;
 // }
+
 
 FG::FrameGraph &FG::FrameGraph::SetUpdateBeforeRendering(const std::function<void()> &callback) {
     updateBeforeRendering = callback;
@@ -740,7 +871,6 @@ void FG::FrameGraph::CreateAliasGroups() {
                 } else {
                     newGroup->description = resource->GetDescription<BufferDescription>();
                 }
-                newGroup->mutexPtr = std::make_unique<std::mutex>();
                 newGroup->vulkanIndex = -1; //在运行时创建资源
                 resourceManager.GetAliasGroups().push_back(std::move(newGroup));
                 resourceManager.resourceDescriptionToAliasGroup[resIndex] =
@@ -885,6 +1015,9 @@ void FG::FrameGraph::InsertBarriers2() {
         VkAccessFlags accessMasks;
         VkPipelineStageFlags pipelineStages;
         VkImageLayout layout;
+        bool operator==(const VulkanState& other) const {
+            return pipelineStages == other.pipelineStages && layout == other.layout && accessMasks == other.accessMasks;
+        }
     };
 
     auto SwitchResourceState = [](const ResourceState& r) {
@@ -1026,16 +1159,17 @@ void FG::FrameGraph::InsertBarriers2() {
                     }
                 }
             }
+
             for (auto& resourceIndex : pass->GetInputResources()) {
                 auto resource = resourceManager.FindResource(resourceIndex);
                 auto desc = resource->GetDescription<TextureDescription>();
                 auto aspect = desc->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ? 0 : 1;
                 if (resource->GetType() == ResourceType::Texture) {
                     auto prePassType = renderPassManager.FindRenderPass(*resource->GetOutputRenderPass().begin())->GetPassType();
-                    auto src = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    auto src = resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
                     resourceStates[resourceIndex].readable = true;
                     resourceStates[resourceIndex].writable = true;
-                    auto dst = resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    auto dst = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
                     BarrierInfo barrierInfo = {
                         .resourceID = resourceIndex,
                         .srcAccessMask = src.accessMasks,
@@ -1060,10 +1194,11 @@ void FG::FrameGraph::InsertBarriers2() {
                 auto aspect = desc->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ? 0 : 1;
                 if (resource->GetType() == ResourceType::Texture) {
                     auto prePassType = renderPassManager.FindRenderPass(*resource->GetOutputRenderPass().begin())->GetPassType();
-                    auto src = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    auto src = resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
                     resourceStates[resourceIndex].readable = true;
                     resourceStates[resourceIndex].writable = false;
-                    auto dst = resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    auto dst = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    if (dst == src ) continue; //如果完全相同，读后读不需要插入barrier
                     BarrierInfo barrierInfo = {
                         .resourceID = resourceIndex,
                         .srcAccessMask = src.accessMasks,

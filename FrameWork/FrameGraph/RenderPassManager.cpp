@@ -128,6 +128,11 @@ FG::PassType FG::RenderPass::GetPassType() const {
     return passType;
 }
 
+FG::RenderPass & FG::RenderPass::SetPassType(PassType type) {
+    passType = type;
+    return *this;
+}
+
 FG::RenderPass & FG::RenderPass::SetName(const std::string &name) {
     this->name = name;
     return *this;

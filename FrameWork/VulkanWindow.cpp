@@ -22,7 +22,7 @@ FrameWork::VulkanWindow::VulkanWindow() {
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    this->window = glfwCreateWindow(2560, 1440, "Start", nullptr, nullptr);
+    this->window = glfwCreateWindow(2560 / 2, 1440 / 2, "Start", nullptr, nullptr);
     if (window == nullptr) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();

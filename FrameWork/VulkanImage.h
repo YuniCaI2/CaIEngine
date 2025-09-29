@@ -12,7 +12,7 @@ namespace FrameWork {
     class VulkanImage {
     public:
         VkDevice device;
-        VkImage image;
+        VkImage image{VK_NULL_HANDLE};
         VkExtent2D extent;
         uint32_t mipLevels;
         uint32_t arrayLayers;

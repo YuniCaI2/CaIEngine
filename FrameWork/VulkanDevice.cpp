@@ -370,6 +370,10 @@ VkResult FrameWork::VulkanDevice::createImage(VulkanImage* vulkanImage, VkExtent
     vulkanImage->usage = usageFlags;
     vulkanImage->samples = numSamples;
 
+    // if (vulkanImage->image != VK_NULL_HANDLE) {
+    //     LOG_ERROR("Image has been created");
+    //     exit(-1);
+    // }
     VK_CHECK_RESULT(vkCreateImage(logicalDevice, &imageInfo, nullptr, &vulkanImage->image));
 
     VkMemoryRequirements memRequirements;

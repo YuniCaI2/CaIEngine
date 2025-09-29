@@ -60,6 +60,7 @@ namespace FG {
 
         VkRenderPass& GetVkRenderPass();
         PassType GetPassType() const;
+        RenderPass& SetPassType(PassType type);
     private:
         RenderPass& SetInputResource(uint32_t index);
         RenderPass& SetOutputResource(uint32_t index);

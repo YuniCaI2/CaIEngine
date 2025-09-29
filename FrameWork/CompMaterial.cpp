@@ -85,7 +85,7 @@ FrameWork::CompMaterial & FrameWork::CompMaterial::SetTexture(const std::string 
         VkDescriptorImageInfo descriptorInfo = {
             .sampler = texture->sampler,
             .imageView = texture->imageView,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            .imageLayout = VK_IMAGE_LAYOUT_GENERAL
         };
         VkWriteDescriptorSet descriptorWrite = {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -135,7 +135,7 @@ FrameWork::CompMaterial & FrameWork::CompMaterial::SetAttachment(const std::stri
     VkDescriptorImageInfo descriptorInfo = {
         .sampler = texture->sampler,
         .imageView = texture->imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL
     };
     VkWriteDescriptorSet descriptorWrite = {
         .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -162,11 +162,11 @@ SetStorageImage2D(const std::string &name, uint32_t id, uint32_t baseMipmap, boo
     auto shaderInfo = CompShader::Get(shaderRef)->GetShaderInfo();
     auto materialData = vulkanRenderAPI.getByIndex<FrameWork::CompMaterialData>(compDataID);
     uint32_t binding = -1;
-    for (int i = 0; i < shaderInfo.shaderProperties.textureProperties.size(); i++) {
-        if (name == shaderInfo.shaderProperties.textureProperties[i].name) {
-            if (shaderInfo.ssbos[i].type == StorageObjectType::Image2D)
+    for (int i = 0; i < shaderInfo.ssbos.size(); i++) {
+        if (shaderInfo.ssbos[i].name == name) {
+            if (shaderInfo.ssbos[i].type != StorageObjectType::Buffer) {
                 binding = shaderInfo.ssbos[i].binding;
-            break;
+            }
         }
     }
     if (binding == -1) {
@@ -175,10 +175,7 @@ SetStorageImage2D(const std::string &name, uint32_t id, uint32_t baseMipmap, boo
     }
 
     auto texture = vulkanRenderAPI.getByIndex<FrameWork::Texture>(id);
-    if (baseMipmap >= texture->image.mipLevels) {
-        LOG_ERROR("The Base Mimap: {} > image mipmap Level : {}", baseMipmap, texture->image.mipLevels);
-        return *this;
-    }
+
     if (texture == nullptr) {
         LOG_ERROR("Failed to set storageImage for material \"{}\", the storageImage is nullptr ", name);
         return *this;
@@ -209,9 +206,9 @@ SetStorageImage2D(const std::string &name, uint32_t id, uint32_t baseMipmap, boo
         }
     }else {
         VkDescriptorImageInfo descriptorInfo = {
-            .sampler = texture->sampler,
+            .sampler = VK_NULL_HANDLE,
             .imageView = texture->mipMapViews[baseMipmap],
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
         };
         VkWriteDescriptorSet descriptorWrite = {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -249,7 +246,7 @@ void FrameWork::CompMaterial::Bind(const VkCommandBuffer &commandBuffer) const {
     auto materialData = vulkanRenderAPI.getByIndex<FrameWork::CompMaterialData>(compDataID);
 
     vkCmdBindDescriptorSets(
-        commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->pipelineLayout, 0, 1,
+        commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline->pipelineLayout, 0, 1,
         &materialData->descriptorSets[vulkanRenderAPI.currentFrame], 0, nullptr
     );
 }

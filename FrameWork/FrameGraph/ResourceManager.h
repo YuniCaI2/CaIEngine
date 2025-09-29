@@ -10,6 +10,8 @@
 #include <utility>
 #include<shared_mutex>
 
+class ThreadPool;
+
 namespace FG {
     class FrameGraph;
 }
@@ -76,15 +78,13 @@ namespace FG {
         }
     };
 
-    //别名组资源，其直接对应Vulkan资源
     struct AliasGroup {
         std::vector<uint32_t> sharedResourceIndices;
         uint32_t vulkanIndex{UINT32_MAX};
         std::atomic<bool> isReset = true;
         BaseDescription* description{}; //资源描述
-        std::unique_ptr<std::mutex> mutexPtr;//实现对AliasGroup访问的异步
-
         //对应图像的Resolve的资源
+        std::mutex mutex;
         uint32_t resolveVulkanIndex{UINT32_MAX};
     };
 
@@ -185,6 +185,7 @@ namespace FG {
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
         //aliasGroup Index创建
         void CreateVulkanResource(uint32_t index);//生成Alias Group
+        void CreateVulkanResources(ThreadPool& threadPool);
         void ResetVulkanResources();
         void ResetVulkanResource(uint32_t aliasIndex);
         void UpdateReusePool();
@@ -197,6 +198,8 @@ namespace FG {
             uint32_t resourceIndex = 0;
             uint32_t resolveIndex = 0;
         };
+
+        std::mutex reusePoolMutex;
         std::unordered_map<uint32_t, std::deque<std::pair<ReuseResource, int>>> reuseResourcePool;
 
         std::unordered_map<uint32_t, uint32_t> resourceDescriptionToAliasGroup;
