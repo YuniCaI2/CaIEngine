@@ -193,6 +193,9 @@ void BaseScene::CreateFrameGraphResource() {
                 .SetExec([&, i](VkCommandBuffer cmdBuffer) {
                     auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
                     auto desc = resourceManager.FindResource(generateMipAttachments[i])->GetDescription<FG::TextureDescription>();
+                    uint32_t width, height;
+                    width = desc->width ;
+                    height = desc->height;
                     FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
                     if (i != 0) {
                         compMaterial->SetAttachment(
@@ -202,13 +205,13 @@ void BaseScene::CreateFrameGraphResource() {
                             "srcImage", resourceManager.GetVulkanIndex(resolveAttachment));
                     }
                     compMaterial->SetStorageImage2D(
-                        "dstImage", resourceManager.GetVulkanIndex(generateMipAttachments[i]), i);
+                        "dstImage", resourceManager.GetVulkanIndex(generateMipAttachments[i]), i + 1);
                     compMaterial->SetParam("srcLod", i);
-                    compMaterial->SetParam("dstScale", glm::vec2(desc->width, desc->height));
-                    compMaterial->SetParam("invDstScale", glm::vec2(1.0f / desc->width, 1.0f / desc->height));
+                    compMaterial->SetParam("dstScale", glm::vec2(width, height));
+                    compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
                     compMaterial->Bind(cmdBuffer);
-                    vkCmdDispatch(cmdBuffer, (desc->width + 15) / 16,
-                        (desc->height + 15) / 16, 1);
+                    vkCmdDispatch(cmdBuffer, (width + 15) / 16,
+                        (height + 15) / 16, 1);
                 });
             }
             );
