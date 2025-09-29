@@ -195,8 +195,9 @@ namespace FG {
         std::vector<std::unique_ptr<AliasGroup>> aliasGroups;
 
         struct ReuseResource {
-            uint32_t resourceIndex = 0;
+            uint32_t resourceIndex = 0; //这里指的是Vulkan实际的物理资源
             uint32_t resolveIndex = 0;
+            BaseDescription* baseDescription = nullptr; //存储Desc用于比较
         };
 
         std::mutex reusePoolMutex;

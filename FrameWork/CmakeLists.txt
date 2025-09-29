@@ -44,7 +44,12 @@ file(GLOB frameGraphPath
         "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/*.cpp"
 )
 
-add_library(FrameWork ${frameWorkPath} ${frameGraphPath}
+file(GLOB uniformPassPath
+        "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/UniformPass/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/UniformPass/*.cpp"
+)
+
+add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath}
         CaIMaterial.cpp
         CaIMaterial.h
         CaIShader.cpp

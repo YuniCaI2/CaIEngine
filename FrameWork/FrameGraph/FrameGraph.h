@@ -10,6 +10,10 @@
 #include "RenderPassManager.h"
 #include "ResourceManager.h"
 
+namespace FG {
+    class UniformPass;
+}
+
 //FrameGraph性能瓶颈在于创建帧间资源，这是重开销
 namespace FG {
     class FrameGraph {
@@ -29,6 +33,9 @@ namespace FG {
         void CreateCommandPools();
         VkRenderingAttachmentInfo CreateCreateAttachmentInfo(uint32_t resourceIndex);
         VkRenderingAttachmentInfo CreateInputAttachmentInfo(uint32_t resourceIndex);
+
+        ResourceManager& GetResourceManager();
+        RenderPassManager& GetRenderPassManager();
         //根据图的拓扑结构创建图的结构
         //为裁剪后的节点创建RenderPass
     private:

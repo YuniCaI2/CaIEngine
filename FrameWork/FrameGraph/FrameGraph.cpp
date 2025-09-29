@@ -957,6 +957,14 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     return attachmentInfo;
 }
 
+FG::ResourceManager & FG::FrameGraph::GetResourceManager() {
+    return resourceManager;
+}
+
+FG::RenderPassManager & FG::FrameGraph::GetRenderPassManager() {
+    return renderPassManager;
+}
+
 VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t resourceIndex) {
     VkRenderingAttachmentInfo attachmentInfo = {};
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;

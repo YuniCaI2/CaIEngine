@@ -97,54 +97,41 @@ bool FG::ResourceManager::CanAlias(uint32_t resourceDescIndex, uint32_t aliasInd
 }
 
 void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
-    //先不支持Buffer的创建，因为RenderAPI现无对应的接口
     auto& group = aliasGroups[index];
-    // std::unique_lock<std::mutex> groupLock(group->mutex);
-    if (group->vulkanIndex != UINT32_MAX) {
-        return;
-    }
+    if (group->vulkanIndex != UINT32_MAX) return;
 
-    auto description = aliasGroups[index]->description;
-    if (description->GetResourceType() == ResourceType::Texture) {
-        // std::unique_lock<std::mutex> lk(reusePoolMutex);
-        if (reuseResourcePool.contains(index) && !reuseResourcePool[index].empty()
-            && reuseResourcePool[index].front().second == 0) {
-            group->vulkanIndex = reuseResourcePool[index].front().first.resourceIndex;
-            group->resolveVulkanIndex = reuseResourcePool[index].front().first.resolveIndex;
-            reuseResourcePool[index].pop_front();
-            // lk.unlock();
-            group->isReset = false;
-            return;
+    auto* desc = group->description;
+    if (desc->GetResourceType() == ResourceType::Texture) {
+        auto it = reuseResourcePool.find(index);
+        if (it != reuseResourcePool.end()) {
+            auto& dq = it->second;
+            // 从队列中**扫描**第一个到期且兼容的资源
+            for (auto iter = dq.begin(); iter != dq.end(); ++iter) {
+                if (iter->second == 0) {
+                    if (desc->Equal(iter->first.baseDescription)) {
+                        group->vulkanIndex = iter->first.resourceIndex;
+                        group->resolveVulkanIndex = iter->first.resolveIndex;
+                        dq.erase(iter);
+                        group->isReset = false;
+                        return;
+                    }
+                }
+            }
         }
-    }else {
+    } else {
         LOG_WARNING("当前VulkanResource 不支持Compute Buffer，等待扩展");
     }
 
-    // groupLock.unlock();
-    uint32_t vulkanIndex, resolveVulkanIndex;
-    vulkanRenderAPI.CreateTexture(vulkanIndex, resolveVulkanIndex, description);
-    // 重新获取锁来更新结果
-    // groupLock.lock();
+    // 没找到可复用 => 新建
+    uint32_t vulkanIndex = UINT32_MAX, resolveVulkanIndex = UINT32_MAX;
+    vulkanRenderAPI.CreateTexture(vulkanIndex, resolveVulkanIndex, desc);
     group->vulkanIndex = vulkanIndex;
     group->resolveVulkanIndex = resolveVulkanIndex;
     group->isReset = false;
 }
 
 void FG::ResourceManager::CreateVulkanResources(ThreadPool& threadPool) {
-    // std::vector<std::future<void>> futures;
-    // futures.reserve(aliasGroups.size());
-    // for (int i = 0; i < aliasGroups.size(); ++i) {
-    //     futures.push_back(
-    //         threadPool.Enqueue(
-    //             [this, i]() {
-    //                 this->CreateVulkanResource(i);
-    //             }
-    //             )
-    //         );
-    // }
-    // for (auto& future : futures) {
-    //     future.wait();
-    // }
+
     for (int i = 0; i < aliasGroups.size(); ++i) {
         CreateVulkanResource(i);
     }
@@ -153,7 +140,6 @@ void FG::ResourceManager::CreateVulkanResources(ThreadPool& threadPool) {
 void FG::ResourceManager::ResetVulkanResources() {
     for (uint32_t index = 0; index < aliasGroups.size(); index++) {
         auto description = aliasGroups[index]->description;
-        aliasGroups[index]->isReset = true;
         if (description->GetResourceType() == ResourceType::Texture) {
             ResetVulkanResource(index);
         }else {
@@ -164,21 +150,25 @@ void FG::ResourceManager::ResetVulkanResources() {
 
 void FG::ResourceManager::ResetVulkanResource(uint32_t aliasIndex) {
     auto& group = aliasGroups[aliasIndex];
-    aliasGroups[aliasIndex]->isReset = true;
-    if (aliasGroups[aliasIndex]->vulkanIndex != UINT32_MAX) {
-        reuseResourcePool[aliasIndex].emplace_back(ReuseResource{group->vulkanIndex, group->resolveVulkanIndex}, MAX_FRAME);
+    if (group->vulkanIndex != UINT32_MAX) {
+        reuseResourcePool[aliasIndex].emplace_back(
+            ReuseResource{ group->vulkanIndex, group->resolveVulkanIndex, group->description}, MAX_FRAME);
+        group->vulkanIndex = UINT32_MAX;
+        group->resolveVulkanIndex = UINT32_MAX;
     }
+    group->isReset = true;
 }
 
 void FG::ResourceManager::UpdateReusePool() {
-    for (auto& [_, resourcePacks] : reuseResourcePool) {
-        for (auto& resource : resourcePacks) {
-            if (resource.second > 0) {
-                resource.second--;
-            }
+    for (auto& [alias, dq] : reuseResourcePool) {
+        for (auto& res : dq) {
+            if (res.second > 0) res.second--;
         }
     }
+
+    //超时销毁先不添加，因为现在是静态的
 }
+
 
 uint32_t FG::ResourceManager::GetVulkanIndex(const std::string& name) {
     return GetVulkanIndex(nameToResourceIndex[name]);

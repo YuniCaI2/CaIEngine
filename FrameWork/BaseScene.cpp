@@ -115,7 +115,7 @@ void BaseScene::CreateFrameGraphResource() {
                 desc->SetName(name)
                 .SetDescription<FG::TextureDescription>(
                     std::make_unique<FG::TextureDescription>(
-                        vulkanRenderAPI.GetFrameWidth() / std::pow(2, i + 1), vulkanRenderAPI.GetFrameHeight() / std::pow(2, i + 1),
+                        vulkanRenderAPI.GetFrameWidth() , vulkanRenderAPI.GetFrameHeight() ,
                         VK_FORMAT_R16G16B16A16_SFLOAT, 8, 1, 1, VK_SAMPLE_COUNT_1_BIT,
                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
                         )
@@ -194,8 +194,8 @@ void BaseScene::CreateFrameGraphResource() {
                     auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
                     auto desc = resourceManager.FindResource(generateMipAttachments[i])->GetDescription<FG::TextureDescription>();
                     uint32_t width, height;
-                    width = desc->width ;
-                    height = desc->height;
+                    width = desc->width / std::pow(2, i + 1);
+                    height = desc->height / std::pow(2, i + 1);
                     FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
                     if (i != 0) {
                         compMaterial->SetAttachment(
