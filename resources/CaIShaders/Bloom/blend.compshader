@@ -1,0 +1,36 @@
+﻿Settings{
+    localX 16
+    localY 16
+    localZ 1
+}
+
+Properties{
+    vec2  invDstScale
+    vec2  dstScale
+    float srcLod
+    sampler2D srcImage
+}
+
+SSBO{
+    ReadWrite Image2D RGBA16F dstImage
+}
+
+Program{
+    float luminance(vec3 c) {
+        //此计算出亮度更符合人眼
+        return dot(c, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    void main(){
+        ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+        if (any(greaterThanEqual(p, dstScale))) return;
+
+        vec2 uv = (vec2(p) + 0.5) * invDstScale;
+        vec3 c  = textureLod(srcImage, uv, 0).rgb;
+        vec3 prev = imageLoad(dstImage, p).rgb;
+
+        vec3 outC = c + prev;
+
+        imageStore(dstImage, p, vec4(outC, 1.0));
+    }
+}

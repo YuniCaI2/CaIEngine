@@ -81,13 +81,8 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                     FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
                     compMaterial->SetAttachment(
                         "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment));
-                    if (i == mipmapLevels - 1) {
-                        compMaterial->SetStorageImage2D(
-                            "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(generateAttachment), i + 1); //这里colorAttachment 一致，generateAttachment是时域上的替身
-                    }else {
-                        compMaterial->SetStorageImage2D(
-                            "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment), i + 1);
-                    }
+                    compMaterial->SetStorageImage2D(
+                        "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment), i + 1);
                     compMaterial->SetParam("srcLod", i);
                     compMaterial->SetParam("dstScale", glm::vec2(width, height));
                     compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
@@ -97,5 +92,5 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                     }
                 });
         });
-    index1 = generateAttachment;
+    index1 = generateAttachment; //colorAttachment的替身，防止成环，物理资源实际一致
 }

@@ -25,12 +25,20 @@ FG::FrameGraph::~FrameGraph() {
 }
 
 FG::FrameGraph &FG::FrameGraph::AddResourceNode(uint32_t resourceNode) {
-    resourceNodes.push_back(resourceNode);
+    //防止重复
+    if (std::find(resourceNodes.begin(), resourceNodes.end(), resourceNode)
+        == resourceNodes.end()) {
+        resourceNodes.push_back(resourceNode);
+    }
     return *this;
 }
 
 FG::FrameGraph &FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
-    renderPassNodes.push_back(renderPassNode);
+    //防止重复
+    if (std::find(renderPassNodes.begin(), renderPassNodes.end(), renderPassNode)
+        ==  renderPassNodes.end()) {
+        renderPassNodes.push_back(renderPassNode);
+    }
     return *this;
 }
 

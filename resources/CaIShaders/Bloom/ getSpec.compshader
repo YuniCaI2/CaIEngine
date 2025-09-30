@@ -1,0 +1,38 @@
+﻿Settings{
+    localX 16
+    localY 16
+    localZ 1
+}
+
+Properties{
+    float threshold
+    vec2  invDstScale
+    vec2  dstScale
+    sampler2D srcImage
+}
+
+SSBO{
+    Write Image2D RGBA16F dstImage
+}
+
+Program{
+    float luminance(vec3 c) {
+        //此计算出亮度更符合人眼
+        return dot(c, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    void main(){
+        ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+        if (any(greaterThanEqual(p, dstScale))) return;
+
+        vec2 uv = (vec2(p) + 0.5) * invDstScale;
+        vec3 c  = textureLod(srcImage, uv, 0).rgb; //提取第零层
+
+        float key = luminance(c);
+
+        // 硬阈值
+        vec3 outC = (key > threshold) ? c : vec3(0.0);
+
+        imageStore(dstImage, p, vec4(outC, 1.0));
+    }
+}

@@ -1,0 +1,58 @@
+﻿Settings{
+    localX 16
+    localY 16
+    localZ 1
+}
+
+Properties{
+    float srcLod
+    vec2 invDstScale
+    vec2 dstScale
+    sampler2D srcImage
+}
+
+
+SSBO{
+    Write Image2D RGBA16F dstImage
+}
+
+Program{
+    void computeGaussianKernel(int radius, float sigma, out float weights[])
+    {
+        float sum = 0.0;
+        for (int i = -radius; i <= radius; i++) {
+            float x = float(i);
+            float w = exp(-(x * x) / (2.0 * sigma * sigma));
+            weights[i + radius] = w;
+            sum += w;
+        }
+
+        for (int i = 0; i < 2 * radius + 1; i++) {
+            weights[i] /= sum;
+        }
+    }
+
+    const int R = 2;
+    float K[2 * R + 1];
+    void main(){
+        computeGaussianKernel(R, 1.0, K);
+
+        ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+        if (any(greaterThanEqual(p, dstScale))) return;
+
+        vec2 uv = (vec2(p) + 0.5) * invDstScale; //提前算好1 / dstScale
+        vec3 acc = vec3(0.0);
+
+        // 中心
+        acc += K[2] * textureLod(srcImage, uv, 0.0).rgb;
+
+        // 左右
+        for (int o = 1; o <= R; ++o) {
+            vec2 off = vec2(invDstScale.x * float(o), 0.0);
+            acc += K[2 +  o] * textureLod(srcImage, uv + off, srcLod + 1).rgb; //采样会自动处理边界
+            acc += K[2 -  o] * textureLod(srcImage, uv - off, srcLod + 1).rgb;
+        }
+
+        imageStore(dstImage, p, vec4(acc, 1.0));
+    }
+}
