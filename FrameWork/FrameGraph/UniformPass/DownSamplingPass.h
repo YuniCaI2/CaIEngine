@@ -19,9 +19,9 @@ namespace FG  {
     private:
         static constexpr std::string_view shaderPath = "../resources/CaIShaders/Bloom/downSample.compshader";
         uint32_t mipmapLevels{};
-        std::vector<uint32_t> generateMipAttachments;
         std::vector<uint32_t> compMaterials;
-        std::vector<uint32_t> generateMipPasses;
+        uint32_t generateMipPasses;
+        uint32_t generateAttachment; //这玩意是是输出
         uint32_t compShaderID{};
 
         FrameGraph* frameGraph{};

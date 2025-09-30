@@ -24,25 +24,12 @@ FG::DownSamplingPass::DownSamplingPass(FrameGraph* frameGraph, uint32_t mipmapLe
     for (int i = 0; i < mipmapLevels - 1; i++) {
         FrameWork::CompMaterial::Create(compMaterials[i], compShaderID);
     }
-    //创建纹理
-    generateMipAttachments.resize(mipmapLevels - 1);
-    generateMipPasses.resize(mipmapLevels - 1);
-
-
 }
 
 void FG::DownSamplingPass::Bind() {
-    frameGraph->AddResourceNode(colorAttachment);
-   for (int i = 0; i < mipmapLevels - 1; i++) {
-        frameGraph->AddResourceNode(generateMipAttachments[i]).AddRenderPassNode(generateMipPasses[i]);
-        if (i == 0) {
-            frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses[i])->SetInputOutputResources(colorAttachment,
-                generateMipAttachments[i]);
-        }else {
-            frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses[i])->SetInputOutputResources(generateMipAttachments[i - 1],
-                generateMipAttachments[i]);
-        }
-   }
+    frameGraph->AddResourceNode(colorAttachment).AddResourceNode(generateAttachment).AddRenderPassNode(generateMipPasses);
+        frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses)->SetInputOutputResources(colorAttachment,
+            generateAttachment);
 }
 
 void FG::DownSamplingPass::SetCreateResource(uint32_t &index) {
@@ -67,50 +54,48 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
     if (texDesc->mipLevels != mipmapLevels) {
         LOG_ERROR("In DownSampling, Input texDesc mipmap is not equal DownSampling mipmap");
     }
-    for (int i = 0; i < mipmapLevels - 1; i++) {
-        generateMipAttachments[i] = frameGraph->GetResourceManager().RegisterResource(
-            [&](std::unique_ptr<FG::ResourceDescription>& desc) {
-                std::string name = "mipmap" + std::to_string(i);
-                desc->SetName(name)
-                .SetDescription<FG::TextureDescription>(
-                    std::make_unique<FG::TextureDescription>(
-                         texDesc->width, texDesc->height,
-                        texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve
-                        texDesc->usages
-                        )
-                    );
-            }
-            );
-
-        generateMipPasses[i] = frameGraph->GetRenderPassManager().RegisterRenderPass(
-            [&](std::unique_ptr<FG::RenderPass>& renderPass) {
-                std::string name = "generateMipmapRenderPass" + std::to_string(i);
-
+    generateAttachment = frameGraph->GetResourceManager().RegisterResource(
+        [&](std::unique_ptr<FG::ResourceDescription>& desc) {
+            std::string name = "generate Attachment";
+            desc->SetName(name)
+            .SetDescription<FG::TextureDescription>(
+                std::make_unique<FG::TextureDescription>(
+                     texDesc->width, texDesc->height,
+                    texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve
+                    texDesc->usages
+                    )
+                );
+        }
+        );
+    generateMipPasses = frameGraph->GetRenderPassManager().RegisterRenderPass(
+        [&](std::unique_ptr<FG::RenderPass>& renderPass) {
+            std::string name = "generateMipmapRenderPass";
                 renderPass->SetName(name).SetPassType(FG::PassType::Compute)
-                .SetExec([&, i](VkCommandBuffer cmdBuffer) {
+                .SetExec([&](VkCommandBuffer cmdBuffer) {
+                    for (int i = 0; i < mipmapLevels - 1; i++) {
                     auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
-                    auto desc = frameGraph->GetResourceManager().FindResource(generateMipAttachments[i])->GetDescription<FG::TextureDescription>();
+                    auto desc = frameGraph->GetResourceManager().FindResource(colorAttachment)->GetDescription<FG::TextureDescription>();
                     uint32_t width, height;
                     width = desc->width / std::pow(2, i + 1);
                     height = desc->height / std::pow(2, i + 1);
                     FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
-                    if (i != 0) {
-                        compMaterial->SetAttachment(
-                            "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i - 1]));
+                    compMaterial->SetAttachment(
+                        "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment));
+                    if (i == mipmapLevels - 1) {
+                        compMaterial->SetStorageImage2D(
+                            "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(generateAttachment), i + 1); //这里colorAttachment 一致，generateAttachment是时域上的替身
                     }else {
-                        compMaterial->SetAttachment(
-                            "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment));
+                        compMaterial->SetStorageImage2D(
+                            "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment), i + 1);
                     }
-                    compMaterial->SetStorageImage2D(
-                        "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i]), i + 1);
                     compMaterial->SetParam("srcLod", i);
                     compMaterial->SetParam("dstScale", glm::vec2(width, height));
                     compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
                     compMaterial->Bind(cmdBuffer);
                     vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                         (height + 15) / 16, 1);
+                    }
                 });
-            });
-    }
-    index1 = generateMipAttachments.back();
+        });
+    index1 = generateAttachment;
 }
