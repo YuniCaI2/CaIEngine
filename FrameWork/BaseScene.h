@@ -74,6 +74,7 @@ private:
     uint32_t caiShaderID = -1;
     std::vector<uint32_t> materials; //这个对应每个mesh
     uint32_t presentShaderID = -1;
+    uint32_t resolveShaderID = -1;
     uint32_t testShader = -1;
     uint32_t compShaderID = -1;
 

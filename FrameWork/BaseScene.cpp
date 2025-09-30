@@ -54,7 +54,7 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
 
 void BaseScene::CreateFrameGraphResource() {
     //创建预制节点
-    downSamplingPass = std::make_unique<FG::DownSamplingPass>(frameGraph.get(), 8);
+    downSamplingPass = std::make_unique<FG::DownSamplingPass>(frameGraph.get(), 5);
     //创建持久资源
     std::string shaderPath = "../resources/CaIShaders/BaseScene/BaseScene.caishader";
     std::string testShaderPath = "../resources/CaIShaders/TestFrameGraph/forward.caishader";
@@ -77,8 +77,9 @@ void BaseScene::CreateFrameGraphResource() {
      }
     std::string presentShaderPath = "../resources/CaIShaders/Present/Present.caishader";
     FrameWork::CaIShader::Create(presentShaderID, presentShaderPath, vulkanRenderAPI.GetVulkanSwapChain().colorFormat);
+    FrameWork::CaIShader::Create(resolveShaderID, presentShaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
     FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
-    FrameWork::CaIMaterial::Create(resolveMaterialID, presentShaderID);
+    FrameWork::CaIMaterial::Create(resolveMaterialID, resolveShaderID);
 
     //创建FrameGraph资源
     colorAttachment = resourceManager.RegisterResource(
@@ -100,7 +101,7 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    VK_FORMAT_R16G16B16A16_SFLOAT, 8, 1, 1, VK_SAMPLE_COUNT_1_BIT,
+                    VK_FORMAT_R16G16B16A16_SFLOAT, 5, 1, 1, VK_SAMPLE_COUNT_1_BIT,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
                     )
                 );
@@ -158,7 +159,7 @@ void BaseScene::CreateFrameGraphResource() {
         renderPass->SetName("resolvePass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
-            FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
+            FrameWork::CaIShader::Get(resolveShaderID)->Bind(cmdBuffer);
             FrameWork::CaIMaterial::Get(resolveMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachment));
             FrameWork::CaIMaterial::Get(resolveMaterialID)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);

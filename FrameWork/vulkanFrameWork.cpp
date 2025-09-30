@@ -802,9 +802,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG
     }
     texture->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    if (texDesc->samples == VK_SAMPLE_COUNT_1_BIT) {
-        texture->sampler = CreateSampler(textureMipmap);
-    }
+    texture->sampler = CreateSampler(textureMipmap);
     //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
     texture->inUse = true;
 

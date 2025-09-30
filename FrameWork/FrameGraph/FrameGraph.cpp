@@ -951,6 +951,9 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
                 resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
             attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
             attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+#ifdef __APPLE__
+            attachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+#endif
         }
     }
 
@@ -1004,6 +1007,9 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
             attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
                 resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
             attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
+#ifdef __APPLE__
+            attachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+#endif
             attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         }
     }
