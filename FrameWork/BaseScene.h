@@ -12,6 +12,7 @@
 #include "VulkanDebug.h"
 #include "FrameGraph/RenderPassManager.h"
 #include "FrameGraph/ResourceManager.h"
+#include "FrameGraph/UniformPass/BloomingPass.h"
 #include "FrameGraph/UniformPass/DownSamplingPass.h"
 
 class BaseScene : public FrameWork::Scene{
@@ -82,11 +83,13 @@ private:
     uint32_t colorAttachment = 0;
     uint32_t depthAttachment = 0;
     uint32_t resolveAttachment = 0;
+    uint32_t bloomingAttachment = 0;
     uint32_t swapChainAttachment = 0;
     std::vector<uint32_t> generateMipAttachments;
     std::vector<uint32_t> compMaterials;//和pass对应起来
 
     std::unique_ptr<FG::DownSamplingPass> downSamplingPass;
+    std::unique_ptr<FG::BloomingPass> bloomingPass;
     uint32_t downSamplingOutput = -1;
 };
 

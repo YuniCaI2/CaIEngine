@@ -11,7 +11,7 @@ namespace FG {
     class BloomingPass : public UniformPass{
     public:
         virtual ~BloomingPass();
-        BloomingPass(FrameGraph* frameGraph, uint32_t mipmapLevels); //降采样层数
+        BloomingPass(FrameGraph* frameGraph, uint32_t mipmapLevels, float* thres = nullptr); //降采样层数
         virtual void Bind() override;
         virtual void SetCreateResource(uint32_t &index) override;
         virtual void SetReadResource(const uint32_t &index) override;
@@ -31,7 +31,10 @@ namespace FG {
 
         uint32_t generatePass;
         uint32_t specPass;
-        uint32_t generateAttachment;
+        uint32_t upRowPass;
+        uint32_t upColPass;
+        std::vector<uint32_t> upSamplingPass;
+        uint32_t blendPass;
         uint32_t rowShaderID;
         uint32_t colShaderID;
         uint32_t specShaderID;
@@ -41,8 +44,15 @@ namespace FG {
         uint32_t colorAttachment;//附件不需要MipmapLevel
         uint32_t specAttachment;
         uint32_t downSamplingAttachment;
+        uint32_t generateColAttachment;
+        uint32_t generateRowAttachment;
+        std::vector<uint32_t> generateColAttachments;
+        uint32_t blendAttachment;
 
         DownSamplingPass downSampling;
+
+        //向外操作参数
+        float* threshold;
     };
 }
 

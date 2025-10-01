@@ -4,7 +4,6 @@ Settings {
     Cull Back
     ZTest LessOrEqual
     ZWrite On
-    MSAA On
 }
 
 Vertex {
@@ -60,7 +59,7 @@ Fragment{
     Program{
         void main()
         {
-            vec4 colors =  texture(colorSampler, inTexCoord);
+            vec4 colors =  texture(colorSampler, inTexCoord) * 1.0;
             outColor = vec4(colors.r, colors.g , colors.b, 1.0);
         }
     }

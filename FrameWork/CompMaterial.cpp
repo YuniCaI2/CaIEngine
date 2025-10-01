@@ -188,7 +188,7 @@ SetStorageImage2D(const std::string &name, uint32_t id, uint32_t baseMipmap, boo
         for (auto& set : materialData->descriptorSets) {
             VkDescriptorImageInfo descriptorInfo = {
                 .sampler = texture->sampler,
-                .imageView = texture->mipMapViews[baseMipmap],
+                .imageView = baseMipmap == 0 ? texture->imageView : texture->mipMapViews[baseMipmap],
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             };
             VkWriteDescriptorSet descriptorWrite = {
@@ -207,7 +207,7 @@ SetStorageImage2D(const std::string &name, uint32_t id, uint32_t baseMipmap, boo
     }else {
         VkDescriptorImageInfo descriptorInfo = {
             .sampler = VK_NULL_HANDLE,
-            .imageView = texture->mipMapViews[baseMipmap],
+            .imageView = baseMipmap == 0 ? texture->imageView : texture->mipMapViews[baseMipmap],
             .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
         };
         VkWriteDescriptorSet descriptorWrite = {

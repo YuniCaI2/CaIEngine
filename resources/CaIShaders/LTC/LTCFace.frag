@@ -190,6 +190,6 @@ layout (binding = 4) uniform sampler2D lightTexture;
             vec3 radiance = _UBO.lightColor * _UBO.lightIntensity;
             vec3 col = radiance * (spec + _UBO.materialDiffuse * diff);
 
-            fragColor = vec4(ACEStonemap(col), 1.0);
+            fragColor = vec4(col, 1.0);
         }
     

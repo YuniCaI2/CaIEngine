@@ -4,7 +4,6 @@ Settings {
     Cull Back
     ZTest LessOrEqual
     ZWrite On
-    MSAA On
 }
 
 Vertex {
@@ -47,19 +46,12 @@ Fragment{
         sampler2D colorSampler
     }
     Program{
-        vec3 ACEStonemap(vec3 hdr) {
-            float a = 2.51;
-            float b = 0.03;
-            float c = 2.43;
-            float d = 0.59;
-            float e = 0.14;
-            return clamp((hdr * (a * hdr + b)) / (hdr * (c * hdr + d) + e), 0.0, 1.0);
-        }
+
 
         void main()
         {
             vec3 baseColor = vec3(texture(colorSampler, vTexCoord));
-            outColor = vec4(ACEStonemap(baseColor * vIntensity), 1.0);
+            outColor = vec4(vec3(baseColor * vIntensity), 1.0);
         }
     }
 }

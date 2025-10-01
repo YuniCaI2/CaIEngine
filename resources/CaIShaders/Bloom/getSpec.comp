@@ -1,0 +1,43 @@
+#version 450 core
+
+layout (binding = 0) uniform UniformBufferObject {
+    float threshold;
+    vec2 invDstScale;
+    vec2 dstScale;
+} _UBO;
+
+layout (binding = 1) uniform sampler2D srcImage;
+
+
+layout(binding = 2, rgba16f) uniform writeonly image2D dstImage;
+
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
+
+    float luminance(vec3 c){
+        return dot(c, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    // 软膝权重（对亮度做，再按比例回分量，避免单通道跳变）
+    vec3 softKneeBloom(vec3 c, float _UBO.threshold, float knee){
+        float L = luminance(c);
+        // t = max(L - _UBO.threshold, 0)
+        float t = max(L - _UBO.threshold, 0.0);
+        // 经典软膝： w = t^2 / (t + 2*knee)
+        float w = (t * t) / (t + 2.0 * knee + 1e-6);
+        // 把亮度权重按比例分配回 RGB，保持原色相
+        return (L > 1e-6) ? c * (w / L) : vec3(0.0);
+    }
+
+    void main(){
+        ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+        if (any(greaterThanEqual(p, _UBO.dstScale))) return;
+
+        vec2 uv = (vec2(p) + 0.5) * _UBO.invDstScale;
+        vec3 c  = textureLod(srcImage, uv, 0.0).rgb; // 在线性 HDR 空间
+
+        float knee = _UBO.threshold * 0.5;          // 软膝宽度
+        vec3 outC = softKneeBloom(c, _UBO.threshold, knee);
+
+        imageStore(dstImage, p, vec4(outC, 1.0));
+    }

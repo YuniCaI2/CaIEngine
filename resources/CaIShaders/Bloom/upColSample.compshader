@@ -1,4 +1,4 @@
-﻿Settings{
+Settings{
     localX 16
     localY 16
     localZ 1
@@ -6,10 +6,11 @@
 
 Properties{
     float maxLod
-    float srcLod
+    float dstLod
     vec2 invDstScale
     vec2 dstScale
     sampler2D srcImage
+    sampler2D blendImage
 }
 
 SSBO{
@@ -17,7 +18,9 @@ SSBO{
 }
 
 Program{
-    void computeGaussianKernel(int radius, float sigma, out float weights[])
+    const int R = 8;
+    float K[2 * R + 1];
+    void computeGaussianKernel(int radius, float sigma, out float weights[2 * R + 1])
     {
         float sum = 0.0;
         for (int i = -radius; i <= radius; i++) {
@@ -26,13 +29,12 @@ Program{
             weights[i + radius] = w;
             sum += w;
         }
+
         for (int i = 0; i < 2 * radius + 1; i++) {
             weights[i] /= sum;
         }
     }
 
-    const int R = 2;
-    float K[2 * R + 1];
 
     void main(){
         computeGaussianKernel(R, 1.0, K);
@@ -44,16 +46,18 @@ Program{
         vec3 acc = vec3(0.0);
 
         // 中心
-        acc += K[2] * textureLod(srcImage, uv, 0.0).rgb;
+        acc += K[R] * textureLod(srcImage, uv, dstLod).rgb;
 
         // 上下（纵向偏移）
         for (int o = 1; o <= R; ++o) {
             vec2 off = vec2(0.0, invDstScale.y * float(o));
-            acc += K[2 +  o] * textureLod(srcImage, uv + off, srcLod + 1).rgb; // 采样自动处理边界
-            acc += K[2 -  o] * textureLod(srcImage, uv - off, srcLod + 1).rgb;
+            acc += K[R +  o] * textureLod(srcImage, uv + off, dstLod).rgb; // 采样自动处理边界
+            acc += K[R -  o] * textureLod(srcImage, uv - off, dstLod).rgb;
         }
-        if(srcLod != maxLod){
-            acc += textureLod(srcImage, uv, srcLod).rgb; //叠加前一层的颜色
+
+        uv = (vec2(p) + 0.5) * invDstScale;
+        if(dstLod < maxLod){
+            acc += textureLod(blendImage, uv, dstLod + 1).rgb; //叠加前一层的颜色, blendImage是dstImage的Storage绑定
         }
         imageStore(dstImage, p, vec4(acc, 1.0));
     }

@@ -1,20 +1,18 @@
-Settings{
-    localX 16
-    localY 16
-    localZ 1
-}
+#version 450 core
 
-Properties{
-    vec2  invDstScale
-    vec2  dstScale
-    sampler2D srcImage
-}
+layout (binding = 0) uniform UniformBufferObject {
+    vec2 invDstScale;
+    vec2 dstScale;
+} _UBO;
 
-SSBO{
-    WriteRead Image2D RGBA16F dstImage
-}
+layout (binding = 1) uniform sampler2D srcImage;
 
-Program{
+
+layout(binding = 2, rgba16f) uniform  image2D dstImage;
+
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
+
     float luminance(vec3 c) {
         //此计算出亮度更符合人眼
         return dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -31,9 +29,9 @@ Program{
 
     void main(){
         ivec2 p = ivec2(gl_GlobalInvocationID.xy);
-        if (any(greaterThanEqual(p, dstScale))) return;
+        if (any(greaterThanEqual(p, _UBO.dstScale))) return;
 
-        vec2 uv = (vec2(p) + 0.5) * invDstScale;
+        vec2 uv = (vec2(p) + 0.5) * _UBO.invDstScale;
         vec3 c  = textureLod(srcImage, uv, 0).rgb;
         vec3 prev = imageLoad(dstImage, p).rgb;
 
@@ -43,4 +41,3 @@ Program{
 
         imageStore(dstImage, p, vec4(outC, 1.0));
     }
-}

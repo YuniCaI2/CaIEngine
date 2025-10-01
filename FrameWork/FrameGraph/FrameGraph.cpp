@@ -374,6 +374,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
 //
 //     updateBeforeRendering();
 //     resourceManager.ResetVulkanResources();
+//     resourceManager.CreateVulkanResources(threadPool);
 //
 //     auto buildGraphicsPassData = [&](uint32_t passIndex) -> RenderPassData {
 //         RenderPassData data;
@@ -727,6 +728,16 @@ void FG::FrameGraph::CreateTimeline() {
             }
         }
     }
+    // // DeBug
+    //  for (auto &renderPassNode: renderPassNodes) {
+    //      auto renderPass = renderPassManager.FindRenderPass(renderPassNode);
+    //
+    //      std::vector<std::string> dep;
+    //      for (auto& dependency : renderPass->GetRenderPassDependencies()) {
+    //          dep.push_back(renderPassManager.FindRenderPass(dependency)->GetName());
+    //      }
+    //      LOG_DEBUG("RenderPass : {} Dependencies are {}", renderPass->GetName(), dep);
+    //  }
     while (!q.empty()) {
         timeline.push_back(q);
         std::vector<uint32_t> tempQ;
@@ -737,7 +748,7 @@ void FG::FrameGraph::CreateTimeline() {
             auto renderPass = renderPassManager.FindRenderPass(renderPassIndex);
             if (renderPass != nullptr) {
                 auto dependencies = renderPass->GetRenderPassDependencies();
-                for (auto &r: q) {
+                for (auto &r: hasAddedPass) {
                     if (dependencies.contains(r)) {
                         dependencies.erase(r);
                     }
@@ -1041,6 +1052,7 @@ void FG::FrameGraph::InsertBarriers2() {
             return pipelineStages == other.pipelineStages && layout == other.layout && accessMasks == other.accessMasks;
         }
     };
+    std::unordered_map<uint32_t, VulkanState> preState;
 
     auto SwitchResourceState = [](const ResourceState& r) {
         if (r.readable == false && r.writable == true) { //Create
@@ -1154,6 +1166,7 @@ void FG::FrameGraph::InsertBarriers2() {
                     resourceStates[resourceIndex].readable = false;
                     resourceStates[resourceIndex].writable = true;
                     auto dst = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    preState[resourceIndex] = dst;
                     BarrierInfo barrierInfo = {
                         .resourceID = resourceIndex,
                         .srcAccessMask = 0,
@@ -1188,10 +1201,12 @@ void FG::FrameGraph::InsertBarriers2() {
                 auto aspect = desc->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ? 0 : 1;
                 if (resource->GetType() == ResourceType::Texture) {
                     auto prePassType = renderPassManager.FindRenderPass(*resource->GetOutputRenderPass().begin())->GetPassType();
-                    auto src = resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    auto src = preState.contains(resourceIndex) ? preState[resourceIndex] :
+                    resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
                     resourceStates[resourceIndex].readable = true;
                     resourceStates[resourceIndex].writable = true;
                     auto dst = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    preState[resourceIndex] = dst;
                     BarrierInfo barrierInfo = {
                         .resourceID = resourceIndex,
                         .srcAccessMask = src.accessMasks,
@@ -1216,10 +1231,12 @@ void FG::FrameGraph::InsertBarriers2() {
                 auto aspect = desc->usages & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ? 0 : 1;
                 if (resource->GetType() == ResourceType::Texture) {
                     auto prePassType = renderPassManager.FindRenderPass(*resource->GetOutputRenderPass().begin())->GetPassType();
-                    auto src = resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    auto src = preState.contains(resourceIndex) ? preState[resourceIndex] :
+                        resourceMap[static_cast<int>(prePassType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
                     resourceStates[resourceIndex].readable = true;
                     resourceStates[resourceIndex].writable = false;
                     auto dst = resourceMap[static_cast<int>(passType)][SwitchResourceState(resourceStates[resourceIndex])][aspect];
+                    preState[resourceIndex] = dst;
                     if (dst == src ) continue; //如果完全相同，读后读不需要插入barrier
                     BarrierInfo barrierInfo = {
                         .resourceID = resourceIndex,

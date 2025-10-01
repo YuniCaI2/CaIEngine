@@ -17,6 +17,7 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
         ImGui::SliderFloat("RotateY", &lightRotateY, 0.0f, 360.0f);
         ImGui::SliderFloat("Roughness", &roughness, 0.01f, 1.0f);
         ImGui::ColorEdit3("Diffuse", &diffuse[0]);
+        ImGui::SliderFloat("Blooming Thres", &threshold, 0.01f, 2.0f);
     };
 
     api.CreateTexture(LTCTex1ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_1.dds", SFLOAT16));
@@ -52,12 +53,13 @@ void LTCScene::CreateFrameGraphResource() {
     std::string ltcLightPath = "../resources/CaIShaders/LTC/LTCLight.caishader";
     std::string presentPath = "../resources/CaIShaders/Present/present.caishader";
 
-    FrameWork::CaIShader::Create(ltcLightShaderID, ltcLightPath);
-    FrameWork::CaIShader::Create(ltcFaceShaderID, ltcFacePath);
+    FrameWork::CaIShader::Create(ltcLightShaderID, ltcLightPath, VK_FORMAT_R16G16B16A16_SFLOAT);
+    FrameWork::CaIShader::Create(ltcFaceShaderID, ltcFacePath, VK_FORMAT_R16G16B16A16_SFLOAT);
     FrameWork::CaIShader::Create(presentShaderID, presentPath);
     FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
     FrameWork::CaIMaterial::Create(ltcFaceMaterialID, ltcFaceShaderID);
     FrameWork::CaIMaterial::Create(ltcLightMaterialID, ltcLightShaderID);
+    bloomPass = std::make_unique<FG::BloomingPass>(frameGraph.get(), 6, &threshold);
 
 
     api.GenFaceData(ltcLightModelID, {0, 0.5, 0}, {0, 0, 1}, 1, 1, "../resources/Pic/doro.png");
@@ -69,8 +71,8 @@ void LTCScene::CreateFrameGraphResource() {
             resource->SetName("colorAttachment");
             resource->SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
-                    api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1, 1 ,1, vulkanRenderAPI.GetSampleCount(),
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                    api.windowWidth, api.windowHeight, VK_FORMAT_R16G16B16A16_SFLOAT, 1, 1 ,1, VK_SAMPLE_COUNT_1_BIT,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
                     )
                 );
         }
@@ -82,7 +84,7 @@ void LTCScene::CreateFrameGraphResource() {
         .SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                 vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                vulkanRenderAPI.GetDepthFormat() , 1,1, 1, vulkanRenderAPI.GetSampleCount(),
+                vulkanRenderAPI.GetDepthFormat() , 1,1, 1, VK_SAMPLE_COUNT_1_BIT,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                 )
             );
@@ -94,8 +96,8 @@ void LTCScene::CreateFrameGraphResource() {
         resource->SetName("colorAttachment1");
         resource->SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
-                api.windowWidth, api.windowHeight, api.GetVulkanSwapChain().colorFormat, 1,1, 1, vulkanRenderAPI.GetSampleCount(),
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                api.windowWidth, api.windowHeight, VK_FORMAT_R16G16B16A16_SFLOAT, 1,1, 1, VK_SAMPLE_COUNT_1_BIT,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
                 )
             );
     }
@@ -107,7 +109,7 @@ void LTCScene::CreateFrameGraphResource() {
         .SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                 vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                vulkanRenderAPI.GetDepthFormat() , 1,1, 1, vulkanRenderAPI.GetSampleCount(),
+                vulkanRenderAPI.GetDepthFormat() , 1,1, 1, VK_SAMPLE_COUNT_1_BIT,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                 )
             );
@@ -206,13 +208,14 @@ void LTCScene::CreateFrameGraphResource() {
             });
         }
         );
+    bloomPass->SetInputOutputResource(colorAttachmentID1, bloomingAttachment);
 
     presentPass = renderPassManager.RegisterRenderPass([this](auto &renderPass) {
         renderPass->SetName("presentPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
         //绑定对应imageView
         FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-        FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachmentID1));
+        FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanIndex(bloomingAttachment));
         FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
         vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
             });
@@ -232,11 +235,12 @@ void LTCScene::CreateFrameGraphResource() {
     swapChainDesc->GetDescription<FG::TextureDescription>()->height = vulkanRenderAPI.windowHeight;
     });
 
+    bloomPass->Bind();
     renderPassManager.FindRenderPass(ltcFacePass)->SetCreateResource(colorAttachmentID).SetCreateResource(depthAttachmentID);
     renderPassManager.FindRenderPass(ltcLightPass)->SetInputOutputResources(colorAttachmentID, colorAttachmentID1)
     .SetInputOutputResources(depthAttachmentID,depthAttachmentID1);
     renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachmentID).SetReadResource(
-    colorAttachmentID1);
+    bloomingAttachment);
 
     frameGraph->Compile();
 }

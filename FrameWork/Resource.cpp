@@ -540,7 +540,12 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
         if (filepath1.string() == ".") {
             return false;
         }
-        auto time1 = std::filesystem::last_write_time(filepath1);
+        std::filesystem::file_time_type time1;
+        try {
+            time1 = std::filesystem::last_write_time(filepath1);
+        }catch (std::exception &e) {
+            LOG_ERROR("Exception in GetCompShaderModule: {}", e.what());
+        }
         if (time1 == time) {
             return false;
         } else {
@@ -579,6 +584,10 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
     }
     auto  compShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".comp.spv" , device);
     shaderModules.emplace_back(VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule);
+
+    if (ifCompile) {
+        SaveCache(caiShaderTimeCachePath, caiShaderTimeCache);
+    }
 
     return shaderModules;
 }

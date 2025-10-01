@@ -4,7 +4,6 @@ Settings {
     Cull Back
     ZTest LessOrEqual
     ZWrite On
-    MSAA On
 }
 
 Vertex {
@@ -232,7 +231,7 @@ Fragment{
             vec3 radiance = lightColor * lightIntensity;
             vec3 col = radiance * (spec + materialDiffuse * diff);
 
-            fragColor = vec4(ACEStonemap(col), 1.0);
+            fragColor = vec4(col, 1.0);
         }
     }
 }

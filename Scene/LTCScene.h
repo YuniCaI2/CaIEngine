@@ -6,6 +6,7 @@
 #define LTCSCENE_H
 #include "Scene.h"
 #include "FrameGraph/FrameGraph.h"
+#include "FrameGraph/UniformPass/BloomingPass.h"
 
 
 class LTCScene : public FrameWork::Scene {
@@ -71,9 +72,14 @@ private:
     uint32_t colorAttachmentID = -1;
     uint32_t depthAttachmentID = -1;
     uint32_t colorAttachmentID1 = -1;
+    uint32_t bloomingAttachment = -1;
     uint32_t depthAttachmentID1 = -1;
     uint32_t swapChainAttachmentID = -1;
 
+    std::unique_ptr<FG::BloomingPass> bloomPass;
+
+    //Bloom
+    float threshold = 0.0f;
 };
 
 

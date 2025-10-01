@@ -12,7 +12,7 @@ layout (binding = 1) uniform sampler2D colorSampler;
 
         void main()
         {
-            vec4 colors =  texture(colorSampler, inTexCoord);
+            vec4 colors =  texture(colorSampler, inTexCoord) * 1.0;
             outColor = vec4(colors.r, colors.g , colors.b, 1.0);
         }
     
