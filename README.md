@@ -221,4 +221,5 @@
 
   以下是LTC场景的展示
 
-  ![IMG_5433](https://github.com/user-attachments/assets/23f1cfc9-bdd2-4dd9-8eec-aa30f188fad0)
+  <img width="1275" height="716" alt="image" src="https://github.com/user-attachments/assets/b34611ca-60a6-4478-a27a-c26e47100517" />
+
