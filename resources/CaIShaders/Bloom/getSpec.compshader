@@ -38,7 +38,7 @@ Program{
         vec2 uv = (vec2(p) + 0.5) * invDstScale;
         vec3 c  = textureLod(srcImage, uv, 0.0).rgb; // 在线性 HDR 空间
 
-        float knee = threshold * 0.5;          // 软膝宽度
+        float knee = threshold * 1.5;          // 软膝宽度
         vec3 outC = softKneeBloom(c, threshold, knee);
 
         imageStore(dstImage, p, vec4(outC, 1.0));

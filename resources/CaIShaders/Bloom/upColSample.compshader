@@ -37,7 +37,7 @@ Program{
 
 
     void main(){
-        computeGaussianKernel(R, 1.0, K);
+        computeGaussianKernel(R, 2.5, K);
 
         ivec2 p = ivec2(gl_GlobalInvocationID.xy);
         if (any(greaterThanEqual(p, dstScale))) return;
@@ -45,7 +45,12 @@ Program{
         vec2 uv = (vec2(p) + 0.5) * invDstScale; // 提前算好1 / dstScale
         vec3 acc = vec3(0.0);
 
+
+        if(dstLod < maxLod){
+            acc += textureLod(blendImage, uv, dstLod + 1).rgb; //叠加前一层的颜色, blendImage是dstImage的Storage绑定
+        }
         // 中心
+
         acc += K[R] * textureLod(srcImage, uv, dstLod).rgb;
 
         // 上下（纵向偏移）
@@ -55,10 +60,6 @@ Program{
             acc += K[R -  o] * textureLod(srcImage, uv - off, dstLod).rgb;
         }
 
-        uv = (vec2(p) + 0.5) * invDstScale;
-        if(dstLod < maxLod){
-            acc += textureLod(blendImage, uv, dstLod + 1).rgb; //叠加前一层的颜色, blendImage是dstImage的Storage绑定
-        }
         imageStore(dstImage, p, vec4(acc, 1.0));
     }
 

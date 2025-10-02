@@ -35,7 +35,7 @@ Program{
         }
     }
     void main(){
-        computeGaussianKernel(R, 1.0, K);
+        computeGaussianKernel(R, 2.5, K);
 
         ivec2 p = ivec2(gl_GlobalInvocationID.xy);
         if (any(greaterThanEqual(p, dstScale))) return;

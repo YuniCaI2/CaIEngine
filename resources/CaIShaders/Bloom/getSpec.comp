@@ -36,7 +36,7 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
         vec2 uv = (vec2(p) + 0.5) * _UBO.invDstScale;
         vec3 c  = textureLod(srcImage, uv, 0.0).rgb; // 在线性 HDR 空间
 
-        float knee = _UBO.threshold * 0.5;          // 软膝宽度
+        float knee = _UBO.threshold * 1.5;          // 软膝宽度
         vec3 outC = softKneeBloom(c, _UBO.threshold, knee);
 
         imageStore(dstImage, p, vec4(outC, 1.0));

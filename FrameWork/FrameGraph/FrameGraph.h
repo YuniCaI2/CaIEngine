@@ -15,6 +15,7 @@ namespace FG {
 }
 
 //FrameGraph性能瓶颈在于创建帧间资源，这是重开销
+//后续可以将RenderPass进行合并，比如可以将相邻的Pass如果管线一致可以防止其重复绑定,所以需要加一个数组记录管线？
 namespace FG {
     class FrameGraph {
     public:

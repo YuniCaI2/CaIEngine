@@ -53,13 +53,13 @@ void LTCScene::CreateFrameGraphResource() {
     std::string ltcLightPath = "../resources/CaIShaders/LTC/LTCLight.caishader";
     std::string presentPath = "../resources/CaIShaders/Present/present.caishader";
 
-    FrameWork::CaIShader::Create(ltcLightShaderID, ltcLightPath, VK_FORMAT_R16G16B16A16_SFLOAT);
-    FrameWork::CaIShader::Create(ltcFaceShaderID, ltcFacePath, VK_FORMAT_R16G16B16A16_SFLOAT);
+    FrameWork::CaIShader::Create(ltcLightShaderID, ltcLightPath, VK_FORMAT_R32G32B32A32_SFLOAT);
+    FrameWork::CaIShader::Create(ltcFaceShaderID, ltcFacePath, VK_FORMAT_R32G32B32A32_SFLOAT);
     FrameWork::CaIShader::Create(presentShaderID, presentPath);
     FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
     FrameWork::CaIMaterial::Create(ltcFaceMaterialID, ltcFaceShaderID);
     FrameWork::CaIMaterial::Create(ltcLightMaterialID, ltcLightShaderID);
-    bloomPass = std::make_unique<FG::BloomingPass>(frameGraph.get(), 6, &threshold);
+    bloomPass = std::make_unique<FG::BloomingPass>(frameGraph.get(), 8, &threshold);
 
 
     api.GenFaceData(ltcLightModelID, {0, 0.5, 0}, {0, 0, 1}, 1, 1, "../resources/Pic/doro.png");
@@ -71,7 +71,7 @@ void LTCScene::CreateFrameGraphResource() {
             resource->SetName("colorAttachment");
             resource->SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
-                    api.windowWidth, api.windowHeight, VK_FORMAT_R16G16B16A16_SFLOAT, 1, 1 ,1, VK_SAMPLE_COUNT_1_BIT,
+                    api.windowWidth, api.windowHeight, VK_FORMAT_R32G32B32A32_SFLOAT, 1, 1 ,1, VK_SAMPLE_COUNT_1_BIT,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
                     )
                 );
@@ -96,7 +96,7 @@ void LTCScene::CreateFrameGraphResource() {
         resource->SetName("colorAttachment1");
         resource->SetDescription<FG::TextureDescription>(
             std::make_unique<FG::TextureDescription>(
-                api.windowWidth, api.windowHeight, VK_FORMAT_R16G16B16A16_SFLOAT, 1,1, 1, VK_SAMPLE_COUNT_1_BIT,
+                api.windowWidth, api.windowHeight, VK_FORMAT_R32G32B32A32_SFLOAT, 1,1, 1, VK_SAMPLE_COUNT_1_BIT,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
                 )
             );
