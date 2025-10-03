@@ -784,7 +784,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
 }
 
 
-void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG::BaseDescription *description) { //特别的此函数只生成2D纹理， Cube纹理有CreateCubeTexture生成
+void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *description) { //特别的此函数只生成2D纹理， Cube纹理有CreateCubeTexture生成
     if (description->GetResourceType() != FG::ResourceType::Texture) {
         LOG_ERROR("Can't create resource which description is not texture type by create texture");
     }
@@ -806,53 +806,20 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, uint32_t& resolveID, FG
     //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
     texture->inUse = true;
 
-    //对resolve处理
-    if (texDesc->samples != VK_SAMPLE_COUNT_1_BIT) {
-        resolveID = getNextIndex<FrameWork::Texture>();
-        auto resolve = getByIndex<FrameWork::Texture>(resolveID);
-        vulkanDevice->createImage(&resolve->image, VkExtent2D(texDesc->width, texDesc->height),
-            texDesc->resolveMipLevels, texDesc->arrayLayers, VK_SAMPLE_COUNT_1_BIT, texDesc->format, VK_IMAGE_TILING_OPTIMAL,
-        texDesc->usages , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        if (texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            CreateImageView(resolve->image, resolve->imageView, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-        }else {
-            CreateImageView(resolve->image, resolve->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+    if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->mipLevels > 1) { //为深度创建需要扩展
+        //为各个Mipmap预先生成好对应的ImageView
+        texture->mipMapViews.resize(texDesc->mipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
+        for (uint32_t i = 0; i < texDesc->mipLevels; i++) {
+            VkImageSubresourceRange subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = i,
+                .levelCount = 1,
+                .baseArrayLayer = 0, //这里为单层的Image
+                .layerCount =  1
+            };
+            CreateImageView(texture->image, texture->mipMapViews[i], subresourceRange, VK_IMAGE_VIEW_TYPE_2D);
         }
-        resolve->image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
-        resolve->sampler = CreateSampler(texDesc->resolveMipLevels);
-        //这里不关心纹理用来干什么，在FrameGraph直接可以通过Description区分
-        resolve->inUse = true;
-        if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->resolveMipLevels > 1) {
-            //为各个Mipmap预先生成好对应的ImageView
-            //因为多采样时原图不能有mipmap，所以此处对应resolve的mipmap
-            resolve->mipMapViews.resize(texDesc->resolveMipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
-            for (uint32_t i = 0; i < texDesc->resolveMipLevels; i++) {
-                VkImageSubresourceRange subresourceRange = {
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel = i,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0, //这里为单层的Image
-                    .layerCount =  1
-                };
-                CreateImageView(resolve->image, resolve->mipMapViews[i], subresourceRange, VK_IMAGE_VIEW_TYPE_2D);
-            }
-        }
-    }else {
-        if (!(texDesc->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) && texDesc->mipLevels > 1) {
-            //为各个Mipmap预先生成好对应的ImageView
-            texture->mipMapViews.resize(texDesc->mipLevels);//注意为了调用方便，所有Mipmap都生成一个imageView，所以第一个mipmap 0 和ImageView是重叠的
-            for (uint32_t i = 0; i < texDesc->mipLevels; i++) {
-                VkImageSubresourceRange subresourceRange = {
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel = i,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0, //这里为单层的Image
-                    .layerCount =  1
-                };
-                CreateImageView(texture->image, texture->mipMapViews[i], subresourceRange, VK_IMAGE_VIEW_TYPE_2D);
-            }
-        }
-    }//当采样数为1时
+    }
 
 }
 

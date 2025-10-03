@@ -108,7 +108,6 @@ void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
                 if (i == 0) {
                     if (desc->Equal(resource.baseDescription)) {
                         group->vulkanIndex = resource.resourceIndex;
-                        group->resolveVulkanIndex = resource.resolveIndex;
                         group->isReset = false;
                         reuseResourcePool.erase(iter);
                         return;
@@ -120,10 +119,9 @@ void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     }
 
     // 没找到可复用 => 新建
-    uint32_t vulkanIndex = UINT32_MAX, resolveVulkanIndex = UINT32_MAX;
-    vulkanRenderAPI.CreateTexture(vulkanIndex, resolveVulkanIndex, desc);
+    uint32_t vulkanIndex = UINT32_MAX;
+    vulkanRenderAPI.CreateTexture(vulkanIndex, desc);
     group->vulkanIndex = vulkanIndex;
-    group->resolveVulkanIndex = resolveVulkanIndex;
     group->isReset = false;
 }
 
@@ -149,9 +147,8 @@ void FG::ResourceManager::ResetVulkanResource(uint32_t aliasIndex) {
     auto& group = aliasGroups[aliasIndex];
     if (group->vulkanIndex != UINT32_MAX) {
         reuseResourcePool.emplace(
-            ReuseResource{ group->vulkanIndex, group->resolveVulkanIndex, group->description}, MAX_FRAME);
+            ReuseResource{ group->vulkanIndex, group->description}, MAX_FRAME);
         group->vulkanIndex = UINT32_MAX;
-        group->resolveVulkanIndex = UINT32_MAX;
     }
     group->isReset = true;
 }
@@ -177,22 +174,6 @@ uint32_t FG::ResourceManager::GetVulkanIndex(uint32_t resourceIndex) {
 
     return a->vulkanIndex;
 
-}
-
-uint32_t FG::ResourceManager::GetVulkanResolveIndex(uint32_t resourceIndex) {
-    if (resourceDescriptions[resourceIndex]->isExternal) {
-        LOG_ERROR("The external resourceIndex : {} , Can't get resolve index", resourceDescriptions[resourceIndex]->GetName());
-        return -1;
-    }
-    if (resourceDescriptions[resourceIndex]->GetType() == ResourceType::Texture) {
-        auto ag = resourceDescriptionToAliasGroup[resourceIndex];
-        auto& a = aliasGroups[ag];
-
-        return a->resolveVulkanIndex;
-    }else {
-        LOG_ERROR("The resource type is Buffer ,didnt have resolve index");
-        return -1;
-    }
 }
 
 std::vector<std::unique_ptr<FG::AliasGroup>> & FG::ResourceManager::GetAliasGroups() {

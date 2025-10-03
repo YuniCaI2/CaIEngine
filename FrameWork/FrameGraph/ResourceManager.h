@@ -35,14 +35,13 @@ namespace FG {
     struct TextureDescription : public BaseDescription {
         TextureDescription() = default;
         TextureDescription(
-            uint32_t width_, uint32_t height_, VkFormat format_, uint32_t mipLevels, uint32_t resolveMipLevels, uint32_t arraySize,
+            uint32_t width_, uint32_t height_, VkFormat format_, uint32_t mipLevels, uint32_t arraySize,
             VkSampleCountFlagBits samples_, VkImageUsageFlags usage_
-            ) : width(width_), height(height_), format(format_), mipLevels(mipLevels), resolveMipLevels(resolveMipLevels), arrayLayers(arraySize),samples(samples_), usages(usage_) {}
+            ) : width(width_), height(height_), format(format_), mipLevels(mipLevels), arrayLayers(arraySize),samples(samples_), usages(usage_) {}
         uint32_t width{};
         uint32_t height{};
         VkFormat format{};
         uint32_t mipLevels{};
-        uint32_t resolveMipLevels{UINT32_MAX};
         uint32_t arrayLayers{};
         VkSampleCountFlagBits samples{};
         VkImageUsageFlags usages{};
@@ -85,7 +84,6 @@ namespace FG {
         BaseDescription* description{}; //资源描述
         //对应图像的Resolve的资源
         std::mutex mutex;
-        uint32_t resolveVulkanIndex{UINT32_MAX};
     };
 
     class ResourceDescription {
@@ -177,7 +175,6 @@ namespace FG {
         ResourceDescription* FindResource(uint32_t index);
         uint32_t GetVulkanIndex(const std::string& name);
         uint32_t GetVulkanIndex(uint32_t resourceIndex);
-        uint32_t GetVulkanResolveIndex(uint32_t resourceIndex);
         void ClearAliasGroups();
         std::vector<std::unique_ptr<AliasGroup>>& GetAliasGroups();
     private:
@@ -196,20 +193,18 @@ namespace FG {
 
         struct ReuseResource {
             uint32_t resourceIndex = 0; //这里指的是Vulkan实际的物理资源
-            uint32_t resolveIndex = 0;
             BaseDescription* baseDescription = nullptr; //存储Desc用于比较
 
             bool operator==(const ReuseResource & r) const {
-                return resourceIndex == r.resourceIndex && resolveIndex == r.resolveIndex && baseDescription == r.baseDescription;
+                return resourceIndex == r.resourceIndex && baseDescription == r.baseDescription;
             }
         };
 
         struct ReuseResourceHash {
             size_t operator()(const ReuseResource& r) const noexcept {
                 size_t h1 = std::hash<uint32_t>{}(r.resourceIndex);
-                size_t h2 = std::hash<uint32_t>{}(r.resolveIndex);
-                size_t h3 = std::hash<BaseDescription*>{}(r.baseDescription);
-                return h1 ^ (h2 ^ h3 + 0x9e3779b97f4a7c15ULL + (h1<< 8) + (h1>>2) + (h3 >> 1));
+                size_t h2 = std::hash<BaseDescription*>{}(r.baseDescription);
+                return h1 ^ (h2  + 0x9e3779b97f4a7c15ULL + (h1<< 8) + (h1>>2));
             }
         };
 

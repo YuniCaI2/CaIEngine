@@ -102,37 +102,6 @@ void FG::FrameGraph::InsertImageBarrier(VkCommandBuffer cmdBuffer, const Barrier
                          0, nullptr,
                          1, &vkBarrier);
 
-    if (description->samples != VK_SAMPLE_COUNT_1_BIT) {
-        auto resolveTexture =vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-            resourceManager.GetVulkanResolveIndex(barrier.resourceID));
-        VkImageSubresourceRange subresourceRange = {};
-        subresourceRange.aspectMask = (description->usages & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                                          ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
-                                          : VK_IMAGE_ASPECT_COLOR_BIT;
-        subresourceRange.layerCount = description->arrayLayers;
-        subresourceRange.levelCount = description->resolveMipLevels;
-        subresourceRange.baseMipLevel = 0;
-        subresourceRange.baseArrayLayer = 0;
-
-        VkImageMemoryBarrier vkBarrier = {};
-        vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        vkBarrier.image = resolveTexture->image.image;
-        vkBarrier.oldLayout = barrier.oldLayout;
-        vkBarrier.newLayout = barrier.newLayout;
-        vkBarrier.srcAccessMask = barrier.srcAccessMask;
-        vkBarrier.dstAccessMask = barrier.dstAccessMask;
-        vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        vkBarrier.subresourceRange = subresourceRange;
-
-        vkCmdPipelineBarrier(cmdBuffer,
-                             barrier.srcStageMask,
-                             barrier.dstStageMask,
-                             0,
-                             0, nullptr,
-                             0, nullptr,
-                             1, &vkBarrier);
-    }
 }
 
 FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
@@ -985,25 +954,10 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateInputAttachmentInfo(uint32_t res
     if ((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
-            attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
     } else if ((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
-            attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
-            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-#ifdef __APPLE__
-            attachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-#endif
-        }
     }
 
     return attachmentInfo;
@@ -1042,25 +996,10 @@ VkRenderingAttachmentInfo FG::FrameGraph::CreateCreateAttachmentInfo(uint32_t re
     if ((texture->image.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) == VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.color = vulkanRenderAPI.defaultClearColor;
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT && texture->image.samples != 0) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
-            attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
     } else if ((texture->image.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) ==
                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         attachmentInfo.clearValue.depthStencil = {1.0f, 0};
         attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        if (texture->image.samples != VK_SAMPLE_COUNT_1_BIT && texture->image.samples != 0) {
-            attachmentInfo.resolveImageView = vulkanRenderAPI.getByIndex<FrameWork::Texture>(
-                resourceManager.GetVulkanResolveIndex(resourceIndex))->imageView;
-            attachmentInfo.resolveMode = VK_RESOLVE_MODE_MAX_BIT; //深度不支持平均
-#ifdef __APPLE__
-            attachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-#endif
-            attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        }
     }
 
     return attachmentInfo;

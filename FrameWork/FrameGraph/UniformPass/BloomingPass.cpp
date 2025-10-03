@@ -64,7 +64,7 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
             .SetDescription<TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                  texDesc->width, texDesc->height,
-                texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
+                texDesc->format, mipmapLevels, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
                 texDesc->usages
                 )
                 );
@@ -77,7 +77,7 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
             .SetDescription<TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                  texDesc->width, texDesc->height,
-                texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
+                texDesc->format, mipmapLevels, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
                 texDesc->usages
                 )
                 );
@@ -90,7 +90,7 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
             .SetDescription<TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                  texDesc->width, texDesc->height,
-                texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
+                texDesc->format, mipmapLevels ,1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
                 texDesc->usages
                 )
                 );
@@ -105,7 +105,7 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
                 .SetDescription<TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                      texDesc->width, texDesc->height,
-                    texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
+                    texDesc->format, mipmapLevels, 1, texDesc->samples, //一般接受的是一个resolve,采样保证为1
                     texDesc->usages
                     )
                     );
@@ -119,7 +119,7 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
             .SetDescription<TextureDescription>(
             std::make_unique<FG::TextureDescription>(
                  texDesc->width, texDesc->height,
-                texDesc->format, texDesc->mipLevels, texDesc->resolveMipLevels, texDesc->arrayLayers, texDesc->samples, //和colorAttachment一致,作为colorAttachment在FrameGraph的替身
+                texDesc->format, texDesc->mipLevels, texDesc->arrayLayers, texDesc->samples, //和colorAttachment一致,作为colorAttachment在FrameGraph的替身
                 texDesc->usages
                 )
                 );

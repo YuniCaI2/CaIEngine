@@ -61,7 +61,7 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                 .SetDescription<FG::TextureDescription>(
                     std::make_unique<FG::TextureDescription>(
                          texDesc->width, texDesc->height,
-                        texDesc->format, mipmapLevels, 1, 1, texDesc->samples, //一般接受的是一个resolve
+                        texDesc->format, mipmapLevels, 1, texDesc->samples, //一般接受的是一个resolve
                         texDesc->usages
                         )
                     );
