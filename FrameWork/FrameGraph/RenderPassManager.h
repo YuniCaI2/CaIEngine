@@ -23,7 +23,9 @@ namespace FG {
     };
     enum class PassType {
         Graphics,
-        Compute
+        Compute,
+        Resolve,
+        GenerateMipmap
     };
 
     class RenderPass {

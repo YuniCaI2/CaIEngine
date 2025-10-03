@@ -12,7 +12,6 @@ namespace FG {
     public:
         virtual ~BloomingPass();
         BloomingPass(FrameGraph* frameGraph, uint32_t mipmapLevels, float* thres = nullptr); //降采样层数
-        virtual void Bind() override;
         virtual void SetCreateResource(uint32_t &index) override;
         virtual void SetReadResource(const uint32_t &index) override;
         virtual void SetInputOutputResource(const uint32_t &index0, uint32_t &index1) override;

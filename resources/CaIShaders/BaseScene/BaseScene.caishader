@@ -4,6 +4,7 @@ Settings {
     Cull Back
     ZTest LessOrEqual
     ZWrite On
+    MSAA On
 }
 
 Vertex {

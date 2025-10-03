@@ -301,6 +301,36 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
 
                     return data;
                 }));
+            }else if (type == PassType::Resolve) {
+                futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                    RenderPassData data;
+                    data.passIndex = passIndex;
+                    data.hasDepth = false;
+                    data.width = vulkanRenderAPI.windowWidth;
+                    data.height = vulkanRenderAPI.windowHeight;
+                    data.passType = PassType::Resolve;
+                    data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+                    // 收集附件格式信息
+                    // 不设置继承信息
+
+                    VkCommandBufferInheritanceInfo inherit{};
+                    inherit.sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+                    inherit.renderPass  = VK_NULL_HANDLE;    // 计算不在 RenderPass/Rendering 内
+                    inherit.subpass     = 0;
+                    inherit.framebuffer = VK_NULL_HANDLE;
+                    inherit.pNext       = nullptr;
+                    // 开始记录 Secondary Command Buffer
+                    VkCommandBufferBeginInfo cmdBufInfo{};
+                    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                    cmdBufInfo.flags = 0;
+                    cmdBufInfo.pInheritanceInfo = &inherit;
+
+                    vkBeginCommandBuffer(data.secondaryCmd, &cmdBufInfo);
+                    // 执行渲染 Pass（不包括 barriers）
+                    renderPass->GetExec()(data.secondaryCmd);
+                    vkEndCommandBuffer(data.secondaryCmd);
+                    return data;
+                }));
             }
         }
     }
@@ -318,7 +348,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
                     InsertImageBarrier(commandBuffer, barrier);
             }
 
-            if (data.passType == PassType::Compute) {
+            if (data.passType == PassType::Compute || data.passType == PassType::Resolve) {
                     vkCmdExecuteCommands(commandBuffer, 1, &data.secondaryCmd);
             } else if (data.passType == PassType::Graphics) {
                 if (!data.colorAttachments.empty() || data.hasDepth) {
@@ -1052,7 +1082,7 @@ void FG::FrameGraph::InsertBarriers2() {
             return pipelineStages == other.pipelineStages && layout == other.layout && accessMasks == other.accessMasks;
         }
     };
-    std::unordered_map<uint32_t, VulkanState> preState;
+    std::unordered_map<uint32_t, VulkanState> preState;//记录的src
 
     auto SwitchResourceState = [](const ResourceState& r) {
         if (r.readable == false && r.writable == true) { //Create
@@ -1068,8 +1098,8 @@ void FG::FrameGraph::InsertBarriers2() {
         return -1;
     };
 
-    std::vector<std::vector<std::vector<VulkanState>>> resourceMap;
-    resourceMap.resize(2); //pipeline Type
+    std::vector<std::vector<std::vector<VulkanState>>> resourceMap;//管线希望转换成的Layout和阶段，也就是dst
+    resourceMap.resize(4); //pipeline Type
     for (auto& t0 : resourceMap) {
         t0.resize(3); //w wr r
         for (auto& t1 : t0) {
@@ -1081,6 +1111,7 @@ void FG::FrameGraph::InsertBarriers2() {
     auto read = 2;
     auto color = 0;
     auto depth = 1;
+
     resourceMap[static_cast<int>(PassType::Graphics)][create][color] = {
         .accessMasks = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         .pipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1153,6 +1184,21 @@ void FG::FrameGraph::InsertBarriers2() {
         .pipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         .layout = VK_IMAGE_LAYOUT_GENERAL,
     };
+
+    //Resolve节点，这个节点比较特殊，就是读
+    resourceMap[static_cast<int>(PassType::Resolve)][read][color] = {
+        .accessMasks = VK_ACCESS_TRANSFER_READ_BIT,
+        .pipelineStages = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+    };
+
+    //Resolve节点写入节点的内容
+    resourceMap[static_cast<int>(PassType::Resolve)][create][color] = {
+        .accessMasks = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .pipelineStages = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    };
+
 
     for (auto& passSet : timeline) {
         for (auto& passIndex : passSet) {

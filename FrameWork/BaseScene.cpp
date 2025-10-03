@@ -53,9 +53,6 @@ void BaseScene::PrepareResources(FrameWork::Camera& camera) {
 }
 
 void BaseScene::CreateFrameGraphResource() {
-    //创建预制节点
-    downSamplingPass = std::make_unique<FG::DownSamplingPass>(frameGraph.get(), 5);
-    // bloomingPass = std::make_unique<FG::BloomingPass>(frameGraph.get(), 5);
     //创建持久资源
     std::string shaderPath = "../resources/CaIShaders/BaseScene/BaseScene.caishader";
     std::string testShaderPath = "../resources/CaIShaders/TestFrameGraph/forward.caishader";
@@ -89,8 +86,8 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    VK_FORMAT_R16G16B16A16_SFLOAT, 1, 1, 1, VK_SAMPLE_COUNT_1_BIT,
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+                    VK_FORMAT_R16G16B16A16_SFLOAT, 1, 1, 1, vulkanRenderAPI.GetSampleCount(),
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                     )
                 );
         }
@@ -102,8 +99,8 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    VK_FORMAT_R16G16B16A16_SFLOAT, 5, 1, 1, VK_SAMPLE_COUNT_1_BIT,
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT
+                    VK_FORMAT_R16G16B16A16_SFLOAT, 1, 1, 1, VK_SAMPLE_COUNT_1_BIT,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                     )
                 );
         }
@@ -115,7 +112,7 @@ void BaseScene::CreateFrameGraphResource() {
             .SetDescription<FG::TextureDescription>(
                 std::make_unique<FG::TextureDescription>(
                     vulkanRenderAPI.GetFrameWidth(), vulkanRenderAPI.GetFrameHeight(),
-                    vulkanRenderAPI.GetDepthFormat() , 1, 1, 1, VK_SAMPLE_COUNT_1_BIT,
+                    vulkanRenderAPI.GetDepthFormat() , 1, 1, 1, vulkanRenderAPI.GetSampleCount(),
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
                     )
                 );
@@ -157,18 +154,32 @@ void BaseScene::CreateFrameGraphResource() {
     });
 
     auto resolvePass = renderPassManager.RegisterRenderPass([this](auto &renderPass) {
-        renderPass->SetName("resolvePass");
-        renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
+        renderPass->SetName("resolvePass").SetPassType(FG::PassType::Resolve);
+        auto texDesc = resourceManager.FindResource(resolveAttachment)->GetDescription<FG::TextureDescription>();
+        renderPass->SetExec([texDesc, this](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
-            FrameWork::CaIShader::Get(resolveShaderID)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(resolveMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanIndex(colorAttachment));
-            FrameWork::CaIMaterial::Get(resolveMaterialID)->Bind(cmdBuffer);
-            vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
-        });
+            // FrameWork::CaIShader::Get(resolveShaderID)->Bind(cmdBuffer);
+            // FrameWork::CaIMaterial::Get(resolveMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachment));
+            // FrameWork::CaIMaterial::Get(resolveMaterialID)->Bind(cmdBuffer);
+            // vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
+
+            //硬件Resolve
+            VkImageResolve region{};
+            region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+            region.srcOffset      = {0,0,0};
+            region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+            region.dstOffset      = {0,0,0};
+            region.extent         = {texDesc->width, texDesc->height, 1};
+            vkCmdResolveImage(
+                cmdBuffer,
+                vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanIndex(colorAttachment))->image.image,   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanIndex(resolveAttachment))->image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1, &region);
+                });
     });
 
 
-    downSamplingPass->SetInputOutputResource(resolveAttachment, downSamplingOutput); //填入之后不需要在向frameGraph填入
+    // downSamplingPass->SetInputOutputResource(resolveAttachment, downSamplingOutput); //填入之后不需要在向frameGraph填入
     // bloomingPass->SetInputOutputResource(resolveAttachment, bloomingAttachment);
 
 
@@ -177,14 +188,14 @@ void BaseScene::CreateFrameGraphResource() {
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanIndex(downSamplingOutput));
+            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanIndex(resolveAttachment));
             FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
         });
     });
 
     //构建图
-    frameGraph->AddResourceNode(colorAttachment).AddResourceNode(swapChainAttachment).AddResourceNode(depthAttachment)//.AddResourceNode(resolveAttachment)
+    frameGraph->AddResourceNode(colorAttachment).AddResourceNode(swapChainAttachment).AddResourceNode(depthAttachment).AddResourceNode(resolveAttachment)
             .AddRenderPassNode(forwardPass).AddRenderPassNode(resolvePass).AddRenderPassNode(presentPass);
 
 
@@ -201,9 +212,7 @@ void BaseScene::CreateFrameGraphResource() {
     renderPassManager.FindRenderPass(forwardPass)->SetCreateResource(colorAttachment).SetCreateResource(depthAttachment);
     renderPassManager.FindRenderPass(resolvePass)->SetCreateResource(resolveAttachment).SetReadResource(colorAttachment);
 
-    downSamplingPass->Bind();
-    // bloomingPass->Bind();
-    renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(downSamplingOutput);
+    renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(resolveAttachment);
 
     frameGraph->Compile();
 }

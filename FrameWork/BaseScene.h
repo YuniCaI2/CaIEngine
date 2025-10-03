@@ -87,10 +87,6 @@ private:
     uint32_t swapChainAttachment = 0;
     std::vector<uint32_t> generateMipAttachments;
     std::vector<uint32_t> compMaterials;//和pass对应起来
-
-    std::unique_ptr<FG::DownSamplingPass> downSamplingPass;
-    std::unique_ptr<FG::BloomingPass> bloomingPass;
-    uint32_t downSamplingOutput = -1;
 };
 
 

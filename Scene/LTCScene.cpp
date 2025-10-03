@@ -235,7 +235,6 @@ void LTCScene::CreateFrameGraphResource() {
     swapChainDesc->GetDescription<FG::TextureDescription>()->height = vulkanRenderAPI.windowHeight;
     });
 
-    bloomPass->Bind();
     renderPassManager.FindRenderPass(ltcFacePass)->SetCreateResource(colorAttachmentID).SetCreateResource(depthAttachmentID);
     renderPassManager.FindRenderPass(ltcLightPass)->SetInputOutputResources(colorAttachmentID, colorAttachmentID1)
     .SetInputOutputResources(depthAttachmentID,depthAttachmentID1);

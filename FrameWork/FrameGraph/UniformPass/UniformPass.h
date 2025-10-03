@@ -12,7 +12,6 @@ namespace FG {
     public:
         virtual ~UniformPass() = default;
         UniformPass() =default;
-        virtual void Bind() = 0;
         virtual void SetInputOutputResource(const uint32_t& index0, uint32_t& index1) = 0;
         virtual void SetCreateResource(uint32_t& index) = 0;
         virtual void SetReadResource(const uint32_t& index) = 0;

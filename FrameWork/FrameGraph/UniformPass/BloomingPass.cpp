@@ -37,9 +37,6 @@ FG::BloomingPass::BloomingPass(FrameGraph *frameGraph, uint32_t mipmapLevels, fl
 
 }
 
-void FG::BloomingPass::Bind() {
-    downSampling.Bind();
-}
 
 void FG::BloomingPass::SetCreateResource(uint32_t &index) {
     LOG_ERROR("Error: BloomingPass can't create Resource");

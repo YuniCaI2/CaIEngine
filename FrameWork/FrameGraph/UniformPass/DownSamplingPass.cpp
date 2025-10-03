@@ -31,20 +31,6 @@ FG::DownSamplingPass::DownSamplingPass(FrameGraph* frameGraph, uint32_t mipmapLe
 
 }
 
-void FG::DownSamplingPass::Bind() {
-    frameGraph->AddResourceNode(colorAttachment);
-   for (int i = 0; i < mipmapLevels - 1; i++) {
-        frameGraph->AddResourceNode(generateMipAttachments[i]).AddRenderPassNode(generateMipPasses[i]);
-        if (i == 0) {
-            frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses[i])->SetInputOutputResources(colorAttachment,
-                generateMipAttachments[i]);
-        }else {
-            frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses[i])->SetInputOutputResources(generateMipAttachments[i - 1],
-                generateMipAttachments[i]);
-        }
-   }
-}
-
 void FG::DownSamplingPass::SetCreateResource(uint32_t &index) {
     LOG_ERROR("Error: DownSamplingPass can't create Resource");
 }
@@ -111,6 +97,17 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                         (height + 15) / 16, 1);
                 });
             });
+    }
+    frameGraph->AddResourceNode(colorAttachment);
+    for (int i = 0; i < mipmapLevels - 1; i++) {
+        frameGraph->AddResourceNode(generateMipAttachments[i]).AddRenderPassNode(generateMipPasses[i]);
+        if (i == 0) {
+            frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses[i])->SetInputOutputResources(colorAttachment,
+                generateMipAttachments[i]);
+        }else {
+            frameGraph->GetRenderPassManager().FindRenderPass(generateMipPasses[i])->SetInputOutputResources(generateMipAttachments[i - 1],
+                generateMipAttachments[i]);
+        }
     }
     index1 = generateMipAttachments.back();
 }
