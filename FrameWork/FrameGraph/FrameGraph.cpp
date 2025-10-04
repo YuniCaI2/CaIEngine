@@ -8,9 +8,7 @@
 
 #include "ResourceManager.h"
 
-FG::FrameGraph::FrameGraph(ResourceManager &resourceManager,
-                           RenderPassManager &renderPassManager) : resourceManager(resourceManager),
-                                                                   renderPassManager(renderPassManager), threadPool(8) {
+FG::FrameGraph::FrameGraph() {
 }
 
 FG::FrameGraph::~FrameGraph() {
@@ -123,7 +121,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
     std::vector<std::future<RenderPassData> > futures;
     futures.reserve(usingPassNodes.size());
     resourceManager.ResetVulkanResources();
-    resourceManager.CreateVulkanResources(threadPool);
+    resourceManager.CreateVulkanResources(ThreadPool::GetInstance());
 
     // 为每个 pass 创建 secondary command buffer
     for (auto &t: timeline) {
@@ -131,7 +129,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
             auto renderPass = renderPassManager.FindRenderPass(passIndex);
             auto type = renderPass->GetPassType();
             if (type == PassType::Graphics) {
-                futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex]() -> RenderPassData {
                     RenderPassData data;
                     data.passIndex = passIndex;
                     data.hasDepth = false;
@@ -240,7 +238,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
                     return data;
                 }));
             }else if (type == PassType::Compute) {
-                futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex]() -> RenderPassData {
                     RenderPassData data;
                     data.passIndex = passIndex;
                     data.hasDepth = false;
@@ -271,7 +269,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
                     return data;
                 }));
             }else if (type == PassType::Resolve) {
-                futures.push_back(threadPool.Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex]() -> RenderPassData {
                     RenderPassData data;
                     data.passIndex = passIndex;
                     data.hasDepth = false;
@@ -373,7 +371,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
 //
 //     updateBeforeRendering();
 //     resourceManager.ResetVulkanResources();
-//     resourceManager.CreateVulkanResources(threadPool);
+//     resourceManager.CreateVulkanResources(ThreadPool::GetInstance());
 //
 //     auto buildGraphicsPassData = [&](uint32_t passIndex) -> RenderPassData {
 //         RenderPassData data;

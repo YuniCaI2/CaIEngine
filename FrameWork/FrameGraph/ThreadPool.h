@@ -1,3 +1,5 @@
+#pragma once
+
 #include<thread>
 #include<vector>
 #include<functional>
@@ -9,30 +11,9 @@
 
 class ThreadPool {
 public:
-    ThreadPool(uint32_t numThreads){
-        if(numThreads > std::thread::hardware_concurrency()){
-            LOG_WARNING("The numThreads: {} exceed the hardware concurrency, set to hardware concurrency", numThreads);
-            numThreads = std::thread::hardware_concurrency();
-        }
-        for(uint32_t i = 0; i < numThreads; i++){
-            workers.emplace_back([this]{
-                while(true){
-                    std::function<void()> task;
-                    {
-                        std::unique_lock<std::mutex> lock(this->queueMutex);
-                        
-                        this->condition.wait(lock, [this]{ return this->stop.load() || !this->tasks.empty(); });
-
-                        if(this->stop.load() && this->tasks.empty()){
-                            return;
-                        }
-                        task = std::move(this->tasks.front());
-                        this->tasks.pop();
-                    }
-                    task();
-                }
-            });
-        }
+    static ThreadPool& GetInstance() {
+        static ThreadPool instance(8);
+        return instance;
     }
 
     template<typename F, typename... Args>
@@ -75,6 +56,32 @@ public:
 
     
 private:
+    ThreadPool(uint32_t numThreads){
+        if(numThreads > std::thread::hardware_concurrency()){
+            LOG_WARNING("The numThreads: {} exceed the hardware concurrency, set to hardware concurrency", numThreads);
+            numThreads = std::thread::hardware_concurrency();
+        }
+        for(uint32_t i = 0; i < numThreads; i++){
+            workers.emplace_back([this]{
+                while(true){
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(this->queueMutex);
+
+                        this->condition.wait(lock, [this]{ return this->stop.load() || !this->tasks.empty(); });
+
+                        if(this->stop.load() && this->tasks.empty()){
+                            return;
+                        }
+                        task = std::move(this->tasks.front());
+                        this->tasks.pop();
+                    }
+                    task();
+                }
+            });
+        }
+    }
+
     std::vector<std::thread> workers;
     std::queue<std::function<void()>> tasks;
     std::atomic<bool> stop{false};

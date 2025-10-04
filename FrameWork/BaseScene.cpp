@@ -11,17 +11,13 @@
 #include "CompMaterial.h"
 
 BaseScene::BaseScene(FrameWork::Camera& camera) {
-    // CreateDescriptorSetLayout();
-    // VkRenderPass renderPass = vulkanRenderAPI.GetRenderPass("forward");
-    // CreateGraphicsPipeline();
-    // PrepareResources(camera);
     cameraPtr = &camera;
     GUIFunc = [this]() {
 
     };
     sceneName =  "Base Scene";
     //初始化frameGraph
-    frameGraph = std::make_unique<FG::FrameGraph>(resourceManager, renderPassManager);
+    frameGraph = std::make_unique<FG::FrameGraph>();
     CreateFrameGraphResource();
 
 }
@@ -46,11 +42,6 @@ std::string BaseScene::GetName() const {
     return sceneName;
 }
 
-
-
-void BaseScene::PrepareResources(FrameWork::Camera& camera) {
-
-}
 
 void BaseScene::CreateFrameGraphResource() {
     //创建持久资源
@@ -80,7 +71,7 @@ void BaseScene::CreateFrameGraphResource() {
     FrameWork::CaIMaterial::Create(resolveMaterialID, resolveShaderID);
 
     //创建FrameGraph资源
-    colorAttachment = resourceManager.RegisterResource(
+    colorAttachment = frameGraph->GetResourceManager().RegisterResource(
         [&](std::unique_ptr<FG::ResourceDescription>& desc) {
             desc->SetName("ColorAttachment")
             .SetDescription<FG::TextureDescription>(
@@ -93,7 +84,7 @@ void BaseScene::CreateFrameGraphResource() {
         }
         );
 
-    resolveAttachment = resourceManager.RegisterResource(
+    resolveAttachment = frameGraph->GetResourceManager().RegisterResource(
         [&](std::unique_ptr<FG::ResourceDescription>& desc) {
             desc->SetName("resolveAttachment")
             .SetDescription<FG::TextureDescription>(
@@ -106,7 +97,7 @@ void BaseScene::CreateFrameGraphResource() {
         }
         );
 
-    depthAttachment = resourceManager.RegisterResource(
+    depthAttachment = frameGraph->GetResourceManager().RegisterResource(
         [&](std::unique_ptr<FG::ResourceDescription>& desc) {
             desc->SetName("DepthAttachment")
             .SetDescription<FG::TextureDescription>(
@@ -119,7 +110,7 @@ void BaseScene::CreateFrameGraphResource() {
         }
         );
 
-    swapChainAttachment = resourceManager.RegisterResource([&](std::unique_ptr<FG::ResourceDescription> &desc) {
+    swapChainAttachment = frameGraph->GetResourceManager().RegisterResource([&](std::unique_ptr<FG::ResourceDescription> &desc) {
         desc->SetName("swapChain");
         desc->SetDescription<FG::TextureDescription>(std::make_unique<FG::TextureDescription>());
         desc->isExternal = true;
@@ -127,7 +118,7 @@ void BaseScene::CreateFrameGraphResource() {
         desc->vulkanIndex = vulkanRenderAPI.GetSwapChainTextures()[0]; //先随便绑定一个
     });
 
-    auto forwardPass = renderPassManager.RegisterRenderPass([this](std::unique_ptr<FG::RenderPass> &renderPass) {
+    auto forwardPass = frameGraph->GetRenderPassManager().RegisterRenderPass([this](std::unique_ptr<FG::RenderPass> &renderPass) {
     renderPass->SetName("forwardPass");
     renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             FrameWork::CaIShader::Get(caiShaderID)->Bind(cmdBuffer);
@@ -153,15 +144,10 @@ void BaseScene::CreateFrameGraphResource() {
         });
     });
 
-    auto resolvePass = renderPassManager.RegisterRenderPass([this](auto &renderPass) {
+    auto resolvePass = frameGraph->GetRenderPassManager().RegisterRenderPass([this](auto &renderPass) {
         renderPass->SetName("resolvePass").SetPassType(FG::PassType::Resolve);
-        auto texDesc = resourceManager.FindResource(resolveAttachment)->GetDescription<FG::TextureDescription>();
+        auto texDesc = frameGraph->GetResourceManager().FindResource(resolveAttachment)->GetDescription<FG::TextureDescription>();
         renderPass->SetExec([texDesc, this](VkCommandBuffer cmdBuffer) {
-            //绑定对应imageView
-            // FrameWork::CaIShader::Get(resolveShaderID)->Bind(cmdBuffer);
-            // FrameWork::CaIMaterial::Get(resolveMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanResolveIndex(colorAttachment));
-            // FrameWork::CaIMaterial::Get(resolveMaterialID)->Bind(cmdBuffer);
-            // vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
 
             //硬件Resolve
             VkImageResolve region{};
@@ -172,23 +158,18 @@ void BaseScene::CreateFrameGraphResource() {
             region.extent         = {texDesc->width, texDesc->height, 1};
             vkCmdResolveImage(
                 cmdBuffer,
-                vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanIndex(colorAttachment))->image.image,   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                vulkanRenderAPI.getByIndex<FrameWork::Texture>(resourceManager.GetVulkanIndex(resolveAttachment))->image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                vulkanRenderAPI.getByIndex<FrameWork::Texture>(frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment))->image.image,   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                vulkanRenderAPI.getByIndex<FrameWork::Texture>(frameGraph->GetResourceManager().GetVulkanIndex(resolveAttachment))->image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 1, &region);
                 });
     });
 
-
-    // downSamplingPass->SetInputOutputResource(resolveAttachment, downSamplingOutput); //填入之后不需要在向frameGraph填入
-    // bloomingPass->SetInputOutputResource(resolveAttachment, bloomingAttachment);
-
-
-    auto presentPass = renderPassManager.RegisterRenderPass([this](auto &renderPass) {
+    auto presentPass = frameGraph->GetRenderPassManager().RegisterRenderPass([this](auto &renderPass) {
         renderPass->SetName("presentPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
             FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanIndex(resolveAttachment));
+            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", frameGraph->GetResourceManager().GetVulkanIndex(resolveAttachment));
             FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
         });
@@ -202,17 +183,17 @@ void BaseScene::CreateFrameGraphResource() {
 
     //设置每帧资源更新
     frameGraph->SetUpdateBeforeRendering([this]() {
-        auto swapChainDesc = resourceManager.FindResource(swapChainAttachment);
+        auto swapChainDesc = frameGraph->GetResourceManager().FindResource(swapChainAttachment);
         swapChainDesc->vulkanIndex = vulkanRenderAPI.GetSwapChainTextures()[vulkanRenderAPI.GetCurrentImageIndex()];
         //防止窗口更新不对齐
         swapChainDesc->GetDescription<FG::TextureDescription>()->width = vulkanRenderAPI.windowWidth;
         swapChainDesc->GetDescription<FG::TextureDescription>()->height = vulkanRenderAPI.windowHeight;
     });
 
-    renderPassManager.FindRenderPass(forwardPass)->SetCreateResource(colorAttachment).SetCreateResource(depthAttachment);
-    renderPassManager.FindRenderPass(resolvePass)->SetCreateResource(resolveAttachment).SetReadResource(colorAttachment);
+    frameGraph->GetRenderPassManager().FindRenderPass(forwardPass)->SetCreateResource(colorAttachment).SetCreateResource(depthAttachment);
+    frameGraph->GetRenderPassManager().FindRenderPass(resolvePass)->SetCreateResource(resolveAttachment).SetReadResource(colorAttachment);
 
-    renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(resolveAttachment);
+    frameGraph->GetRenderPassManager().FindRenderPass(presentPass)->SetCreateResource(swapChainAttachment).SetReadResource(resolveAttachment);
 
     frameGraph->Compile();
 }

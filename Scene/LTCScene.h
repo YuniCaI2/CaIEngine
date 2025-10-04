@@ -48,8 +48,6 @@ private:
 
     //FrameGraph Resource
     std::unique_ptr<FG::FrameGraph> frameGraph;
-    FG::RenderPassManager renderPassManager;
-    FG::ResourceManager resourceManager;
     void CreateFrameGraphResource();
 
     uint32_t ltcFaceShaderID = -1;

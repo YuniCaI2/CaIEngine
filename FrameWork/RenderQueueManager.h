@@ -1,0 +1,13 @@
+﻿//
+// Created by 51092 on 2025/10/4.
+//
+
+#ifndef CAIENGINE_RENDERQUEUEMANAGER_H
+#define CAIENGINE_RENDERQUEUEMANAGER_H
+
+
+class RenderQueueManager {
+};
+
+
+#endif //CAIENGINE_RENDERQUEUEMANAGER_H

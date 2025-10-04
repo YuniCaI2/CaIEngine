@@ -25,7 +25,6 @@ public:
     virtual std::string GetName() const override;
 
 private:
-    void PrepareResources(FrameWork::Camera& camera);
     void CreateFrameGraphResource();
 
     std::string sceneName{};
@@ -64,8 +63,6 @@ private:
 
     //FrameGraph设置
     uint32_t vulkanModelDataIndex = -1;
-    FG::ResourceManager resourceManager;
-    FG::RenderPassManager renderPassManager;
     std::unique_ptr<FG::FrameGraph> frameGraph;
     //持久资源
     uint32_t vulkanModelID = -1;

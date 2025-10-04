@@ -23,7 +23,7 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
     api.CreateTexture(LTCTex1ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_1.dds", SFLOAT16));
     api.CreateTexture(LTCTex2ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_2.dds", SFLOAT16));
 
-    frameGraph = std::make_unique<FG::FrameGraph>(resourceManager, renderPassManager);
+    frameGraph = std::make_unique<FG::FrameGraph>();
     CreateFrameGraphResource();
 
 }
@@ -66,7 +66,7 @@ void LTCScene::CreateFrameGraphResource() {
     api.GenFaceData(ltcFaceModelID, {0, 0.0, 0}, {0, 1, 0}, 20, 20);
 
 
-    colorAttachmentID = resourceManager.RegisterResource(
+    colorAttachmentID = frameGraph->GetResourceManager().RegisterResource(
         [&](std::unique_ptr<FG::ResourceDescription>& resource) {
             resource->SetName("colorAttachment");
             resource->SetDescription<FG::TextureDescription>(
@@ -78,7 +78,7 @@ void LTCScene::CreateFrameGraphResource() {
         }
         );
 
-    depthAttachmentID = resourceManager.RegisterResource(
+    depthAttachmentID = frameGraph->GetResourceManager().RegisterResource(
     [&](std::unique_ptr<FG::ResourceDescription>& desc) {
         desc->SetName("DepthAttachment")
         .SetDescription<FG::TextureDescription>(
@@ -91,7 +91,7 @@ void LTCScene::CreateFrameGraphResource() {
     }
     );
 
-    colorAttachmentID1 = resourceManager.RegisterResource(
+    colorAttachmentID1 = frameGraph->GetResourceManager().RegisterResource(
     [&](std::unique_ptr<FG::ResourceDescription>& resource) {
         resource->SetName("colorAttachment1");
         resource->SetDescription<FG::TextureDescription>(
@@ -103,7 +103,7 @@ void LTCScene::CreateFrameGraphResource() {
     }
     );
 
-    depthAttachmentID1 = resourceManager.RegisterResource(
+    depthAttachmentID1 = frameGraph->GetResourceManager().RegisterResource(
     [&](std::unique_ptr<FG::ResourceDescription>& desc) {
         desc->SetName("DepthAttachment1")
         .SetDescription<FG::TextureDescription>(
@@ -116,7 +116,7 @@ void LTCScene::CreateFrameGraphResource() {
     }
     );
 
-    swapChainAttachmentID = resourceManager.RegisterResource([&](std::unique_ptr<FG::ResourceDescription> &desc) {
+    swapChainAttachmentID = frameGraph->GetResourceManager().RegisterResource([&](std::unique_ptr<FG::ResourceDescription> &desc) {
         desc->SetName("swapChain");
         desc->SetDescription<FG::TextureDescription>(std::make_unique<FG::TextureDescription>());
         desc->isExternal = true;
@@ -163,7 +163,7 @@ void LTCScene::CreateFrameGraphResource() {
 
     };
 
-    ltcFacePass = renderPassManager.RegisterRenderPass(
+    ltcFacePass = frameGraph->GetRenderPassManager().RegisterRenderPass(
         [&](std::unique_ptr<FG::RenderPass>& renderPass) {
             renderPass->SetName("ltcFacePass");
             renderPass->SetExec(
@@ -180,7 +180,7 @@ void LTCScene::CreateFrameGraphResource() {
         }
         );
 
-    ltcLightPass = renderPassManager.RegisterRenderPass(
+    ltcLightPass = frameGraph->GetRenderPassManager().RegisterRenderPass(
         [&](std::unique_ptr<FG::RenderPass>& renderPass) {
             renderPass->SetName("ltcLightPass")
             .SetExec([this](VkCommandBuffer cmdBuffer) {
@@ -210,12 +210,12 @@ void LTCScene::CreateFrameGraphResource() {
         );
     bloomPass->SetInputOutputResource(colorAttachmentID1, bloomingAttachment);
 
-    presentPass = renderPassManager.RegisterRenderPass([this](auto &renderPass) {
+    presentPass = frameGraph->GetRenderPassManager().RegisterRenderPass([this](auto &renderPass) {
         renderPass->SetName("presentPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
         //绑定对应imageView
         FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-        FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", resourceManager.GetVulkanIndex(bloomingAttachment));
+        FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", frameGraph->GetResourceManager().GetVulkanIndex(bloomingAttachment));
         FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
         vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
             });
@@ -228,17 +228,17 @@ void LTCScene::CreateFrameGraphResource() {
     .AddRenderPassNode(ltcFacePass).AddRenderPassNode(ltcLightPass).AddRenderPassNode(presentPass);
 
     frameGraph->SetUpdateBeforeRendering([this]() {
-    auto swapChainDesc = resourceManager.FindResource(swapChainAttachmentID);
+    auto swapChainDesc = frameGraph->GetResourceManager().FindResource(swapChainAttachmentID);
     swapChainDesc->vulkanIndex = vulkanRenderAPI.GetSwapChainTextures()[vulkanRenderAPI.GetCurrentImageIndex()];
     //防止窗口更新不对齐
     swapChainDesc->GetDescription<FG::TextureDescription>()->width = vulkanRenderAPI.windowWidth;
     swapChainDesc->GetDescription<FG::TextureDescription>()->height = vulkanRenderAPI.windowHeight;
     });
 
-    renderPassManager.FindRenderPass(ltcFacePass)->SetCreateResource(colorAttachmentID).SetCreateResource(depthAttachmentID);
-    renderPassManager.FindRenderPass(ltcLightPass)->SetInputOutputResources(colorAttachmentID, colorAttachmentID1)
+    frameGraph->GetRenderPassManager().FindRenderPass(ltcFacePass)->SetCreateResource(colorAttachmentID).SetCreateResource(depthAttachmentID);
+    frameGraph->GetRenderPassManager().FindRenderPass(ltcLightPass)->SetInputOutputResources(colorAttachmentID, colorAttachmentID1)
     .SetInputOutputResources(depthAttachmentID,depthAttachmentID1);
-    renderPassManager.FindRenderPass(presentPass)->SetCreateResource(swapChainAttachmentID).SetReadResource(
+    frameGraph->GetRenderPassManager().FindRenderPass(presentPass)->SetCreateResource(swapChainAttachmentID).SetReadResource(
     bloomingAttachment);
 
     frameGraph->Compile();

@@ -20,7 +20,7 @@ namespace FG {
     class FrameGraph {
     public:
         //依赖注入
-        FrameGraph(ResourceManager& resourceManager ,RenderPassManager& renderPassManager);
+        FrameGraph();
         ~FrameGraph();
         //仅仅只是将RenderPass和Resource注入给FrameGraph管理
         FrameGraph& AddResourceNode(uint32_t resourceNode);
@@ -48,9 +48,8 @@ namespace FG {
         std::vector<uint32_t> usingPassNodes{}; //经过裁剪之后的Pass
         using TimeLine = std::vector<std::vector<uint32_t>>;
         TimeLine timeline;
-        ResourceManager& resourceManager;
-        RenderPassManager& renderPassManager;
-        ThreadPool threadPool;
+        ResourceManager resourceManager;
+        RenderPassManager renderPassManager;
         std::function<void()> updateBeforeRendering{};
 
         //单FrameGraph资源
