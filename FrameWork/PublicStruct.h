@@ -182,9 +182,6 @@ namespace FrameWork {
         uint32_t indexCount{0};
 
 
-        //每个网格有对应的渲染优先级来对应不同的渲染程度
-        RenderQueue renderQueue{RenderQueue::Opaque};
-
         bool inUse = false;
     };
 
@@ -382,6 +379,12 @@ namespace FrameWork {
         std::vector<Buffer> uniformBuffers;
 
         bool inUse = false;
+    };
+
+    struct DrawItem {
+        uint32_t meshID = 0;
+        uint32_t materialID = 0;
+        glm::mat4 modelMatrix{};
     };
 
 

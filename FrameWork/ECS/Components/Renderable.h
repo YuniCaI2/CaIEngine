@@ -1,0 +1,8 @@
+//
+// Created by cai on 2025/10/5.
+//
+
+#ifndef CAIENGINE_RENDERABLE_H
+#define CAIENGINE_RENDERABLE_H
+
+#endif //CAIENGINE_RENDERABLE_H

@@ -50,6 +50,11 @@ file(GLOB uniformPassPath
         "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/UniformPass/*.cpp"
 )
 
+file(GLOB ECSPath
+        "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Components/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Components/*.cpp"
+)
+
 add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath}
         CaIMaterial.cpp
         CaIMaterial.h
@@ -64,7 +69,10 @@ add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath}
         CompMaterial.cpp
         CompMaterial.h
         CompShader.cpp
-        CompShader.h)
+        CompShader.h
+        ECS/Systems/RenderSystem.cpp
+        ECS/Systems/RenderSystem.h
+)
 
 # 基础库链接（所有平台共用）
 target_link_libraries(FrameWork PUBLIC

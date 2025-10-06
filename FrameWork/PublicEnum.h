@@ -81,9 +81,9 @@ enum class DescriptorType {
     Storage
 };
 
-enum class RenderQueue {
-    Transparent,
-    Opaque
+enum class RenderQueueType {
+    Opaque = 0,
+    Transparent = 1,
 };
 
 enum class AttachmentType {
@@ -239,6 +239,7 @@ enum class StorageImageFormat {
     RGBA8,
     RGBA16F
 };
+
 
 #endif //PUBLICENUM_H
 
