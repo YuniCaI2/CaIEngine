@@ -125,7 +125,7 @@ void FG::ResourceManager::CreateVulkanResource(uint32_t index) {
     group->isReset = false;
 }
 
-void FG::ResourceManager::CreateVulkanResources(ThreadPool& threadPool) {
+void FG::ResourceManager::CreateVulkanResources() {
 
     for (int i = 0; i < aliasGroups.size(); ++i) {
         CreateVulkanResource(i);

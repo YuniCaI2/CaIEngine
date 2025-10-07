@@ -121,7 +121,7 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
     std::vector<std::future<RenderPassData> > futures;
     futures.reserve(usingPassNodes.size());
     resourceManager.ResetVulkanResources();
-    resourceManager.CreateVulkanResources(ThreadPool::GetInstance());
+    resourceManager.CreateVulkanResources();
 
     // 为每个 pass 创建 secondary command buffer
     for (auto &t: timeline) {

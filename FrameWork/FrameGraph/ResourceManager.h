@@ -182,7 +182,7 @@ namespace FG {
         bool CanAlias(uint32_t resourceIndex, uint32_t aliasIndex);
         //aliasGroup Index创建
         void CreateVulkanResource(uint32_t index);//生成Alias Group
-        void CreateVulkanResources(ThreadPool& threadPool);
+        void CreateVulkanResources();
         void ResetVulkanResources();
         void ResetVulkanResource(uint32_t aliasIndex);
         void UpdateReusePool();

@@ -289,10 +289,6 @@ namespace FrameWork {
         bool inUse = false;
     };
 
-    struct RenderObject {
-        uint32_t meshID{};
-        uint32_t slotID{};
-    };
 
 
     struct ShaderStateSet {
@@ -382,9 +378,15 @@ namespace FrameWork {
     };
 
     struct DrawItem {
+        std::string passName{};
         uint32_t meshID = 0;
+        uint32_t pipelineID = 0;
         uint32_t materialID = 0;
-        glm::mat4 modelMatrix{};
+        glm::vec3 position{};
+
+        //不需要手动填写
+        uint32_t depth{}; //扩展
+        uint64_t sortKey{};//用来排序
     };
 
 

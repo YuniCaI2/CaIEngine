@@ -5,9 +5,14 @@
 #ifndef CAIENGINE_RENDERSYSTEM_H
 #define CAIENGINE_RENDERSYSTEM_H
 
+namespace FrameWork {
+    class RenderSystem {
+    public:
 
-class RenderSystem {
-};
+    private:
+
+    };
+}
 
 
 #endif //CAIENGINE_RENDERSYSTEM_H

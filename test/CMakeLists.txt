@@ -2,18 +2,15 @@
 set(CMAKE_CXX_STANDARD 23)
 
 
-add_executable(loggerTest LoggerTest.cpp)
-target_link_libraries(loggerTest FrameWork)
-add_test(NAME loggerTest COMMAND loggerTest)
+function(add_framework_test TEST_NAME)
+    add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+    target_link_libraries(${TEST_NAME} PRIVATE FrameWork)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endfunction()
 
-add_executable(parserTest parserTest.cpp)
-target_link_libraries(parserTest FrameWork)
-add_test(NAME parserTest COMMAND parserTest)
 
-add_executable(frameGraphTest frameGraphTest.cpp)
-target_link_libraries(frameGraphTest FrameWork)
-add_test(NAME frameGraphTest COMMAND frameGraphTest)
-
-add_executable(threadPoolTest threadPoolTest.cpp)
-target_link_libraries(threadPoolTest FrameWork)
-add_test(NAME threadPoolTest COMMAND threadPoolTest)
+add_framework_test(LoggerTest)
+add_framework_test(ParserTest)
+add_framework_test(FrameGraphTest)
+add_framework_test(threadPoolTest)
+add_framework_test(RenderQueueTest)

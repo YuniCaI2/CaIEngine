@@ -5,10 +5,10 @@
 #ifndef CAIENGINE_RENDERQUEUE_H
 #define CAIENGINE_RENDERQUEUE_H
 #include<vector>
+#include<iostream>
 
-namespace FrameWork {
-    struct DrawItem;
-}
+#include "Camera.h"
+#include"PublicStruct.h"
 
 namespace FrameWork {
     enum class SortType {
@@ -17,17 +17,20 @@ namespace FrameWork {
     };
     class RenderQueue {
     public:
-        using RenderLists = std::vector<std::unique_ptr<DrawItem>>;
-        RenderQueue();
+        using RenderLists = std::unordered_map<std::string, std::vector<std::unique_ptr<DrawItem>>>;
+        using MutexLists = std::unordered_map<std::string, std::unique_ptr<std::mutex>>;
+        RenderQueue(RenderQueueType renderQueueType);
         ~RenderQueue();
 
         void AddDrawItem(std::unique_ptr<DrawItem>&& drawItem);
         RenderLists& GetRenderLists();
         void Clear();
-        void SortRenderLists(SortType sortType);
+        void SortRenderLists(const Camera& camera,SortType sortType);
     private:
+        void MakeSortKey(std::unique_ptr<DrawItem>& drawItem, const Camera& camera);
+        std::mutex listsMutex;
         RenderLists renderLists;
-
+        RenderQueueType renderQueueType;
     };
 }
 
