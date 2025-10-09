@@ -219,16 +219,10 @@ void FrameWork::Resource::CompileShader(const std::string &filepath) const {
     }
 }
 
-
-void FrameWork::Resource::CompileCaIShader(const std::string &filepath) const {
-}
-
-
 FrameWork::Resource::Resource() {
 }
 
 
-//这里默认这里的Obj不支持PBR贴图，等待后续扩展
 std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType,
                                                                TextureTypeFlags textureFlags, float scale) {
     Assimp::Importer importer;
@@ -258,6 +252,41 @@ std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string
     std::vector<MeshData> meshes; //返回值
     processNode(scene->mRootNode, scene, meshes, modelType, directory, textureFlags);
     return meshes;
+}
+
+std::unique_ptr<FrameWork::ModelData> FrameWork::Resource::LoadModelData(const std::string &filePath,
+    TextureTypeFlags textureFlags) {
+    std::string extra = filePath.substr(filePath.find_last_of('.') + 1);
+    if (extra == "") {
+        LOG_ERROR("FilePath: {} has mistake", filePath);
+        return nullptr;
+    }
+    ModelType modelType {ModelType::OBJ};
+    if (extra == "obj") {
+        modelType = ModelType::OBJ;
+    }
+    else if (extra == "fbx") {
+        modelType = ModelType::FBX;
+    }
+    else if (extra == "gltf") {
+        modelType = ModelType::GLTF;
+    }else {
+        LOG_ERROR("Can't find suitable modelType for {}", extra);
+        return nullptr;
+    }
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(
+        filePath, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs |
+              aiProcess_GlobalScale);
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        LOG_ERROR("Failed to load model from file {}", filePath);
+        return nullptr;
+    }
+
+    auto directory = filePath.substr(0, filePath.find_last_of('/') + 1); //得到目录
+    auto modelData = std::make_unique<FrameWork::ModelData>();
+    processNode(scene->mRootNode, scene, modelData->meshDatas, modelType, directory, textureFlags);
+    return modelData;
 }
 
 std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(

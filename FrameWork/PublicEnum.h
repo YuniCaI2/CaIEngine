@@ -116,6 +116,19 @@ enum TextureTypeFlagBits : uint32_t{
     SFLOAT32 = 1 << 8,
     None = 1 << 9,
 };
+NLOHMANN_JSON_SERIALIZE_ENUM(TextureTypeFlagBits,
+    {
+        {DiffuseColor, "DiffuseColor"},
+        {Normal, "Normal"},
+        {MetallicRoughness, "MetallicRoughness"},
+        {Emissive, "Emissive"},
+        {Occlusion, "Occlusion"},
+        {Ambient, "Ambient"},
+        {BaseColor, "BaseColor"},
+        {SFLOAT16, "SFloat16"},
+        {SFLOAT32, "SFloat32"}
+    }
+    )
 //导入顺序也同上，当然不存在空缺
 using TextureTypeFlags = uint32_t;
 

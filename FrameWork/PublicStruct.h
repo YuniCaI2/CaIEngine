@@ -12,6 +12,7 @@
 #include <vector>
 #include "Light.h"
 #include <unordered_map>
+#include <entt/entity/entity.hpp>
 #include<nlohmann/json.hpp>
 
 namespace FrameWork {
@@ -410,18 +411,25 @@ namespace FrameWork {
         ParaMap<glm::vec3> vec3Params{};
         ParaMap<glm::vec4> vec4Params{};
 
+        TextureTypeFlags textureTypeFlags{TextureTypeFlagBits::DiffuseColor}; //加载的纹理是
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialStruct, name, path, shaderPath, shaderCode,
+        floatParams, uintParams, intParams, vec2Params, vec3Params, vec4Params, textureTypeFlags)
 
     struct PrefabStruct {
         std::string name{};
 
         std::vector<nlohmann::json> components{};
-        PrefabStruct* parent{};
-        std::vector<PrefabStruct*> children{};
+        PrefabStruct* parent{nullptr};
+        std::vector<std::unique_ptr<PrefabStruct>> children{};
 
-        std::unique_ptr<ModelData> modelData;
+        std::string modelDataPath;
         std::unique_ptr<MaterialStruct> materialData;
     };
+
+    //Parent 在加载前处理，树形结构得到parent
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PrefabStruct, name, components, children, modelDataPath, materialData)
+
 
 }
 

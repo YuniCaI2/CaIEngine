@@ -99,10 +99,41 @@ struct adl_serializer<glm::qua<T, Q>> {
         q.y = j[2].get<T>();
         q.z = j[3].get<T>();
     }
-
-
 };
 
+
+//智能指针
+template<typename T>
+struct nlohmann::adl_serializer<std::unique_ptr<T>> {
+    static void to_json(nlohmann::json& j, const std::unique_ptr<T>& p) {
+        if (p != nullptr)
+            j = *p;
+    }
+    static void from_json(const nlohmann::json& j, std::unique_ptr<T>& p) {
+        if (j.is_null()) {
+            p.reset(nullptr);
+        }else {
+            p.reset();
+            p = std::make_unique<T>(j.get<T>());
+        }
+    }
+};
+
+template<typename T>
+struct nlohmann::adl_serializer<std::shared_ptr<T>> {
+    static void to_json(nlohmann::json& j, const std::shared_ptr<T>& p) {
+        if (p != nullptr)
+            j = *p;
+    }
+    static void from_json(const nlohmann::json& j, std::shared_ptr<T>& p) {
+        if (j.is_null()) {
+            p.reset(nullptr);
+        }else {
+            p.reset();
+            p = std::make_shared<T>(j.get<T>());
+        }
+    }
+};
 
 } // namespace nlohmann
 
