@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <future>
 #include <assimp/scene.h>
 
 #include "pubh.h"
@@ -29,6 +30,7 @@ namespace FrameWork {
         mutable ShaderTimeCache shaderTimeCache;
         //记录自己的shader改变情况
         mutable ShaderTimeCache caiShaderTimeCache;
+        mutable std::mutex caiShaderTimeCacheMutex;
 
         void processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, ModelType modelType, std::string, TextureTypeFlags textureFlags);
         FrameWork::MeshData processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene, std::string, TextureTypeFlags textureFlags);
@@ -44,12 +46,18 @@ namespace FrameWork {
     public:
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
         ShaderModulePackages GetShaderCaIShaderModule(VkDevice device, const std::string& filePath,ShaderInfo& shaderInfo) const;
+        ShaderInfo GetShaderInfo(VkDevice device, const std::string& filePath) const;
         ShaderModulePackages GetCompShaderModule(VkDevice device, const std::string& filePath, CompShaderInfo& compShaderInfo) const;
         std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale = 1.0f);
         std::unique_ptr<ModelData> LoadModelData(const std::string& filePath, TextureTypeFlags textureFlags);
         std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, const aiScene* scene,aiTextureType type, std::string directory);
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
+
+        //实现异步
+        //Async Func
+        std::future<ShaderModulePackages> AsyncGetShaderCaIShaderModule(VkDevice device, const std::string& filePath) const;
+        std::future<ShaderInfo> AsyncGetShaderInfo(VkDevice device, const std::string& filePath) const;
 
 
         static Resource& GetInstance();

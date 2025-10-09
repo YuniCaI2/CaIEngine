@@ -19,6 +19,7 @@
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
 #include "FrameGraph/ResourceManager.h"
+#include "FrameGraph/ThreadPool.h"
 #define VOLK_IMPLEMENTATION
 #define _VALIDATION
 
@@ -1279,8 +1280,9 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         colorFormat = swapChain.colorFormat;
     }
 
-    FrameWork::ShaderInfo shaderInfo = {};
-    auto shaderModulePackages = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
+    // auto shaderModulePackages = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
+    auto asyncShaderModulePackages = resourceManager.AsyncGetShaderCaIShaderModule(device, shaderPath);
+    FrameWork::ShaderInfo shaderInfo = resourceManager.GetShaderInfo(device, shaderPath);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
         LOG_ERROR("The CreateVulkanPipeline Func can't create computer Shader Pipeline !");
     }
@@ -1372,6 +1374,8 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         );
 
     //根据ShaderState创建管线
+
+    auto shaderModulePackages = asyncShaderModulePackages.get();
     auto shaderModuleInfos = SetPipelineShaderStageInfo(shaderModulePackages);
     auto colorBlendState = SetPipelineColorBlendAttachment(shaderInfo);
     auto depthStencilState = SetDepthStencil(shaderInfo);

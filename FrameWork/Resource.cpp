@@ -21,6 +21,7 @@
 #include <stb_image.h>
 #include <filesystem>
 #include "Logger.h"
+#include "FrameGraph/ThreadPool.h"
 
 
 void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
@@ -563,8 +564,22 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
     return shaderModules;
 }
 
+FrameWork::ShaderInfo FrameWork::Resource::GetShaderInfo(VkDevice device, const std::string &filePath) const {
+    std::ifstream testFile(filePath);
+    if (!testFile.is_open()) {
+        LOG_ERROR("Failed to open test file from: {}", filePath);
+    }
+    std::stringstream ss;
+    ss << testFile.rdbuf();
+    std::string code = ss.str();
+    auto shaderInfo = ShaderParse::GetShaderInfo(code);
+    std::string vert, frag;
+    ShaderParse::ParseShaderCode(code, vert, frag);
+    return shaderInfo;
+}
+
 FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevice device, const std::string &filePath,
-    CompShaderInfo &compShaderInfo) const {
+                                                                         CompShaderInfo &compShaderInfo) const {
     auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
         if (filepath1.string() == ".") {
             return false;
@@ -582,14 +597,17 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
         }
     };
     FrameWork::ShaderModulePackages shaderModules{};
-    caiShaderTimeCache = LoadShaderCache(caiShaderTimeCachePath);
     std::ifstream testFile(filePath);
     bool ifCompile = true;
-    if (! caiShaderTimeCache.empty()) {
-        ifCompile = IfCompile(filePath, caiShaderTimeCache[filePath]);
-    }
-    if (!testFile.is_open()) {
-        LOG_ERROR("Failed to open test file from: {}", filePath);
+    {
+        std::lock_guard<std::mutex> lock(this->caiShaderTimeCacheMutex);
+        caiShaderTimeCache = LoadShaderCache(caiShaderTimeCachePath);
+        if (! caiShaderTimeCache.empty()) {
+            ifCompile = IfCompile(filePath, caiShaderTimeCache[filePath]);
+        }
+        if (!testFile.is_open()) {
+            LOG_ERROR("Failed to open test file from: {}", filePath);
+        }
     }
     std::stringstream ss;
     ss << testFile.rdbuf();
@@ -609,12 +627,14 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
         vulkanVertShaderFile << vulkanCode;
         vulkanVertShaderFile.close();
         CompileShader(vulkanShaderPath.string() + ".comp");
+        std::lock_guard<std::mutex> lock(this->caiShaderTimeCacheMutex);
         caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
     }
     auto  compShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".comp.spv" , device);
     shaderModules.emplace_back(VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule);
 
     if (ifCompile) {
+        std::lock_guard<std::mutex> lock(this->caiShaderTimeCacheMutex);
         SaveCache(caiShaderTimeCachePath, caiShaderTimeCache);
     }
 
@@ -632,6 +652,118 @@ void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureF
     }
 }
 
+
+std::future<FrameWork::ShaderModulePackages> FrameWork::Resource::AsyncGetShaderCaIShaderModule(VkDevice device,
+    const std::string &filePath) const {
+    auto Func = [this](VkDevice device, const std::string& filePath)->ShaderModulePackages {
+        ShaderModulePackages shaderModulePackages;
+        ShaderInfo shaderInfo{};
+        auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
+            if (filepath1.string() == ".") {
+                return false;
+            }
+            auto time1 = std::filesystem::last_write_time(filepath1);
+            if (time1 == time) {
+                return false;
+            } else {
+                return true;
+            }
+        };
+
+        auto& shaderModules = shaderModulePackages;
+        std::ifstream testFile(filePath);
+        bool ifCompile = true;
+        {
+            std::lock_guard<std::mutex> lock(this->caiShaderTimeCacheMutex);
+            caiShaderTimeCache = LoadShaderCache(caiShaderTimeCachePath);
+            if (! caiShaderTimeCache.empty()) {
+                ifCompile = IfCompile(filePath, caiShaderTimeCache[filePath]);
+            }
+        }
+        if (!testFile.is_open()) {
+            LOG_ERROR("Failed to open test file from: {}", filePath);
+        }
+        std::stringstream ss;
+        ss << testFile.rdbuf();
+        std::string code = ss.str();
+        shaderInfo = ShaderParse::GetShaderInfo(code);
+        std::string vert, frag;
+        ShaderParse::ParseShaderCode(code, vert, frag);
+        bool hasVertex = ! vert.empty();
+        bool hasFrag = ! frag.empty();
+        if (!hasVertex && !hasFrag) {
+            LOG_ERROR("Vertex and fragment shader not found in file: {}", filePath);
+            return {};
+        }
+        if (! hasVertex) {
+            LOG_WARNING("Vertex shader not found in file: {}", filePath);
+        }
+        if (! hasFrag) {
+            LOG_WARNING("Fragment shader not found in file: {}", filePath);
+        }
+        std::string vulkanVertCode{} , vulkanFragCode{};
+        std::filesystem::path vulkanShaderPath = std::filesystem::path(filePath).parent_path();
+        vulkanShaderPath = vulkanShaderPath / std::filesystem::path(filePath).stem();
+        if (hasVertex) {
+            if (ifCompile) {
+                vulkanVertCode = ShaderParse::TranslateToVulkan(vert, shaderInfo.vertProperties);
+                std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".vert");
+                if (! vulkanVertShaderFile.is_open()) {
+                    LOG_ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
+                    return {};
+                }
+                vulkanVertShaderFile << vulkanVertCode;
+                vulkanVertShaderFile.close();
+                CompileShader(vulkanShaderPath.string() + ".vert");
+                caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
+            }
+            auto vertShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".vert.spv" , device);
+            shaderModules.emplace_back(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule);
+        }
+        if (hasFrag) {
+            if (ifCompile) {
+                vulkanFragCode = ShaderParse::TranslateToVulkan(frag, shaderInfo.fragProperties);
+                std::ofstream vulkanFragShaderFile(vulkanShaderPath.string() + ".frag");
+                if (! vulkanFragShaderFile.is_open()) {
+                    LOG_ERROR("Failed to open fragment shader file: {}", vulkanShaderPath.string());
+                    return {};
+                }
+                vulkanFragShaderFile << vulkanFragCode;
+                vulkanFragShaderFile.close();
+                CompileShader(vulkanShaderPath.string() + ".frag");
+                std::lock_guard<std::mutex> lock(this->caiShaderTimeCacheMutex);
+                caiShaderTimeCache[filePath] = std::filesystem::last_write_time(filePath);
+            }
+            auto fragShaderModule = VulkanTool::loadShader(vulkanShaderPath.string() + ".frag.spv" , device);
+            shaderModules.emplace_back(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule);
+        }
+        if (ifCompile) {
+            std::lock_guard<std::mutex> lock(this->caiShaderTimeCacheMutex);
+            SaveCache(caiShaderTimeCachePath, caiShaderTimeCache);
+            //测试会因为地址原因报错
+        }
+        return shaderModulePackages;
+    };
+    return ThreadPool::GetInstance().Enqueue(Func, device, filePath);
+}
+
+std::future<FrameWork::ShaderInfo> FrameWork::Resource::AsyncGetShaderInfo(VkDevice device,
+    const std::string &filePath) const {
+    auto Func = [](VkDevice device, const std::string &filePath)->ShaderInfo {
+        std::ifstream testFile(filePath);
+        if (!testFile.is_open()) {
+            LOG_ERROR("Failed to open test file from: {}", filePath);
+        }
+        std::stringstream ss;
+        ss << testFile.rdbuf();
+        std::string code = ss.str();
+        auto shaderInfo = ShaderParse::GetShaderInfo(code);
+        std::string vert, frag;
+        ShaderParse::ParseShaderCode(code, vert, frag);
+        return shaderInfo;
+    };
+    return ThreadPool::GetInstance().Enqueue(Func, device, filePath);
+}
 
 FrameWork::Resource &FrameWork::Resource::GetInstance() {
     static Resource instance;
