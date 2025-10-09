@@ -40,6 +40,7 @@ namespace FrameWork {
         CaIMaterial& SetAttachment(const std::string& name, uint32_t id) ; //因为有时候会将Attachment作为纹理输入比如呈现或者后处理，飞行帧资源上不同
 
         [[nodiscard]] CaIShader* GetShader() const;
+        [[nodiscard]] uint32_t GetShaderID() const;
 
         void Bind(const VkCommandBuffer& cmdBuffer) const;
 

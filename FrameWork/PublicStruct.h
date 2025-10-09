@@ -12,7 +12,7 @@
 #include <vector>
 #include "Light.h"
 #include <unordered_map>
-
+#include<nlohmann/json.hpp>
 
 namespace FrameWork {
 
@@ -383,12 +383,45 @@ namespace FrameWork {
         uint32_t pipelineID = 0;
         uint32_t materialID = 0;
         glm::vec3 position{};
+        glm::mat4 modelMatrix{glm::mat4(1)};
 
         //不需要手动填写
         uint32_t depth{}; //扩展
         uint64_t sortKey{};//用来排序
     };
 
+
+    //一些资源
+    struct MaterialStruct {
+        std::string name{};
+        std::string path{}; //Material Info信息路径
+
+        std::string shaderPath{};
+        std::string shaderCode{}; //暂留
+
+        template<typename T>
+        using ParaMap = std::unordered_map<std::string, T>;
+
+        //Material Param
+        ParaMap<float> floatParams{};
+        ParaMap<uint32_t> uintParams{};
+        ParaMap<int> intParams{};
+        ParaMap<glm::vec2> vec2Params{};
+        ParaMap<glm::vec3> vec3Params{};
+        ParaMap<glm::vec4> vec4Params{};
+
+    };
+
+    struct PrefabStruct {
+        std::string name{};
+
+        std::vector<nlohmann::json> components{};
+        PrefabStruct* parent{};
+        std::vector<PrefabStruct*> children{};
+
+        std::unique_ptr<ModelData> modelData;
+        std::unique_ptr<MaterialStruct> materialData;
+    };
 
 }
 

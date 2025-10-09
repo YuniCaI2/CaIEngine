@@ -8,6 +8,7 @@ find_package(Vulkan REQUIRED)
 find_package(assimp REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 if(WIN32)
     find_package(imgui CONFIG REQUIRED)
@@ -55,7 +56,10 @@ file(GLOB ECSPath
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Components/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Systems/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Systems/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ECS/resources/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ECS/resources/*.h"
 )
+
 
 add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath}
         CaIMaterial.cpp
@@ -80,6 +84,7 @@ target_link_libraries(FrameWork PUBLIC
         Vulkan::Vulkan
         assimp::assimp
         EnTT::EnTT
+        nlohmann_json::nlohmann_json
 )
 
 # 平台特定的库和配置

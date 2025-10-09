@@ -5,12 +5,15 @@
 #ifndef CAIENGINE_RENDERABLE_H
 #define CAIENGINE_RENDERABLE_H
 #include<iostream>
-#include "PublicEnum.h"
+#include "../../PublicEnum.h"
 
-
-struct Renderable {
-    uint32_t meshID = 0;
-    uint32_t materialID = 0;
-    RenderQueueType queueType{RenderQueueType::Opaque};
-};
+namespace ECS {
+    struct Renderable {
+        std::string passName{};
+        uint32_t meshID = 0;
+        uint32_t materialID = 0;
+        RenderQueueType queueType{RenderQueueType::Opaque};
+    };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Renderable, passName, meshID, materialID, queueType)
+}
 #endif //CAIENGINE_RENDERABLE_H

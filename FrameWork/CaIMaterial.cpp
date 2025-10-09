@@ -175,6 +175,10 @@ FrameWork::CaIShader *FrameWork::CaIMaterial::GetShader() const {
     return nullptr;
 }
 
+uint32_t FrameWork::CaIMaterial::GetShaderID() const {
+    return shaderRef;
+}
+
 void FrameWork::CaIMaterial::Bind(const VkCommandBuffer &cmdBuffer) const {
     if (!CaIShader::exist(shaderRef)) {
         LOG_ERROR("Failed to Bind Material, because it's shader has been destroyed");
