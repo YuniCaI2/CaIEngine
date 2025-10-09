@@ -4,18 +4,7 @@
 
 #include "CaIShader.h"
 #include"vulkanFrameWork.h"
-FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::string& shaderPath, RenderPassType renderPassType) {
-    for (int i = 0; i < caiShaderPool.size(); i++) {
-        if (caiShaderPool[i] == nullptr) {
-            id = i;
-            caiShaderPool[i] = new FrameWork::CaIShader(shaderPath, renderPassType);
-            return caiShaderPool[i];
-        }
-    }
-    caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath, renderPassType));
-    id = caiShaderPool.size() - 1;
-    return caiShaderPool.back();
-}
+
 
 FrameWork::CaIShader * FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
     for (int i = 0; i < caiShaderPool.size(); i++) {
@@ -59,17 +48,6 @@ bool FrameWork::CaIShader::exist(uint32_t id) {
         return true;
     }
     return false;
-}
-
-FrameWork::CaIShader::CaIShader(const std::string &shaderPath, RenderPassType renderPassType) {
-    //创建Vulkan资源, 得到ShaderInfo，为了后续创建Material所使用
-    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, renderPassType);
-    this->shaderPath = shaderPath;
-}
-
-FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkRenderPass renderPass) {
-    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, renderPass);
-    this->shaderPath = shaderPath;
 }
 
 //支持Dynamic Rendering

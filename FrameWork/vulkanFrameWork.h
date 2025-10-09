@@ -342,24 +342,6 @@ public:
     //对于动态调节大小这里默认可以
 
 
-    void CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &name, uint32_t &pipelineInfoIdx,
-                              const std::string &renderPassName, uint32_t subpass,
-                              const std::vector<VkDescriptorSetLayout> &descriptorSetLayout, uint32_t uniform,
-                              uint32_t texNum); //最后一项是为了创建的pipelineLayout
-    void CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &name, uint32_t &pipelineInfoIdx,
-                              const std::string &renderPassName, uint32_t subpass,
-                              const std::vector<VkDescriptorSetLayout> &descriptorSetLayout);
-
-    //适配CaIShader                                                                                                                                              //这里的宽和高设置渲染的视口大小，这里的默认值为-1，作用是默认为窗口大小
-    FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
-                                               RenderPassType renderPassType, uint32_t subpass = 0, uint32_t width = -1,
-                                               uint32_t height = -1);
-
-    FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,
-                                               VkRenderPass renderPass, uint32_t subpass = 0, uint32_t width = -1,
-                                               uint32_t height = -1);
-    //先只支持多pass，如果支持subpass则在各种延迟渲染中需要使用InputAttachment来代替普通RenderPass使用纹理传入的Attachment需要分类讨论
-
     //支持Dynamic Rendering Pipeline
     FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,VkFormat colorFormat = VK_FORMAT_UNDEFINED, uint32_t width = -1,
                                                uint32_t height = -1);
