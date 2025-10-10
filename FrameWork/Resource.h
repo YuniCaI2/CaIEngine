@@ -15,7 +15,7 @@
 #include "PublicEnum.h"
 #include "PublicStruct.h"
 #include <map>
-
+#include <expected>
 namespace FrameWork {
     //这个类的作用是将外部的资源加载或者转为程序可用的资源
     using ShaderModulePackages = std::vector<std::pair<VkShaderStageFlagBits, VkShaderModule>>;
@@ -51,6 +51,7 @@ namespace FrameWork {
         std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale = 1.0f);
         std::unique_ptr<ModelData> LoadModelData(const std::string& filePath, TextureTypeFlags textureFlags);
         std::vector<TextureFullData> LoadTextureFullDatas(aiMaterial* mat, const aiScene* scene,aiTextureType type, std::string directory);
+        ExpectWithStr<std::unique_ptr<PrefabStruct>> LoadPrefabStruct(const std::string& filePath) const;
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
 
@@ -58,7 +59,7 @@ namespace FrameWork {
         //Async Func
         std::future<ShaderModulePackages> AsyncGetShaderCaIShaderModule(VkDevice device, const std::string& filePath) const;
         std::future<ShaderInfo> AsyncGetShaderInfo(VkDevice device, const std::string& filePath) const;
-
+        std::future<ExpectWithStr<std::unique_ptr<PrefabStruct>>> AsyncLoadPrefabStruct(const std::string& filePath) const;
 
         static Resource& GetInstance();
 

@@ -5,14 +5,25 @@
 #ifndef CAIENGINE_GAMEOBJECTMANAGER_H
 #define CAIENGINE_GAMEOBJECTMANAGER_H
 #include <entt/entt.hpp>
+#include <future>
+
+#include "../../PublicEnum.h"
+
+namespace FrameWork {
+    struct PrefabStruct;
+}
 
 namespace ECS {
     class GameObjectManager {
     public:
-        GameObjectManager();
+        GameObjectManager(entt::registry& registryRef);
         entt::entity CreateEmptyGameObject(const std::string& name);
-        entt::entity LoadPrefabGameObject(const std::string& name, const std::string& prefabPath);
+        ExpectedWithInfo<entt::entity> LoadPrefabGameObject(const std::string& prefabPath);
+
+        //Async
+
     private:
+        ExpectedWithInfo<entt::entity> LoadPrefab(FrameWork::PrefabStruct* prefab);
         entt::registry& registryRef;
     };
 }

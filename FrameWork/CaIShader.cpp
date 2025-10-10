@@ -5,18 +5,35 @@
 #include "CaIShader.h"
 #include"vulkanFrameWork.h"
 
-
-FrameWork::CaIShader * FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
+//TODO: 添加错误处理保证后续热加载CaIShader时不影响原本的程序运行，比如使用默认的Shader etc.
+ExpectedWithInfo<FrameWork::CaIShader *> FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
     for (int i = 0; i < caiShaderPool.size(); i++) {
         if (caiShaderPool[i] == nullptr) {
             id = i;
             caiShaderPool[i] = new FrameWork::CaIShader(shaderPath, colorFormat);
-            return caiShaderPool[i];
+            if (caiShaderPool[i]->shaderPath != shaderPath) {
+                delete caiShaderPool[i];
+                caiShaderPool[i] = nullptr;
+
+                return std::unexpected(
+                    ErrorInfo("Can't Create Shader By :" + shaderPath)
+                    );
+            }else {
+                return caiShaderPool[i];
+            }
         }
     }
     caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath, colorFormat));
-    id = caiShaderPool.size() - 1;
-    return caiShaderPool.back();
+    if (caiShaderPool.back()->shaderPath != shaderPath) {
+        delete caiShaderPool.back();
+        caiShaderPool.back() = nullptr;
+        return std::unexpected(
+            ErrorInfo("Can't Create Shader By :" + shaderPath)
+            );
+    }else {
+        id = caiShaderPool.size() - 1;
+        return caiShaderPool.back();
+    }
 }
 
 
@@ -52,8 +69,13 @@ bool FrameWork::CaIShader::exist(uint32_t id) {
 
 //支持Dynamic Rendering
 FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkFormat colorFormat) {
-    shaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, colorFormat);
-    this->shaderPath = shaderPath;
+    auto opShaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, colorFormat);
+    if (opShaderInfo) {
+        shaderInfo = std::move(opShaderInfo.value());
+        this->shaderPath = shaderPath;
+    }else {
+        LOG_ERROR("CreateVulkanPipeline error {}", opShaderInfo.error());
+    }
 }
 
 FrameWork::CaIShader::~CaIShader() {

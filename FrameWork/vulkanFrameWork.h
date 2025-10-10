@@ -10,6 +10,7 @@
 #include <vector>
 #include <functional>
 #include <chrono>
+#include<expected>
 
 #include "CaIMaterial.h"
 #include "pubh.h"
@@ -343,7 +344,7 @@ public:
 
 
     //支持Dynamic Rendering Pipeline
-    FrameWork::ShaderInfo CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,VkFormat colorFormat = VK_FORMAT_UNDEFINED, uint32_t width = -1,
+    std::expected<FrameWork::ShaderInfo, std::string> CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath,VkFormat colorFormat = VK_FORMAT_UNDEFINED, uint32_t width = -1,
                                                uint32_t height = -1);
 
     //计算着色器

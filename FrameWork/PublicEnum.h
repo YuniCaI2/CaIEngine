@@ -6,6 +6,20 @@
 #define PUBLICENUM_H
 #include<iostream>
 #include <nlohmann/json.hpp>
+#include<expected>
+template<class T>
+using ExpectWithStr = std::expected<T, std::string>;
+
+template<class T = int>
+struct ErrorInfo {
+    std::string msg{};
+    T code{};
+};
+
+template<class T, class CodeType = int>
+using ExpectedWithInfo = std::expected<T, ErrorInfo<CodeType>>;
+
+
 
 enum class MouseButton {
     Mid,
@@ -178,6 +192,13 @@ enum class ShaderPropertyType
     SAMPLER_CUBE,
 };
 
+enum class ShaderFormat {
+    R8G8B8A8_UNORM,
+    R8G8B8A8_SRGB,
+    R16G16B16A16_SFLOAT,
+    SWAPCHAIN_FORMAT
+};
+
 enum class CompareOption
 {
     NEVER,
@@ -258,6 +279,7 @@ enum class StorageImageFormat {
     RGBA8,
     RGBA16F
 };
+
 
 
 #endif //PUBLICENUM_H

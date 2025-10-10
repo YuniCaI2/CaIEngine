@@ -9,7 +9,7 @@
 FrameWork::ShaderInfo FrameWork::ShaderParse::GetShaderInfo(const std::string &code) {
     ShaderInfo info;
     info.shaderState = GetShaderStateSet(code);
-
+    info.shaderFormatsInfo = GetShaderFormatsInfo(code);
     std::string vertCode, fragCode;
     ParseShaderCode(code, vertCode, fragCode);
     info.vertProperties = GetShaderProperties(vertCode);
@@ -698,4 +698,23 @@ std::string FrameWork::ShaderParse::TranslateCompToVulkan(const std::string &cod
     vulkanCode += programBlock;
 
     return vulkanCode;
+}
+
+FrameWork::ShaderFormatsInfo FrameWork::ShaderParse::GetShaderFormatsInfo(const std::string &code) {
+    ShaderFormatsInfo shaderFormatsInfo = {};
+    auto block = GetCodeBlock(code, "Formats");
+    if (block.empty()) {
+        LOG_WARNING("Shader formats not found.");
+        return shaderFormatsInfo;
+    }
+    //清空默认值
+    shaderFormatsInfo.shaderFormats.clear();
+    auto lines = SplitString(block, '\n');
+    for (auto& line : lines) {
+        auto words = ExtractWords(line);
+        if (!words.empty() && words.size() == 1) {
+            shaderFormatsInfo.shaderFormats.push_back(shaderFormatMap[words[0]]);
+        }
+    }
+    return shaderFormatsInfo;
 }

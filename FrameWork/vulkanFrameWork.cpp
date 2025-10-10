@@ -1274,7 +1274,7 @@ VkPipelineDepthStencilStateCreateInfo vulkanFrameWork::SetDepthStencil(const Fra
 
 
 
-FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath, VkFormat colorFormat,
+std::expected<FrameWork::ShaderInfo, std::string> vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineIdx, const std::string &shaderPath, VkFormat colorFormat,
      uint32_t width, uint32_t height) {
     if (colorFormat == VK_FORMAT_UNDEFINED) {
         colorFormat = swapChain.colorFormat;
@@ -1284,7 +1284,7 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     auto asyncShaderModulePackages = resourceManager.AsyncGetShaderCaIShaderModule(device, shaderPath);
     FrameWork::ShaderInfo shaderInfo = resourceManager.GetShaderInfo(device, shaderPath);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
-        LOG_ERROR("The CreateVulkanPipeline Func can't create computer Shader Pipeline !");
+        return std::unexpected("Comp Shader Can't use CaI Shader to Create Shader");
     }
     //获取VulkanPipeline容器
     pipelineIdx = getNextIndex<FrameWork::VulkanPipeline>();
@@ -1376,6 +1376,9 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
     //根据ShaderState创建管线
 
     auto shaderModulePackages = asyncShaderModulePackages.get();
+    if (shaderModulePackages.empty()) {
+        return std::unexpected("ShaderModulePackages is empty");
+    }
     auto shaderModuleInfos = SetPipelineShaderStageInfo(shaderModulePackages);
     auto colorBlendState = SetPipelineColorBlendAttachment(shaderInfo);
     auto depthStencilState = SetDepthStencil(shaderInfo);
@@ -1455,7 +1458,14 @@ FrameWork::ShaderInfo vulkanFrameWork::CreateVulkanPipeline(uint32_t &pipelineId
         .pAttachments = blendAttachments.data(),
     };
 
-    std::vector colorFormats(shaderInfo.shaderState.outputNums, colorFormat);
+    std::vector<VkFormat> colorFormats;
+    for (auto& format : shaderInfo.shaderFormatsInfo.shaderFormats) {
+        if (format == ShaderFormat::SWAPCHAIN_FORMAT) {
+            colorFormats.push_back(swapChain.colorFormat);
+        }else {
+            colorFormats.push_back(FrameWork::ShaderParse::ShaderFormatToVulkanFormat[format]);
+        }
+    }
 
     //Dynamic Rendering设置
     VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};

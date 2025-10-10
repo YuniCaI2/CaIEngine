@@ -18,6 +18,7 @@ FrameWork::CaIMaterial *FrameWork::CaIMaterial::Create(uint32_t &id, uint32_t sh
     return caiMaterialPools.back();
 }
 
+
 void FrameWork::CaIMaterial::Destroy(uint32_t &id) {
     if (caiMaterialPools.size() <= id || caiMaterialPools[id] == nullptr) {
         LOG_WARNING("shaderRef: {}  is not existed", id);

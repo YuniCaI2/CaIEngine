@@ -28,8 +28,8 @@ namespace FrameWork {
         static CompShaderInfo GetCompShaderInfo(const std::string &code);
         static std::string TranslateCompToVulkan(const std::string &code, const CompShaderInfo& compShaderInfo);
 
-        // private:
-        // 为了测试
+        private:
+        static ShaderFormatsInfo GetShaderFormatsInfo(const std::string &code);
         static ShaderStateSet GetShaderStateSet(const std::string &code);
         static CompLocalInvocation GetCompLocalInvocation(const std::string& code);
         static std::vector<SSBO> GetSSBOs(const std::string &code);
@@ -50,6 +50,7 @@ namespace FrameWork {
 
 
 
+    public:
         //Map
         inline static std::unordered_map<std::string, ShaderPropertyType> shaderPropertyMap = {
             {"vec2", ShaderPropertyType::VEC2}, {"vec3", ShaderPropertyType::VEC3}, {"vec4", ShaderPropertyType::VEC4},
@@ -130,6 +131,13 @@ namespace FrameWork {
             {"RGBA16F", StorageImageFormat::RGBA16F},
         };
 
+        inline static std::unordered_map<std::string, ShaderFormat> shaderFormatMap = {
+            {"R8G8B8A8_UNORM", ShaderFormat::R8G8B8A8_UNORM},
+            {"R8G8B8A8_SRGB", ShaderFormat::R8G8B8A8_SRGB},
+            {"R16G16B16A16_SFLOAT", ShaderFormat::R16G16B16A16_SFLOAT},
+            {"SWAPCHAIN_FORMAT", ShaderFormat::SWAPCHAIN_FORMAT},
+        };
+
         inline static std::unordered_map<BlendOption, VkBlendOp> blendOpToVulkanBlendOp = {
             {BlendOption::ADD, VK_BLEND_OP_ADD}, {BlendOption::MAX, VK_BLEND_OP_MAX},
             {BlendOption::MIN, VK_BLEND_OP_MIN}, {BlendOption::SUBTRACT, VK_BLEND_OP_SUBTRACT},
@@ -200,6 +208,14 @@ namespace FrameWork {
             {StorageImageFormat::RGBA8, "rgba8"},
             {StorageImageFormat::RGBA16F, "rgba16f"},
         };
+
+        inline static std::unordered_map<ShaderFormat, VkFormat> ShaderFormatToVulkanFormat = {
+            {ShaderFormat::R8G8B8A8_SRGB, VK_FORMAT_R8G8B8A8_SRGB},
+            {ShaderFormat::R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
+            {ShaderFormat::R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT},
+        };
+        //特判swapchainFormat
+
 
     };
 }

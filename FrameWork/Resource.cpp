@@ -382,6 +382,17 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
     return textures;
 }
 
+ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>> FrameWork::Resource::LoadPrefabStruct(
+    const std::string &filePath) const {
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return std::unexpected("Can't open file : " + filePath);
+    }
+    nlohmann::json jsonData = nlohmann::json::parse(file);
+    auto prefabStruct = std::make_unique<PrefabStruct>(jsonData.get<PrefabStruct>());
+    return prefabStruct;
+}
+
 
 FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath,
                                                                     TextureTypeFlagBits type) {
@@ -763,6 +774,14 @@ std::future<FrameWork::ShaderInfo> FrameWork::Resource::AsyncGetShaderInfo(VkDev
         return shaderInfo;
     };
     return ThreadPool::GetInstance().Enqueue(Func, device, filePath);
+}
+
+std::future<ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>>> FrameWork::Resource::AsyncLoadPrefabStruct(
+    const std::string &filePath) const {
+    return ThreadPool::GetInstance().Enqueue(
+        [this](const std::string & filePath)->ExpectWithStr<std::unique_ptr<PrefabStruct>> {
+            return this->LoadPrefabStruct(filePath);
+        }, filePath);
 }
 
 FrameWork::Resource &FrameWork::Resource::GetInstance() {

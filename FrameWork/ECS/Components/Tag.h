@@ -5,7 +5,7 @@
 #ifndef CAIENGINE_TAG_H
 #define CAIENGINE_TAG_H
 #include <string>
-#include "PublicEnum.h"
+#include "../../PublicEnum.h"
 
 namespace ECS {
     struct Tag {

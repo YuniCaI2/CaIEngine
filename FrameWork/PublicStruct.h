@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <entt/entity/entity.hpp>
 #include<nlohmann/json.hpp>
+#include "Serialize.h"
 
 namespace FrameWork {
 
@@ -326,8 +327,13 @@ namespace FrameWork {
         std::vector<ShaderProperty> textureProperties;
     };
 
+    struct ShaderFormatsInfo {
+        std::vector<ShaderFormat> shaderFormats{ShaderFormat::SWAPCHAIN_FORMAT}; //默认值
+    };
+
     struct ShaderInfo {
         ShaderStateSet shaderState; //基本的状态设置
+        ShaderFormatsInfo shaderFormatsInfo{};
         ShaderTypeFlags shaderTypeFlags = 0;
         ShaderPropertiesInfo vertProperties;
         ShaderPropertiesInfo fragProperties;

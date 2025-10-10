@@ -6,6 +6,10 @@ Settings {
     ZWrite On
 }
 
+Formats{
+    R16G16B16A16_SFLOAT
+}
+
 Vertex {
     Input{
         0 vec3 inPos
