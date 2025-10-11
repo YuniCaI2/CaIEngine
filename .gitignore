@@ -140,3 +140,4 @@ build
 CLAUDE.md
 .vs
 out
+./cache

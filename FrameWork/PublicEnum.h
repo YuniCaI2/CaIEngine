@@ -14,7 +14,10 @@ template<class T = int>
 struct ErrorInfo {
     std::string msg{};
     T code{};
+    ErrorInfo(const std::string& msg, T code) : msg(msg), code(code) {}
+    ErrorInfo(const std::string& msg) : msg(msg) {}
 };
+ErrorInfo(const std::string& msg) ->ErrorInfo<int>;
 
 template<class T, class CodeType = int>
 using ExpectedWithInfo = std::expected<T, ErrorInfo<CodeType>>;
@@ -283,5 +286,3 @@ enum class StorageImageFormat {
 
 
 #endif //PUBLICENUM_H
-
-
