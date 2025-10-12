@@ -268,6 +268,7 @@ namespace FrameWork {
     };
 
     struct MeshData {
+        std::string name;
         std::vector<uint32_t> indices;
         std::vector<Vertex> vertices;
         std::vector<TextureFullData> texData;
@@ -399,16 +400,12 @@ namespace FrameWork {
 
 
     //一些资源
-    struct MaterialStruct {
-        std::string name{};
-        std::string path{}; //Material Info信息路径
 
-        std::string shaderPath{};
-        std::string shaderCode{}; //暂留
+    //对于Static Material Param 静态写入
+    struct MaterialStruct {
 
         template<typename T>
         using ParaMap = std::unordered_map<std::string, T>;
-
         //Material Param
         ParaMap<float> floatParams{};
         ParaMap<uint32_t> uintParams{};
@@ -419,24 +416,26 @@ namespace FrameWork {
 
         TextureTypeFlags textureTypeFlags{TextureTypeFlagBits::DiffuseColor}; //加载的纹理是
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialStruct, name, path, shaderPath, shaderCode,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialStruct,
         floatParams, uintParams, intParams, vec2Params, vec3Params, vec4Params, textureTypeFlags)
 
     struct PrefabStruct {
         std::string name{};
-
         std::vector<nlohmann::json> components{};
-        PrefabStruct* parent{nullptr};
-        std::vector<std::unique_ptr<PrefabStruct>> children{};
-
         std::string modelDataPath;
         std::unique_ptr<MaterialStruct> materialData;
     };
 
     //Parent 在加载前处理，树形结构得到parent
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PrefabStruct, name, components, children, modelDataPath, materialData)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PrefabStruct, name, components, modelDataPath, materialData)
 
-
+    //以树的结构加载模型
+    struct ModelNode {
+        std::string name{};
+        ModelNode* parent = nullptr; //默认root Node
+        std::vector<std::unique_ptr<ModelNode>> children;
+        std::vector<std::unique_ptr<MeshData>> meshDatas;
+    };
 }
 
 

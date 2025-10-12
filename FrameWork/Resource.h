@@ -34,6 +34,7 @@ namespace FrameWork {
 
         void processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, ModelType modelType, std::string, TextureTypeFlags textureFlags);
         FrameWork::MeshData processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene, std::string, TextureTypeFlags textureFlags);
+        std::unique_ptr<ModelNode> LoadModelNode_Impl(std::unique_ptr<ModelNode> modelNode , aiScene* scene, aiNode* node,const std::string& directory,ModelType modelType, TextureTypeFlags textureFlags);
         TextureFullData CreateDefaultTexture(TextureTypeFlagBits textureFlagBits);
 
         void SaveCache(const std::string& filePath, const ShaderTimeCache& shaderTimeCache) const;
@@ -54,6 +55,8 @@ namespace FrameWork {
         ExpectWithStr<std::unique_ptr<PrefabStruct>> LoadPrefabStruct(const std::string& filePath) const;
         TextureFullData LoadTextureFullData(const std::string& filePath, TextureTypeFlagBits type);
         void ReleaseTextureFullData(const TextureFullData& textureFullData);
+
+        std::unique_ptr<ModelNode> LoadModelNode(const std::string& filePath, TextureTypeFlags textureFlags);
 
         //实现异步
         //Async Func

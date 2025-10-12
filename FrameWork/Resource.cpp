@@ -4,11 +4,14 @@
 
 #include "Resource.h"
 #include "Logger.h"
+#include "PublicStruct.h"
 #include "VulkanTool.h"
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
+#include <future>
+#include <memory>
 #include <ranges>
 #include "Logger.h"
 
@@ -22,7 +25,6 @@
 #include <filesystem>
 #include "Logger.h"
 #include "FrameGraph/ThreadPool.h"
-
 
 void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
                                       ModelType modelType, std::string directory, TextureTypeFlags textureFlags) {
@@ -112,6 +114,44 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType mod
     }
 
     return meshData;
+}
+
+std::unique_ptr<FrameWork::ModelNode> FrameWork::Resource::LoadModelNode_Impl(std::unique_ptr<ModelNode> modelNode, aiScene* scene, aiNode* node,
+    const std::string& directory,ModelType modelType, TextureTypeFlags textureFlags){
+    //加载Mesh
+    //Async
+    std::vector<std::future<MeshData>> meshFutures;
+    for(int i = 0; i < node->mNumMeshes; i++) {
+        auto task = [this, scene, node, directory, modelType, textureFlags, i]() {
+            return processMesh(scene->mMeshes[node->mMeshes[i]], modelType, scene, directory, textureFlags);
+        };
+        meshFutures.push_back(
+            ThreadPool::GetInstance().Enqueue(
+                task
+            )
+        );
+    }
+    for(int i = 0; i < meshFutures.size(); i++){
+        modelNode->meshDatas.push_back(std::make_unique<MeshData>(std::move(meshFutures[i].get())));
+        modelNode->meshDatas.back()->name = scene->mMeshes[node->mMeshes[i]]->mName.C_Str(); //获取到网格的名字
+    }
+    std::vector<std::future<std::unique_ptr<ModelNode>>> modelNodeFutures;
+    for(int i = 0; i < node->mNumChildren; i++) {
+
+        auto task = [this, scene, node, directory, modelType, textureFlags, i]() {
+            return LoadModelNode_Impl(std::make_unique<ModelNode>(), scene, node->mChildren[i], directory, modelType, textureFlags);
+        };
+        modelNodeFutures.push_back(
+            ThreadPool::GetInstance().Enqueue(
+                task
+            )
+        );
+    }
+    for(int i = 0; i < modelNodeFutures.size(); i++){
+        modelNode->children.push_back(std::move(modelNodeFutures[i].get()));
+        modelNode->children.back()->parent = modelNode.get();
+    }
+    return modelNode;
 }
 
 FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureTypeFlagBits type) {
@@ -578,7 +618,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
 FrameWork::ShaderInfo FrameWork::Resource::GetShaderInfo(VkDevice device, const std::string &filePath) const {
     std::ifstream testFile(filePath);
     if (!testFile.is_open()) {
-        LOG_ERROR("Failed to open test file from: {}", filePath);
+        LOG_ERROR("Failed to open CaIShaderFile file from: {}", filePath);
     }
     std::stringstream ss;
     ss << testFile.rdbuf();
