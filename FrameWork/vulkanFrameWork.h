@@ -19,7 +19,7 @@
 #include "Camera.h"
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
-#include "Resource.h"
+#include "ResourceManager.h"
 #define MAX_FRAME 2
 
 
@@ -60,7 +60,7 @@ private:
 
     //外部服务注册
     FrameWork::InputManager &inputManager = FrameWork::InputManager::GetInstance();
-    FrameWork::Resource &resourceManager = FrameWork::Resource::GetInstance();
+    FrameWork::ResourceManager &resourceManager = FrameWork::ResourceManager::GetInstance();
 
     //动态的描述符池
     FrameWork::VulkanDescriptorPool vulkanDescriptorPool;

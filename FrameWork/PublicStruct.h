@@ -17,7 +17,7 @@
 #include "Serialize.h"
 
 namespace FrameWork {
-
+    //Vulkan Resource
     struct VulkanFBO {
         std::vector<VkFramebuffer> framebuffers;
         std::vector<uint32_t> AttachmentsIdx; //这里只是使用一个数组存储东西，因为我不确定其中的内容有哪些，所以这里和其对应的renderpass所对应，当然需要检查
@@ -266,6 +266,7 @@ namespace FrameWork {
             return attributeDescriptions;
         }
     };
+    //-------------------------------------------------
 
     struct MeshData {
         std::string name;
@@ -293,7 +294,7 @@ namespace FrameWork {
     };
 
 
-
+    //Shader Parse Struct -----------------------------------------------------
     struct ShaderStateSet {
         BlendOption blendOp = BlendOption::ADD;
         BlendFactor srcBlendFactor = BlendFactor::SRC_ALPHA;

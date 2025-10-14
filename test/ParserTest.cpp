@@ -95,7 +95,7 @@ void testTranslate(const std::string& code) {
 }
 
 void testGetShaderModule() {
-   auto& resource = Resource::GetInstance();
+   auto& resource = ResourceManager::GetInstance();
    ShaderInfo shaderInfo;
    auto shaderModules = resource.GetShaderCaIShaderModule(
       vulkanRenderAPI.GetVulkanDevice()->logicalDevice, testFilePath, shaderInfo);

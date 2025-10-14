@@ -20,8 +20,8 @@ LTCScene::LTCScene(FrameWork::Camera *camera) {
         ImGui::SliderFloat("Blooming Thres", &threshold, 0.01f, 2.0f);
     };
 
-    api.CreateTexture(LTCTex1ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_1.dds", SFLOAT16));
-    api.CreateTexture(LTCTex2ID_, FrameWork::Resource::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_2.dds", SFLOAT16));
+    api.CreateTexture(LTCTex1ID_, FrameWork::ResourceManager::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_1.dds", SFLOAT16));
+    api.CreateTexture(LTCTex2ID_, FrameWork::ResourceManager::GetInstance().LoadTextureFullData("../resources/Pic/LTCMap/ltc_2.dds", SFLOAT16));
 
     frameGraph = std::make_unique<FG::FrameGraph>();
     CreateFrameGraphResource();

@@ -19,9 +19,9 @@
 namespace FrameWork {
     //这个类的作用是将外部的资源加载或者转为程序可用的资源
     using ShaderModulePackages = std::vector<std::pair<VkShaderStageFlagBits, VkShaderModule>>;
-    class Resource {
+    class ResourceManager {
     private:
-        Resource();
+        ResourceManager();
 
 
 
@@ -64,7 +64,7 @@ namespace FrameWork {
         std::future<ShaderInfo> AsyncGetShaderInfo(VkDevice device, const std::string& filePath) const;
         std::future<ExpectWithStr<std::unique_ptr<PrefabStruct>>> AsyncLoadPrefabStruct(const std::string& filePath) const;
 
-        static Resource& GetInstance();
+        static ResourceManager& GetInstance();
 
         //路径暴露出来方便更改和调试
         std::string resourcePath{"../resources/"};

@@ -4,7 +4,7 @@ Settings{
     localZ 1
 }
 
-Properties{
+Properties {
     float threshold
     vec2  invDstScale
     vec2  dstScale
@@ -21,7 +21,7 @@ Program{
     }
 
     // 软膝权重（对亮度做，再按比例回分量，避免单通道跳变）
-    vec3 softKneeBloom(vec3 c, float threshold, float knee){
+    vec3 softKneeBloom(vec3 c, float threshold_, float knee){ //注意函数传参避免和main中的代码重复
         float L = luminance(c);
         // t = max(L - threshold, 0)
         float t = max(L - threshold, 0.0);

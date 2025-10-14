@@ -19,7 +19,7 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
     }
 
     // 软膝权重（对亮度做，再按比例回分量，避免单通道跳变）
-    vec3 softKneeBloom(vec3 c, float _UBO.threshold, float knee){
+    vec3 softKneeBloom(vec3 c, float threshold_, float knee){
         float L = luminance(c);
         // t = max(L - _UBO.threshold, 0)
         float t = max(L - _UBO.threshold, 0.0);

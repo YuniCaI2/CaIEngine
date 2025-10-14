@@ -2,7 +2,7 @@
 // Created by 51092 on 25-6-13.
 //
 
-#include "Resource.h"
+#include "ResourceManager.h"
 #include "Logger.h"
 #include "PublicStruct.h"
 #include "VulkanTool.h"
@@ -26,7 +26,7 @@
 #include "Logger.h"
 #include "FrameGraph/ThreadPool.h"
 
-void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
+void FrameWork::ResourceManager::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
                                       ModelType modelType, std::string directory, TextureTypeFlags textureFlags) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
@@ -38,7 +38,7 @@ void FrameWork::Resource::processNode(aiNode *node, const aiScene *scene, std::v
     }
 }
 
-FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene,
+FrameWork::MeshData FrameWork::ResourceManager::processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene,
                                                      std::string directory, TextureTypeFlags textureFlags) {
     MeshData meshData;
 
@@ -116,7 +116,7 @@ FrameWork::MeshData FrameWork::Resource::processMesh(aiMesh *mesh, ModelType mod
     return meshData;
 }
 
-std::unique_ptr<FrameWork::ModelNode> FrameWork::Resource::LoadModelNode_Impl(std::unique_ptr<ModelNode> modelNode, aiScene* scene, aiNode* node,
+std::unique_ptr<FrameWork::ModelNode> FrameWork::ResourceManager::LoadModelNode_Impl(std::unique_ptr<ModelNode> modelNode, aiScene* scene, aiNode* node,
     const std::string& directory,ModelType modelType, TextureTypeFlags textureFlags){
     //加载Mesh
     //Async
@@ -154,7 +154,7 @@ std::unique_ptr<FrameWork::ModelNode> FrameWork::Resource::LoadModelNode_Impl(st
     return modelNode;
 }
 
-FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureTypeFlagBits type) {
+FrameWork::TextureFullData FrameWork::ResourceManager::CreateDefaultTexture(TextureTypeFlagBits type) {
     int width = 100, height = 100, numChannels = 4;
     uint32_t desireChannels = 4;
     TextureFullData texData;
@@ -204,7 +204,7 @@ FrameWork::TextureFullData FrameWork::Resource::CreateDefaultTexture(TextureType
     return texData;
 }
 
-void FrameWork::Resource::SaveCache(const std::string &filePath, const ShaderTimeCache& shaderTimeCache) const {
+void FrameWork::ResourceManager::SaveCache(const std::string &filePath, const ShaderTimeCache& shaderTimeCache) const {
     std::ofstream file(filePath, std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
         LOG_ERROR("Failed to open file {}", filePath);
@@ -221,7 +221,7 @@ void FrameWork::Resource::SaveCache(const std::string &filePath, const ShaderTim
 }
 
 
-FrameWork::Resource::ShaderTimeCache FrameWork::Resource::LoadShaderCache(const std::string& filePath) const {
+FrameWork::ResourceManager::ShaderTimeCache FrameWork::ResourceManager::LoadShaderCache(const std::string& filePath) const {
     ShaderTimeCache cache;
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
@@ -248,7 +248,7 @@ FrameWork::Resource::ShaderTimeCache FrameWork::Resource::LoadShaderCache(const 
     return cache;
 }
 
-void FrameWork::Resource::CompileShader(const std::string &filepath) const {
+void FrameWork::ResourceManager::CompileShader(const std::string &filepath) const {
     std::string command = "GLSLANG " + filepath + " -V -o " + filepath + ".spv";
     std::cout << "Compiling shader:   " << filepath << std::endl;
     int result = system(command.c_str());
@@ -260,11 +260,11 @@ void FrameWork::Resource::CompileShader(const std::string &filepath) const {
     }
 }
 
-FrameWork::Resource::Resource() {
+FrameWork::ResourceManager::ResourceManager() {
 }
 
 
-std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string &fileName, ModelType modelType,
+std::vector<FrameWork::MeshData> FrameWork::ResourceManager::LoadMesh(const std::string &fileName, ModelType modelType,
                                                                TextureTypeFlags textureFlags, float scale) {
     Assimp::Importer importer;
     std::vector<std::string_view> fsplits;
@@ -295,7 +295,7 @@ std::vector<FrameWork::MeshData> FrameWork::Resource::LoadMesh(const std::string
     return meshes;
 }
 
-std::unique_ptr<FrameWork::ModelData> FrameWork::Resource::LoadModelData(const std::string &filePath,
+std::unique_ptr<FrameWork::ModelData> FrameWork::ResourceManager::LoadModelData(const std::string &filePath,
     TextureTypeFlags textureFlags) {
     std::string extra = filePath.substr(filePath.find_last_of('.') + 1);
     if (extra == "") {
@@ -330,7 +330,7 @@ std::unique_ptr<FrameWork::ModelData> FrameWork::Resource::LoadModelData(const s
     return modelData;
 }
 
-std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullDatas(
+std::vector<FrameWork::TextureFullData> FrameWork::ResourceManager::LoadTextureFullDatas(
     aiMaterial *mat, const aiScene *scene, aiTextureType type,
     std::string directory) {
     std::vector<TextureFullData> textures;
@@ -422,7 +422,7 @@ std::vector<FrameWork::TextureFullData> FrameWork::Resource::LoadTextureFullData
     return textures;
 }
 
-ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>> FrameWork::Resource::LoadPrefabStruct(
+ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>> FrameWork::ResourceManager::LoadPrefabStruct(
     const std::string &filePath) const {
     std::ifstream file(filePath);
     if (!file.is_open()) {
@@ -434,7 +434,7 @@ ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>> FrameWork::Resource::Loa
 }
 
 
-FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::string &filePath,
+FrameWork::TextureFullData FrameWork::ResourceManager::LoadTextureFullData(const std::string &filePath,
                                                                     TextureTypeFlagBits type) {
     // 获取文件扩展名
     std::filesystem::path path(filePath);
@@ -452,7 +452,7 @@ FrameWork::TextureFullData FrameWork::Resource::LoadTextureFullData(const std::s
     }
 }
 
-FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type) {
+FrameWork::TextureFullData FrameWork::ResourceManager::LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type) {
     TextureFullData texData{};
 #ifdef _WIN32
     using namespace DirectX;
@@ -506,7 +506,7 @@ FrameWork::TextureFullData FrameWork::Resource::LoadDDSTexture(const std::string
     return texData;
 }
 
-FrameWork::TextureFullData FrameWork::Resource::LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type) {
+FrameWork::TextureFullData FrameWork::ResourceManager::LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type) {
     int width = 100, height = 100, numChannels;
     uint32_t desireChannels = 4;
     unsigned char *data = nullptr;
@@ -529,7 +529,7 @@ FrameWork::TextureFullData FrameWork::Resource::LoadSTBTexture(const std::string
     return texData;
 }
 
-FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(VkDevice device, const std::string &filePath,
+FrameWork::ShaderModulePackages FrameWork::ResourceManager::GetShaderCaIShaderModule(VkDevice device, const std::string &filePath,
                                                              ShaderInfo &shaderInfo) const {
 
     auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
@@ -615,7 +615,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetShaderCaIShaderModule(Vk
     return shaderModules;
 }
 
-FrameWork::ShaderInfo FrameWork::Resource::GetShaderInfo(VkDevice device, const std::string &filePath) const {
+FrameWork::ShaderInfo FrameWork::ResourceManager::GetShaderInfo(VkDevice device, const std::string &filePath) const {
     std::ifstream testFile(filePath);
     if (!testFile.is_open()) {
         LOG_ERROR("Failed to open CaIShaderFile file from: {}", filePath);
@@ -629,7 +629,7 @@ FrameWork::ShaderInfo FrameWork::Resource::GetShaderInfo(VkDevice device, const 
     return shaderInfo;
 }
 
-FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevice device, const std::string &filePath,
+FrameWork::ShaderModulePackages FrameWork::ResourceManager::GetCompShaderModule(VkDevice device, const std::string &filePath,
                                                                          CompShaderInfo &compShaderInfo) const {
     auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
         if (filepath1.string() == ".") {
@@ -692,7 +692,7 @@ FrameWork::ShaderModulePackages FrameWork::Resource::GetCompShaderModule(VkDevic
     return shaderModules;
 }
 
-void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureFullData) {
+void FrameWork::ResourceManager::ReleaseTextureFullData(const TextureFullData &textureFullData) {
     //主要是释放图像的指针指向的数据
     for (auto &it: textureMap) {
         if (it.second.path == textureFullData.path) {
@@ -704,7 +704,7 @@ void FrameWork::Resource::ReleaseTextureFullData(const TextureFullData &textureF
 }
 
 
-std::future<FrameWork::ShaderModulePackages> FrameWork::Resource::AsyncGetShaderCaIShaderModule(VkDevice device,
+std::future<FrameWork::ShaderModulePackages> FrameWork::ResourceManager::AsyncGetShaderCaIShaderModule(VkDevice device,
     const std::string &filePath) const {
     auto Func = [this](VkDevice device, const std::string& filePath)->ShaderModulePackages {
         ShaderModulePackages shaderModulePackages;
@@ -798,7 +798,7 @@ std::future<FrameWork::ShaderModulePackages> FrameWork::Resource::AsyncGetShader
     return ThreadPool::GetInstance().Enqueue(Func, device, filePath);
 }
 
-std::future<FrameWork::ShaderInfo> FrameWork::Resource::AsyncGetShaderInfo(VkDevice device,
+std::future<FrameWork::ShaderInfo> FrameWork::ResourceManager::AsyncGetShaderInfo(VkDevice device,
     const std::string &filePath) const {
     auto Func = [](VkDevice device, const std::string &filePath)->ShaderInfo {
         std::ifstream testFile(filePath);
@@ -816,7 +816,7 @@ std::future<FrameWork::ShaderInfo> FrameWork::Resource::AsyncGetShaderInfo(VkDev
     return ThreadPool::GetInstance().Enqueue(Func, device, filePath);
 }
 
-std::future<ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>>> FrameWork::Resource::AsyncLoadPrefabStruct(
+std::future<ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>>> FrameWork::ResourceManager::AsyncLoadPrefabStruct(
     const std::string &filePath) const {
     return ThreadPool::GetInstance().Enqueue(
         [this](const std::string & filePath)->ExpectWithStr<std::unique_ptr<PrefabStruct>> {
@@ -824,7 +824,7 @@ std::future<ExpectWithStr<std::unique_ptr<FrameWork::PrefabStruct>>> FrameWork::
         }, filePath);
 }
 
-FrameWork::Resource &FrameWork::Resource::GetInstance() {
-    static Resource instance;
+FrameWork::ResourceManager &FrameWork::ResourceManager::GetInstance() {
+    static ResourceManager instance;
     return instance;
 }

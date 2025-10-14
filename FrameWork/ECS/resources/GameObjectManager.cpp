@@ -6,7 +6,7 @@
 
 #include "../../Logger.h"
 #include "../Components/Tag.h"
-#include "../../Resource.h"
+#include "../../ResourceManager.h"
 
 ECS::GameObjectManager::GameObjectManager(entt::registry& res): registryRef(res) {
 }
@@ -19,7 +19,7 @@ entt::entity ECS::GameObjectManager::CreateEmptyGameObject(const std::string &na
 
 ExpectedWithInfo<entt::entity> ECS::GameObjectManager::LoadPrefabGameObject(const std::string &prefabPath) {
     entt::entity object = registryRef.create();
-    auto expectPrefab = FrameWork::Resource::GetInstance().LoadPrefabStruct(prefabPath);
+    auto expectPrefab = FrameWork::ResourceManager::GetInstance().LoadPrefabStruct(prefabPath);
     if (!expectPrefab) {
         return std::unexpected(ErrorInfo{
             "Load Prefab Error :" + expectPrefab.error()
