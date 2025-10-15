@@ -229,7 +229,7 @@ namespace FrameWork {
         if (res.has_value()) {
             return textureMeta.id;
         }else {
-            UnexpectedWithInfo<ErrorCode>(res.error());
+            return UnexpectedWithInfo<ErrorCode>(res.error());
         }
     }
 
