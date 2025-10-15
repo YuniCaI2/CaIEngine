@@ -4,8 +4,11 @@
 
 #ifndef CAIENGINE_SCHEMA_H
 #define CAIENGINE_SCHEMA_H
+#include <cstdint>
 #include<string>
 #include<nlohmann/json.hpp>
+#include<glm/glm.hpp>
+#include"PublicStruct.h"
 
 using GUID = uint64_t;
 
@@ -35,6 +38,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(AssetType,
 
 struct BaseMeta {
     GUID id;
+    std::string name;
     std::string source;
     uint32_t importerVersion; //保证导入器改变时资源解释正确
     AssetType type;
@@ -122,7 +126,7 @@ struct TextureSampler {
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureSampler, minFilter, maxFilter, wrap, anisotropy)
 
 struct TextureImport {
-    TexDim texDim;
+    TexDim texDim{TexDim::Tex2D};
     TextureFormat textureFormat {TextureFormat::R8G8B8A8};
     ColorSpace colorSpace {ColorSpace::SRGB};
     bool generateMipmap {true};
@@ -136,10 +140,8 @@ struct TextureAsset {
     std::string name;
     uint32_t width;
     uint32_t height;
-    uint32_t mipLevels;
+    uint32_t numChannel;
 
-    uint32_t numMips;
-    uint32_t totalSize;
     std::vector<uint8_t> data;
 };
 
@@ -148,34 +150,121 @@ struct TextureMeta : BaseMeta {
     TextureImport textureImport;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureMeta, id, source, importerVersion, type, dependencies, contextHash, textureImport)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureMeta, id, name, source,
+    importerVersion, type, dependencies, contextHash, textureImport)
 
-struct MaterialAsset {
+struct MaterialProperties {
+    template<class T>
+    using ParamMap = std::map<std::string, T>;
 
+    //Uniform
+    ParamMap<float> floatParams{};
+    ParamMap<uint32_t> uintParams{};
+    ParamMap<int> intParams{};
+    ParamMap<glm::vec2> vec2Params{};
+    ParamMap<glm::vec3> vec3Params{};
+    ParamMap<glm::vec4> vec4Params{};
+    //Static Tex
+    ParamMap<GUID> textureIDs;
 };
 
-struct MaterialMeta {
-    GUID id;
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialProperties,
+    floatParams, uintParams, intParams, vec2Params, vec3Params, vec4Params, textureIDs
+)
 
+struct MaterialAsset {
+    GUID id;
+    std::string name;
+    GUID shaderId;
+    MaterialProperties properties;
+};
+
+
+struct MaterialMeta : BaseMeta {
+    MaterialProperties properties;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialMeta, id, name, source,
+    importerVersion, type, dependencies, contextHash, properties)
+
+
+struct VertexData {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec3 tangent;
+    glm::vec2 texCoord;
 };
 
 struct MeshAsset {
-
+    GUID id;
+    std::string name;
+    std::vector<VertexData> vertices;
+    std::vector<uint32_t> indices;
+    GUID materialID; //每个Mesh的材质ID
 };
 
-struct MeshMeta {
+struct MeshMeta : BaseMeta{ //这里Mesh没有特殊的参数
 
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshMeta, id, name, source,
+    importerVersion, type, dependencies)
 
 struct ShaderAsset {
+    GUID id;
+    std::string name;
+    FrameWork::ShaderInfo shaderInfo; //管线反射信息
 
+    uint32_t shaderSize;
+    uint32_t* shaderCode;
 };
 
-struct ShaderMeta {
-
+struct ShaderMeta : BaseMeta {
+    FrameWork::ShaderInfo shaderInfo;
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderMeta, id, name, source,
+    importerVersion, type, dependencies, shaderInfo)
 
 
+struct ModelImport {
+    bool genNormal{true};
+    bool genTangent{true};
+    bool filpUV{false};
+    float scale{1.0f};
+    //...
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelImport, genNormal, genTangent, filpUV, scale);
+
+struct ModelNode {
+    uint32_t index; //在Model中Nodes array中的索引
+    uint32_t parentIndex{UINT32_MAX};
+    std::vector<uint32_t> childrenIndices{};
+
+    std::string name;
+    std::vector<GUID> meshes;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelNode, index, parentIndex, childrenIndices, name, meshes);
+
+struct ModelAsset {
+    GUID id;
+    std::string name;
+    uint32_t rootNode;
+    std::vector<ModelNode> nodes;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset, id, name, rootNode, nodes);
+
+struct ModelMeta : BaseMeta{
+    ModelImport import;
+    uint32_t rootNode;
+    std::vector<ModelNode> nodes;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelMeta, id, name, source,
+    importerVersion, type, dependencies, import, rootNode, nodes)
+
+
+//Comp Material
+//Comp Shader
+//后续需要补充Comp Shader Comp Material， 但是CompMaterial的传入的参数是transient，则不需要Material Properties 设置
+// Static Param。如果传入的参数是Static，那么大概率计算管线不需要每帧执行。
 
 
 

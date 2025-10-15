@@ -22,6 +22,8 @@ ErrorInfo(const std::string& msg) ->ErrorInfo<int>;
 template<class T, class CodeType = int>
 using ExpectedWithInfo = std::expected<T, ErrorInfo<CodeType>>;
 
+template<class CodeType = int>
+using UnexpectedWithInfo = std::unexpected<ErrorInfo<CodeType>>;
 
 
 enum class MouseButton {
@@ -224,6 +226,7 @@ enum class BlendOption
     MAX,
 };
 
+
 enum class BlendFactor
 {
     ZERO,
@@ -283,6 +286,122 @@ enum class StorageImageFormat {
     RGBA16F
 };
 
+// ==================== ShaderPropertyType ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(ShaderPropertyType, {
+    {ShaderPropertyType::BOOL, "BOOL"},
+    {ShaderPropertyType::INT, "INT"},
+    {ShaderPropertyType::UINT, "UINT"},
+    {ShaderPropertyType::FLOAT, "FLOAT"},
+    {ShaderPropertyType::VEC2, "VEC2"},
+    {ShaderPropertyType::VEC3, "VEC3"},
+    {ShaderPropertyType::VEC4, "VEC4"},
+    {ShaderPropertyType::IVEC2, "IVEC2"},
+    {ShaderPropertyType::IVEC3, "IVEC3"},
+    {ShaderPropertyType::IVEC4, "IVEC4"},
+    {ShaderPropertyType::UVEC2, "UVEC2"},
+    {ShaderPropertyType::UVEC3, "UVEC3"},
+    {ShaderPropertyType::UVEC4, "UVEC4"},
+    {ShaderPropertyType::MAT2, "MAT2"},
+    {ShaderPropertyType::MAT3, "MAT3"},
+    {ShaderPropertyType::MAT4, "MAT4"},
+    {ShaderPropertyType::SAMPLER, "SAMPLER"},
+    {ShaderPropertyType::SAMPLER_2D, "SAMPLER_2D"},
+    {ShaderPropertyType::SAMPLER_CUBE, "SAMPLER_CUBE"}
+})
+
+// ==================== ShaderFormat ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(ShaderFormat, {
+    {ShaderFormat::R8G8B8A8_UNORM, "R8G8B8A8_UNORM"},
+    {ShaderFormat::R8G8B8A8_SRGB, "R8G8B8A8_SRGB"},
+    {ShaderFormat::R16G16B16A16_SFLOAT, "R16G16B16A16_SFLOAT"},
+    {ShaderFormat::SWAPCHAIN_FORMAT, "SWAPCHAIN_FORMAT"}
+})
+
+// ==================== CompareOption ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(CompareOption, {
+    {CompareOption::NEVER, "NEVER"},
+    {CompareOption::LESS, "LESS"},
+    {CompareOption::EQUAL, "EQUAL"},
+    {CompareOption::LESS_OR_EQUAL, "LESS_OR_EQUAL"},
+    {CompareOption::GREATER, "GREATER"},
+    {CompareOption::NOT_EQUAL, "NOT_EQUAL"},
+    {CompareOption::GREATER_OR_EQUAL, "GREATER_OR_EQUAL"},
+    {CompareOption::ALWAYS, "ALWAYS"}
+})
+
+// ==================== BlendOption ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(BlendOption, {
+    {BlendOption::ADD, "ADD"},
+    {BlendOption::SUBTRACT, "SUBTRACT"},
+    {BlendOption::REVERSE_SUBTRACT, "REVERSE_SUBTRACT"},
+    {BlendOption::MIN, "MIN"},
+    {BlendOption::MAX, "MAX"}
+})
+
+// ==================== BlendFactor ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(BlendFactor, {
+    {BlendFactor::ZERO, "ZERO"},
+    {BlendFactor::ONE, "ONE"},
+    {BlendFactor::SRC_COLOR, "SRC_COLOR"},
+    {BlendFactor::ONE_MINUS_SRC_COLOR, "ONE_MINUS_SRC_COLOR"},
+    {BlendFactor::DST_COLOR, "DST_COLOR"},
+    {BlendFactor::ONE_MINUS_DST_COLOR, "ONE_MINUS_DST_COLOR"},
+    {BlendFactor::SRC_ALPHA, "SRC_ALPHA"},
+    {BlendFactor::ONE_MINUS_SRC_ALPHA, "ONE_MINUS_SRC_ALPHA"},
+    {BlendFactor::DST_ALPHA, "DST_ALPHA"},
+    {BlendFactor::ONE_MINUS_DST_ALPHA, "ONE_MINUS_DST_ALPHA"},
+    {BlendFactor::CONSTANT_COLOR, "CONSTANT_COLOR"},
+    {BlendFactor::ONE_MINUS_CONSTANT_COLOR, "ONE_MINUS_CONSTANT_COLOR"},
+    {BlendFactor::CONSTANT_ALPHA, "CONSTANT_ALPHA"},
+    {BlendFactor::ONE_MINUS_CONSTANT_ALPHA, "ONE_MINUS_CONSTANT_ALPHA"}
+})
+
+// ==================== FaceCullOption ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(FaceCullOption, {
+    {FaceCullOption::None, "None"},
+    {FaceCullOption::Front, "Front"},
+    {FaceCullOption::Back, "Back"},
+    {FaceCullOption::FrontAndBack, "FrontAndBack"}
+})
+
+// ==================== RenderPassType ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(RenderPassType, {
+    {RenderPassType::Present, "Present"},
+    {RenderPassType::Forward, "Forward"},
+    {RenderPassType::MsaaForward, "MsaaForward"},
+    {RenderPassType::Normal, "Normal"},
+    {RenderPassType::Color, "Color"},
+    {RenderPassType::GBuffer, "GBuffer"},
+    {RenderPassType::Deferred, "Deferred"},
+    {RenderPassType::MAX, "MAX"}
+})
+
+// ==================== PolygonMode ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(PolygonMode, {
+    {PolygonMode::Line, "Line"},
+    {PolygonMode::Fill, "Fill"}
+})
+
+// ==================== SSBO_OP ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(SSBO_OP, {
+    {SSBO_OP::Write, "Write"},
+    {SSBO_OP::Read, "Read"},
+    {SSBO_OP::WriteRead, "WriteRead"}
+})
+
+// ==================== StorageObjectType ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(StorageObjectType, {
+    {StorageObjectType::Image2D, "Image2D"},
+    {StorageObjectType::Image3D, "Image3D"},
+    {StorageObjectType::ImageCube, "ImageCube"},
+    {StorageObjectType::Buffer, "Buffer"}
+})
+
+// ==================== StorageImageFormat ====================
+NLOHMANN_JSON_SERIALIZE_ENUM(StorageImageFormat, {
+    {StorageImageFormat::RGBA8, "RGBA8"},
+    {StorageImageFormat::RGBA16F, "RGBA16F"}
+})
 
 
 #endif //PUBLICENUM_H

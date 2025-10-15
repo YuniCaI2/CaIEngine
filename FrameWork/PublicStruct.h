@@ -311,6 +311,9 @@ namespace FrameWork {
         //输出附件的数量
         uint32_t outputNums{};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderStateSet, blendOp,
+        srcBlendFactor, dstBlendFactor, faceCullOp, depthCompareOp,
+        polygonMode, depthWrite, inputVertex, msaa, outputNums)
 
     struct ShaderProperty {
         std::string name {};
@@ -322,16 +325,22 @@ namespace FrameWork {
         uint32_t arrayOffset = 0; // 如果是数组的话，一个属性在数组内的偏移量
         ShaderPropertyType type = ShaderPropertyType::FLOAT;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderProperty, name,
+        size, align, offset, binding,
+        arrayLength, arrayOffset, type)
+
 
     struct ShaderPropertiesInfo
     {
         std::vector<ShaderProperty> baseProperties;
         std::vector<ShaderProperty> textureProperties;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPropertiesInfo, baseProperties, textureProperties)
 
     struct ShaderFormatsInfo {
         std::vector<ShaderFormat> shaderFormats{ShaderFormat::SWAPCHAIN_FORMAT}; //默认值
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderFormatsInfo, shaderFormats)
 
     struct ShaderInfo {
         ShaderStateSet shaderState; //基本的状态设置
@@ -341,13 +350,17 @@ namespace FrameWork {
         ShaderPropertiesInfo fragProperties;
         //这里先省略几何着色器，后面在加
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderInfo, shaderState,
+        shaderFormatsInfo, shaderTypeFlags, vertProperties, fragProperties)
+
+
 
     struct CompLocalInvocation {
         uint32_t x = 1;
         uint32_t y = 1;
         uint32_t z = 1;
     };
-
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CompLocalInvocation, x, y, z)
 
     struct SSBO {
         std::string name{};
@@ -357,6 +370,7 @@ namespace FrameWork {
         SSBO_OP ssboOP;
         uint32_t binding = 0;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SSBO, name, structName, type, storageImageFormat, ssboOP, binding)
 
 
     struct CompShaderInfo {
@@ -364,7 +378,9 @@ namespace FrameWork {
         ShaderPropertiesInfo shaderProperties;
         std::vector<SSBO> ssbos;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CompShaderInfo, localInvocation, shaderProperties, ssbos)
 
+    //Vulkan Resource
 
     struct MaterialData { //用来存储Vulkan中的资源
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts; //此处仅仅只是一个引用不管理其生命周期
@@ -375,8 +391,6 @@ namespace FrameWork {
 
         bool inUse = false;
     };
-
-
 
     struct CompMaterialData {
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
