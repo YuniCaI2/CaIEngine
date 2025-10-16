@@ -1280,7 +1280,6 @@ std::expected<FrameWork::ShaderInfo, std::string> vulkanFrameWork::CreateVulkanP
         colorFormat = swapChain.colorFormat;
     }
 
-    // auto shaderModulePackages = resourceManager.GetShaderCaIShaderModule(device, shaderPath, shaderInfo);
     auto asyncShaderModulePackages = resourceManager.AsyncGetShaderCaIShaderModule(device, shaderPath);
     FrameWork::ShaderInfo shaderInfo = resourceManager.GetShaderInfo(device, shaderPath);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {

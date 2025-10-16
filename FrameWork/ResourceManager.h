@@ -75,65 +75,6 @@ namespace FrameWork {
         std::string generalModelPath{"../resources/models/"};
         std::string caiShaderTimeCachePath{"../resources/CaIShaders/caiShaderTimeCache.bin"};
 
-        //Asset Pool
-        enum class AssetErrorCode {
-            GUID_NOT_FOUND,
-            ASSET_NOT_FOUND,
-        };
-
-        template<typename Meta, typename Asset>
-        requires std::derived_from<Meta, BaseMeta>
-        struct MetaAsset {
-            std::unique_ptr<Meta> meta;
-            std::unique_ptr<Asset> asset;
-        };
-
-        template<typename Meta, typename Asset>
-        requires std::derived_from<Meta, BaseMeta>
-        struct MetaAssetPool {
-            std::shared_mutex mutex;
-            std::unordered_map<GUID, MetaAsset<Meta, Asset>> metaAssetPool;
-            ExpectedWithInfo<Meta*> GetMeta(const GUID& guid) {
-                std::shared_lock lock(mutex);
-                auto it = metaAssetPool.find(guid);
-                if (it == metaAssetPool.end() || it->second.meta == nullptr) {
-                    return std::unexpected(ErrorInfo("Can't find GUID Meta"));
-                }
-                return ExpectedWithInfo<Meta*>(it->second.meta.get());
-            }
-
-            ExpectedWithInfo<Asset*> GetAsset(const GUID& guid) {
-                std::shared_lock lock(mutex);
-                auto it = metaAssetPool.find(guid);
-                if (it == metaAssetPool.end() || it->second.asset == nullptr) {
-                    return std::unexpected(ErrorInfo("Can't find GUID Asset"));
-                }
-                return ExpectedWithInfo<Asset*>(it->second.asset.get());
-            }
-
-            void SetMeta(const GUID& guid, std::unique_ptr<Meta> meta){
-                std::lock_guard<std::mutex> lock(mutex);
-                if (metaAssetPool.contains(guid)) {
-                    LOG_WARNING("The GUID: {} has been existed, the : {} will be overwritten",
-                        guid, metaAssetPool[guid].meta->name);
-                }
-                metaAssetPool[guid].meta = std::move(meta);
-            }
-
-            void SetAsset(const GUID& guid, const Asset& asset){
-                std::lock_guard<std::mutex> lock(mutex);
-                if (metaAssetPool.contains(guid)) {
-                    LOG_WARNING("The GUID: {} has been existed, the : {} will be overwritten",
-                        guid, metaAssetPool[guid].asset->name);
-                }
-                metaAssetPool[guid].asset = std::move(asset);
-            }
-        };
-
-        MetaAssetPool<TextureMeta, TextureAsset> textureAssetPool;
-        MetaAssetPool<MaterialMeta, MaterialAsset> materialAssetPool;
-        MetaAssetPool<ShaderMeta, ShaderAsset> shaderAssetPool;
-        MetaAssetPool<ModelMeta, ModelAsset> modelAssetPool;
     };
 }
 
