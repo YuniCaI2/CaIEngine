@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by 51092 on 2025/10/14.
 //
 
@@ -165,14 +165,26 @@ struct MeshAsset { //理应上Material和Mesh不耦合
 };
 
 
+struct ShaderPass {
+    std::string passName;
+    std::string sourcePath;
+    FrameWork::ShaderInfo shaderInfo;
+    uint32_t shaderSize;
+
+    uint32_t* shaderCode; //shaderCode //存储成bin文件
+};
+
+
+struct ShaderRenderGraph {
+
+};
+
+
 
 struct ShaderAsset {
     std::string name;
-    std::string sourcePath;
-    FrameWork::ShaderInfo shaderInfo; //管线反射信息
+    std::vector<std::unique_ptr<ShaderPass>> passes;
 
-    uint32_t shaderSize;
-    uint32_t* shaderCode;
 };
 
 

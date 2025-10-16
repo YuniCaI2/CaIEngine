@@ -11,9 +11,7 @@
 #include <future>
 #include <assimp/scene.h>
 #include <shared_mutex>
-
 #include "Schema.h"
-#include "Logger.h"
 #include "PublicEnum.h"
 #include "PublicStruct.h"
 #include <map>
@@ -24,9 +22,6 @@ namespace FrameWork {
     class ResourceManager {
     private:
         ResourceManager();
-
-
-
         std::unordered_map<std::string, TextureFullData> textureMap;
         using ShaderTimeCache =  std::map<std::string, std::filesystem::file_time_type>;
         mutable ShaderTimeCache shaderTimeCache;
@@ -46,6 +41,19 @@ namespace FrameWork {
 
         static TextureFullData LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type);
         static TextureFullData LoadSTBTexture(const std::string &filePath, TextureTypeFlagBits type);
+
+        //Asset Pool
+        std::shared_mutex textureAssetPoolMutex;
+        std::vector<TextureAsset> textureAssetPool;
+        std::shared_mutex materialAssetPoolMutex;
+        std::vector<MaterialAsset> materialAssetPool;
+        std::shared_mutex shaderAssetPoolMutex;
+        std::vector<ShaderAsset> shaderAssetPool;
+        std::shared_mutex meshAssetPoolMutex;
+        std::vector<MeshAsset> meshAssetPool;
+        std::shared_mutex modelAssetPoolMutex;
+        std::vector<ModelAsset> modelAssetPool;
+
     public:
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
         ShaderModulePackages GetShaderCaIShaderModule(VkDevice device, const std::string& filePath,ShaderInfo& shaderInfo) const;

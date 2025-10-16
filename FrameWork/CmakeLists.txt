@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+﻿cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -61,8 +61,12 @@ file(GLOB ECSPath
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/resources/*.h"
 )
 
+file(GLOB AssetPath
+        "${CMAKE_CURRENT_SOURCE_DIR}/Asset/*.h"
+)
 
-add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath}
+
+add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath} ${AssetPath}
         CaIMaterial.cpp
         CaIMaterial.h
         CaIShader.cpp
