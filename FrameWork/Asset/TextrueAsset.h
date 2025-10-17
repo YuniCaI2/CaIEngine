@@ -91,6 +91,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureImport, texDim, textureFormat, colorSp
 struct TextureAsset {
     std::string name;
     std::string sourcePath;
+    std::string contentHash;
+    std::filesystem::file_time_type fileTime;
     uint32_t width;
     uint32_t height;
     uint32_t numChannel;
@@ -99,5 +101,40 @@ struct TextureAsset {
     unsigned char* data;
 };
 
+namespace Asset_Impl {
+    struct TextureAsset_Impl {
+        std::string name;
+        std::string sourcePath;
+        std::string contentHash;
+        std::filesystem::file_time_type fileTime;
+        uint32_t width;
+        uint32_t height;
+        uint32_t numChannel;
+        TextureImport textureImport;
+
+        std::string binPath{}; //方便序列化
+    };
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureAsset_Impl, name, contentHash, fileTime,
+        sourcePath, width, height, numChannel, textureImport, binPath)
+}
+
+
+inline void SaveTextureBin(const std::string& path, unsigned char* data, uint32_t totalSize) {
+    std::ofstream file(path, std::ios::binary);
+    file.write(reinterpret_cast<const char*>(data), totalSize);
+}
+
+inline unsigned char* LoadTextureBin(const std::string& path, uint32_t totalSize) {
+    std::ifstream file(path, std::ios::binary);
+    unsigned char* data = new unsigned char[totalSize];
+    if (file.is_open()) {
+        file.read(reinterpret_cast<char*>(data), totalSize);
+    }else {
+        throw std::runtime_error("Could not open file to load Texture Bin" + path);
+        return nullptr;
+    }
+    return data;
+}
 
 #endif //CAIENGINE_TEXTRUEASSET_H

@@ -135,6 +135,20 @@ struct nlohmann::adl_serializer<std::shared_ptr<T>> {
     }
 };
 
+template<>
+struct nlohmann::adl_serializer<std::filesystem::file_time_type> {
+    static void to_json(nlohmann::json& j, const std::filesystem::file_time_type& p) {
+        auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(p);
+        j = std::chrono::system_clock::to_time_t(sctp);
+    }
+    static void from_json(const nlohmann::json& j, std::filesystem::file_time_type& p) {
+        std::time_t t;
+        j.get_to(t);
+        using namespace std::chrono;
+        p = std::filesystem::file_time_type::clock::now() +
+            (system_clock::from_time_t(t) - system_clock::now());
+    }
+};
 } // namespace nlohmann
 
 

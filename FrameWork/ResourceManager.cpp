@@ -1,7 +1,8 @@
-﻿//
+//
 // Created by 51092 on 25-6-13.
 //
 
+#include"Serialize.h"
 #include "ResourceManager.h"
 #include "Logger.h"
 #include "PublicStruct.h"
@@ -12,8 +13,7 @@
 #include <assimp/Importer.hpp>
 #include <future>
 #include <memory>
-#include <ranges>
-#include "Logger.h"
+#include<openssl/sha.h>
 
 #include "ShaderParse.h"
 #ifdef _WIN32
@@ -261,11 +261,27 @@ void FrameWork::ResourceManager::CompileShader(const std::string &filepath) cons
 }
 
 FrameWork::ResourceManager::ResourceManager() {
+    std::ifstream iassetCacheTable(assetCacheTablePath);
+    if (!iassetCacheTable.is_open()) {
+        //意味着没创建
+        std::ofstream ofile(assetCacheTablePath);
+        ofile.close();
+    }else {
+        if (!iassetCacheTable.eof()) {
+            assetCacheTable = nlohmann::json::parse(iassetCacheTable);
+        }
+    }
+}
+
+FrameWork::ResourceManager::~ResourceManager() {
+    std::ofstream oassetCacheTable(assetCacheTablePath);
+    nlohmann::json assetCache = assetCacheTable;
+    oassetCacheTable << std::setw(4) << assetCache;
 }
 
 
 std::vector<FrameWork::MeshData> FrameWork::ResourceManager::LoadMesh(const std::string &fileName, ModelType modelType,
-                                                               TextureTypeFlags textureFlags, float scale) {
+                                                                      TextureTypeFlags textureFlags, float scale) {
     Assimp::Importer importer;
     std::vector<std::string_view> fsplits;
     std::string path;
@@ -529,8 +545,282 @@ FrameWork::TextureFullData FrameWork::ResourceManager::LoadSTBTexture(const std:
     return texData;
 }
 
+void FrameWork::ResourceManager::LoadDDSTextureAsset(const std::string &filePath, TextureAsset &textureAsset) {
+#ifdef _WIN32
+    using namespace DirectX;
+    textureAsset.sourcePath = filePath;
+
+    // 转换文件路径为宽字符
+    std::wstring wFilePath(filePath.begin(), filePath.end());
+
+    // 加载DDS文件
+    TexMetadata metadata;
+    ScratchImage image;
+
+    HRESULT hr = LoadFromDDSFile(wFilePath.c_str(), DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to load DDS texture from file: " << filePath << std::endl;
+        exit(-1);
+    }
+
+
+    switch (metadata.format) {
+        case DXGI_FORMAT_R32G32B32A32_FLOAT: // FLOAT32, 4通道
+        case DXGI_FORMAT_R16G16B16A16_FLOAT: // FLOAT16, 4通道
+            break;
+        default:
+            std::cerr << "Unsupported DDS format. Only FLOAT32 and FLOAT16 4-channel formats are supported." <<
+                    std::endl;
+            exit(-1);
+    }
+
+    // 获取图像数据
+    const Image *img = image.GetImage(0, 0, 0);
+    if (!img) {
+        std::cerr << "Failed to get image data from DDS file: " << filePath << std::endl;
+        exit(-1);
+    }
+
+    // 分配内存并复制数据
+    size_t dataSize = img->rowPitch * img->height; //rowPitch 是每行字节数
+    unsigned char *data = new unsigned char[dataSize];
+    memcpy(data, img->pixels, dataSize);
+
+    // 填充原有的TextureFullData结构
+    textureAsset.width = static_cast<int>(metadata.width);
+    textureAsset.height = static_cast<int>(metadata.height);
+    textureAsset.numChannel = 4; // DDS文件我们只支持4通道
+    textureAsset.data = data;
+#endif
+}
+
+void FrameWork::ResourceManager::LoadSTBTextureAsset(const std::string &filePath, TextureAsset &textureAsset) {
+    int width = 100, height = 100, numChannels;
+    uint32_t desireChannels = 4;
+    unsigned char *data = nullptr;
+
+    data = stbi_load(filePath.c_str(), &width, &height, &numChannels, desireChannels);
+
+    TextureFullData texData;
+    textureAsset.width = width;
+    textureAsset.height = height;
+    textureAsset.numChannel = desireChannels;
+    textureAsset.data = data;
+    textureAsset.sourcePath = filePath;
+
+    if (!data) {
+        std::cerr << "Failed to load texture from file, may be the directory was wrong " << filePath << std::endl;
+        exit(-1);
+    }
+}
+
+
+nlohmann::json LoadJSONFromPath(const std::string & path) {
+    if (std::filesystem::exists(path)) {
+        LOG_ERROR("Resource Manager does not exist : "  ,path);
+        throw std::runtime_error("Resource Manager does not exist : " + path);
+    }
+    if (std::filesystem::path(path).extension() != ".json") {
+        LOG_ERROR("Resource Manager does not JSON file {}"  ,path);
+        throw std::runtime_error("Resource Manager does not JSON file : " + path);
+    }
+    std::ifstream file(path);
+    nlohmann::json j;
+    if (!file.is_open()) {
+        LOG_ERROR("Open file failed: {}", path);
+        throw std::runtime_error("Open file failed: " + path);
+    }
+    try {
+        file >> j;
+        return j;
+    } catch (const nlohmann::json::exception& e) {
+        LOG_ERROR("JSON Error in : {}", e.what());
+        throw std::runtime_error("JSON error in \""
+            + path + "\": " + std::string(e.what()));
+    }
+    return j;
+}
+
+//计算hash
+std::string ComputeFileSHA256(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file) throw std::runtime_error("Failed to open file for hashing: " + path);
+
+    SHA256_CTX ctx;
+    SHA256_Init(&ctx);
+
+    std::vector<char> buffer(8192);
+    while (file.good()) {
+        file.read(buffer.data(), buffer.size());
+        SHA256_Update(&ctx, buffer.data(), file.gcount());
+    }
+
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_Final(hash, &ctx);
+
+    std::ostringstream result;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+        result << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+    return result.str();
+}
+
+
+uint32_t FrameWork::ResourceManager::LoadTextureAssetFromJSON(const std::string &path) {
+    auto j = LoadJSONFromPath(path);
+    //先加载JSON格式
+    Asset_Impl::TextureAsset_Impl textureAsset_Impl;
+    try {
+        textureAsset_Impl = j.get<Asset_Impl::TextureAsset_Impl>();
+    } catch (const nlohmann::json::exception& e) {
+        throw std::runtime_error( "Error :" + std::string(e.what()));
+    }
+
+    //先检测时间戳
+    if (textureAsset_Impl.fileTime != last_write_time(std::filesystem::path(path))) {
+        //再计算hash
+        auto newHash = ComputeFileSHA256(path);
+        if (newHash != textureAsset_Impl.contentHash) {
+            textureAsset_Impl.contentHash = newHash;
+            LOG_TRACE("File Change, Should Reload");
+            return LoadTextureAssetFromSource(textureAsset_Impl.sourcePath);
+        }
+    }
+
+
+    //提取bin
+    auto binPath = textureAsset_Impl.binPath;
+    if (!std::filesystem::exists(binPath)) {
+        LOG_ERROR("Resource Manager does not exist : {}", binPath);
+        throw std::runtime_error("Texture Path :" + path +
+            " does not exist BIN PATH : !" + binPath);
+    }
+    unsigned char* textureData = nullptr;
+    uint32_t totalSize{};
+    switch (textureAsset_Impl.textureImport.textureFormat) {
+        case TextureFormat::R8:
+        case TextureFormat::R8G8B8A8:
+            totalSize = textureAsset_Impl.width * textureAsset_Impl.height * textureAsset_Impl.numChannel;
+            break;
+        default:
+            totalSize = textureAsset_Impl.width * textureAsset_Impl.height * textureAsset_Impl.numChannel * 2;
+    }
+    try {
+        textureData = LoadTextureBin(binPath, totalSize);
+    } catch (std::exception& e) {
+        LOG_ERROR("Error : {}", std::string(e.what()));
+        throw std::runtime_error("Error : " + std::string(e.what()));
+    }
+
+    TextureAsset textureAsset = {
+        .name = textureAsset_Impl.name,
+        .sourcePath = textureAsset_Impl.sourcePath,
+        .width = textureAsset_Impl.width,
+        .height = textureAsset_Impl.height,
+        .numChannel = textureAsset_Impl.numChannel,
+        .textureImport = textureAsset_Impl.textureImport,
+        .data = textureData
+    };
+
+    return AddAsset(std::make_shared<TextureAsset>(textureAsset));
+}
+
+uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromJSON(const std::string &path) {
+    auto j = LoadJSONFromPath(path);
+    MaterialAsset materialAsset;
+    try {
+        materialAsset = j.get<MaterialAsset>();
+    } catch (const nlohmann::json::exception& e) {
+        LOG_ERROR("Error : {}", std::string(e.what()));
+        throw std::runtime_error( "Error :" + std::string(e.what()));
+    }
+    return {};
+}
+
+uint32_t FrameWork::ResourceManager::LoadShaderAssetFromJSON(const std::string &path) {
+    auto j = LoadJSONFromPath(path);
+    return {};
+}
+
+uint32_t FrameWork::ResourceManager::LoadModelAssetFromJSON(const std::string &path) {
+    auto j = LoadJSONFromPath(path);
+    return {};
+}
+
+uint32_t FrameWork::ResourceManager::LoadMeshAssetFromJSON(const std::string &path) {
+    auto j = LoadJSONFromPath(path);
+    return {};
+}
+
+uint32_t FrameWork::ResourceManager::LoadTextureAssetFromSource(const std::string &path) {
+    TextureAsset textureAsset;
+    textureAsset.name = std::filesystem::path(path).stem().string();
+    textureAsset.fileTime = std::filesystem::last_write_time(path);
+    textureAsset.contentHash = ComputeFileSHA256(path);
+    if (assetCacheTable.contains(path)) {
+        if (std::filesystem::exists(assetCacheTable[path])) {
+            try {
+                std::ifstream file(assetCacheTable[path]);
+                nlohmann::json json = nlohmann::json::parse(file);
+                Asset_Impl::TextureAsset_Impl textureAsset_Impl = json;
+                textureAsset.name = textureAsset_Impl.name;
+                textureAsset.sourcePath = path;
+                textureAsset.textureImport = textureAsset_Impl.textureImport;
+            } catch (std::exception& e) {
+                LOG_ERROR("Error : {}", std::string(e.what()));
+                throw std::runtime_error("Error : " + std::string(e.what()));
+            }
+        }
+    }
+    uint32_t totalSize{};
+    if (std::filesystem::path(path).extension() == ".dds") {
+        textureAsset.textureImport.colorSpace = ColorSpace::LINEAR;
+        textureAsset.textureImport.textureFormat = TextureFormat::R16G16B16;
+    }
+    if (textureAsset.textureImport.textureFormat == TextureFormat::R16G16B16) {
+        LoadDDSTextureAsset(path, textureAsset);
+        totalSize = textureAsset.width * textureAsset.height * textureAsset.numChannel * 2;
+    }else {
+        LoadSTBTextureAsset(path, textureAsset);
+        totalSize = textureAsset.width * textureAsset.height * textureAsset.numChannel;
+    }
+
+    std::string jsonPath = std::filesystem::absolute (std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
+        std::filesystem::path(std::filesystem::path(path).stem().string() + std::string(".json"))).string();
+    std::string binPath = std::filesystem::absolute(std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
+        std::filesystem::path(std::filesystem::path(path).stem().string() + std::string(".bin"))).string();
+
+    SaveTextureBin(binPath, textureAsset.data, totalSize);
+
+    Asset_Impl::TextureAsset_Impl textureAsset_Impl = {
+        .name = textureAsset.name,
+        .sourcePath = std::filesystem::absolute(std::filesystem::path(textureAsset.sourcePath)).string(),
+        .contentHash = textureAsset.contentHash,
+        .fileTime = textureAsset.fileTime,
+        .width = textureAsset.width,
+        .height = textureAsset.height,
+        .numChannel = textureAsset.numChannel,
+        .textureImport = textureAsset.textureImport,
+        .binPath = binPath
+    };
+    std::ofstream jsonFile(jsonPath);
+    nlohmann::json json = textureAsset_Impl;
+    jsonFile << std::setw(4) << json;
+    assetCacheTable[path] = jsonPath;
+
+    return AddAsset(std::make_shared<TextureAsset>(textureAsset));
+}
+
+uint32_t FrameWork::ResourceManager::LoadShaderAssetFromSource(const std::string &path) {
+    return {};
+}
+
+uint32_t FrameWork::ResourceManager::LoadModelAssetFromSource(const std::string &path) {
+    return {};
+}
+
+
 FrameWork::ShaderModulePackages FrameWork::ResourceManager::GetShaderCaIShaderModule(VkDevice device, const std::string &filePath,
-                                                             ShaderInfo &shaderInfo) const {
+                                                                                     ShaderInfo &shaderInfo) const {
 
     auto IfCompile = [](const std::filesystem::path &filepath1, const std::filesystem::file_time_type &time)-> bool {
         if (filepath1.string() == ".") {

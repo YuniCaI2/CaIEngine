@@ -1,4 +1,4 @@
-﻿//
+//
 // Created by 51092 on 2025/10/16.
 //
 
@@ -11,10 +11,12 @@
 
 struct ShaderPass {
     std::string passName;
-    std::string sourcePath;
+    std::string sourcePath; //检测sourcePath是否修改，修改则重新编译
+    std::string contentHash;
+    std::filesystem::file_time_type fileTime; //shader加载时间
     FrameWork::ShaderInfo shaderInfo; //其中包括如何操作队列
     uint32_t shaderSize;
-    uint32_t* shaderCode; //shaderCode //存储成bin文件
+    std::unique_ptr<uint32_t[]> shaderCode; //shaderCode //存储成bin文件
 };
 
 struct TextureTransient {
@@ -50,13 +52,21 @@ struct ShaderRenderGraph { //维护拓扑关系
     std::unordered_map<std::string, RenderGraphPass> passes;
 };
 
-
-
 struct ShaderAsset {
     std::string name;
-    std::unordered_map<std::string, ShaderPass> passes;
     ShaderRenderGraph renderGraph;
+    std::unordered_map<std::string, ShaderPass> passes;
 };
+
+namespace Asset_Impl {
+    struct ShaderAsset_Impl {
+        std::string name;
+        ShaderRenderGraph renderGraph;
+        std::unordered_map<std::string, std::string> passes; //指定对应bin路径
+    };
+}
+
+
 
 
 #endif //CAIENGINE_SHADERASSET_H

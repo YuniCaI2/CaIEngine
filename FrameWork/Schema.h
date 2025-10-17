@@ -174,13 +174,6 @@ struct ShaderPass {
     uint32_t* shaderCode; //shaderCode //存储成bin文件
 };
 
-
-struct ShaderRenderGraph {
-
-};
-
-
-
 struct ShaderAsset {
     std::string name;
     std::vector<std::unique_ptr<ShaderPass>> passes;
