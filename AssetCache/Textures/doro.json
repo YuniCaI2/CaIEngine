@@ -1,11 +1,11 @@
 {
-    "binPath": "D:\\Visual Studio Project\\CaIEngine\\AssetCache\\Textures\\doro.bin",
+    "binPath": "D:\\Visual_Studio_Project\\CaIEngine\\AssetCache\\Textures\\doro.bin",
     "contentHash": "da2ea732ac1cdb9c5d3afafaec8abec67a90eac90ead3c28a8cac40778a0abcc",
     "fileTime": 1739337751,
     "height": 844,
     "name": "doro",
     "numChannel": 4,
-    "sourcePath": "D:\\Visual Studio Project\\CaIEngine\\resources\\Pic\\doro.png",
+    "sourcePath": "D:\\Visual_Studio_Project\\CaIEngine\\resources\\Pic\\doro.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

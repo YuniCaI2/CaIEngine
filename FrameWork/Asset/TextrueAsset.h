@@ -5,6 +5,7 @@
 #ifndef CAIENGINE_TEXTRUEASSET_H
 #define CAIENGINE_TEXTRUEASSET_H
 #include<nlohmann/json.hpp>
+#include<fstream>
 
 enum class TextureFormat {
     R8,
@@ -93,6 +94,7 @@ struct TextureAsset {
     std::string sourcePath;
     std::string contentHash;
     std::filesystem::file_time_type fileTime;
+
     uint32_t width;
     uint32_t height;
     uint32_t numChannel;

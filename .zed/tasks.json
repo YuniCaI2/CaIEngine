@@ -1,0 +1,18 @@
+[
+  {
+    "label": "MSVC x64 Shell (cmd)",
+    "command": "C:\\Windows\\System32\\cmd.exe",
+    "args": [
+      "/k",
+      "call \"D:\\APP\\Visual Studio\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && title MSVC x64 Ready && cd /d %ZED_WORKTREE_ROOT%"
+    ],
+    "use_new_terminal": true,
+    "reveal": "always"
+  },
+  {
+    "label": "Generate CMake",
+    "command": "cmd /c \"call \"\"D:\\APP\\Visual Studio\\VC\\Auxiliary\\Build\\vcvarsall.bat\"\" x64 && cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_TOOLCHAIN_FILE=C:/Users/51092/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_VERBOSE_MAKEFILE=OFF\"",
+    "use_new_terminal": true,
+    "reveal": "always"
+  }
+]

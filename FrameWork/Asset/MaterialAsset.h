@@ -7,6 +7,8 @@
 #include<map>
 #include<string>
 #include<glm/glm.hpp>
+#include<filesystem>
+#include<nlohmann/json.hpp>
 
 struct MaterialAsset {
     std::string name;

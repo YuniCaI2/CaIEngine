@@ -171,14 +171,20 @@ namespace FrameWork {
         std::string assetCachePath =  "../../AssetCache/";
         // std::string assetCachePath =  "../AssetCache/";
 
-    public:
+        //从.caishader -> .spv
+        void CompileCaIShader(const std::string& path, ShaderPass& shaderPass);
+
         //Asset Op
         // Load 对应JSON
         uint32_t LoadTextureAssetFromJSON(const std::string& path); //加载纹理且生成默认Import 和.bin
         uint32_t LoadMaterialAssetFromJSON(const std::string& path);
+
+        ShaderPass LoadShaderPassFromJSON(const std::string& path);
         uint32_t LoadShaderAssetFromJSON(const std::string& path);
+
         uint32_t LoadModelAssetFromJSON(const std::string& path);
         uint32_t LoadMeshAssetFromJSON(const std::string& path);
+    public:
 
         uint32_t LoadTextureAssetFromSource(const std::string& path);
         uint32_t LoadModelAssetFromSource(const std::string& path);
@@ -186,8 +192,9 @@ namespace FrameWork {
 
 
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
+
         ShaderModulePackages GetShaderCaIShaderModule(VkDevice device, const std::string& filePath,ShaderInfo& shaderInfo) const;
-        ShaderInfo GetShaderInfo(VkDevice device, const std::string& filePath) const;
+        ShaderInfo GetShaderInfo(const std::string& filePath) const;
         ShaderModulePackages GetCompShaderModule(VkDevice device, const std::string& filePath, CompShaderInfo& compShaderInfo) const;
         std::vector<MeshData> LoadMesh(const std::string& fileName, ModelType modelType, TextureTypeFlags textureFlags, float scale = 1.0f);
         std::unique_ptr<ModelData> LoadModelData(const std::string& filePath, TextureTypeFlags textureFlags);

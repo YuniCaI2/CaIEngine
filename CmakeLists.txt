@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
+
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (APPLE)
     # 对于 macOS，可能需要
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-limit-debug-info")

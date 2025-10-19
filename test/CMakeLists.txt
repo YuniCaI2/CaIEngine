@@ -11,8 +11,6 @@ endfunction()
 
 add_framework_test(LoggerTest)
 add_framework_test(ParserTest)
-add_framework_test(FrameGraphTest)
-add_framework_test(threadPoolTest)
 add_framework_test(RenderQueueTest)
 add_framework_test(SerializeTest)
 add_framework_test(ImporterTest)

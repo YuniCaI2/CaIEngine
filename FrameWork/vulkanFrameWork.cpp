@@ -1281,7 +1281,7 @@ std::expected<FrameWork::ShaderInfo, std::string> vulkanFrameWork::CreateVulkanP
     }
 
     auto asyncShaderModulePackages = resourceManager.AsyncGetShaderCaIShaderModule(device, shaderPath);
-    FrameWork::ShaderInfo shaderInfo = resourceManager.GetShaderInfo(device, shaderPath);
+    FrameWork::ShaderInfo shaderInfo = resourceManager.GetShaderInfo(shaderPath);
     if ((shaderInfo.shaderTypeFlags & ShaderType::Comp) == ShaderType::Comp) {
         return std::unexpected("Comp Shader Can't use CaI Shader to Create Shader");
     }
