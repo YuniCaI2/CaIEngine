@@ -9,10 +9,12 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <exception>
+#include <fstream>
 #include <future>
 #include <memory>
 #include <openssl/e_os2.h>
 #include<openssl/sha.h>
+#include <vulkan/vulkan_core.h>
 
 #include "ShaderParse.h"
 #ifdef _WIN32
@@ -693,7 +695,7 @@ void FrameWork::ResourceManager::CompileCaIShader(const std::string &path, Shade
     std::stringstream ss;
     ss << caiShaderFile.rdbuf();
     std::string code = ss.str();
-    auto shaderInfo = ShaderParse::GetShaderInfo(code);
+    std::future<ShaderInfo> shaderInfoFuture = ThreadPool::GetInstance().Enqueue(ShaderParse::GetShaderInfo, code);
     std::string vert, frag;
     ShaderParse::ParseShaderCode(code, vert, frag);
     bool hasVertex = ! vert.empty();
@@ -711,8 +713,9 @@ void FrameWork::ResourceManager::CompileCaIShader(const std::string &path, Shade
     std::string vulkanVertCode{} , vulkanFragCode{};
     std::filesystem::path vulkanShaderPath = std::filesystem::path(path).parent_path();
     vulkanShaderPath = vulkanShaderPath / std::filesystem::path(path).stem();
+    shaderPass.shaderInfo = shaderInfoFuture.get();
     if (hasVertex) {
-        vulkanVertCode = ShaderParse::TranslateToVulkan(vert, shaderInfo.vertProperties);
+        vulkanVertCode = ShaderParse::TranslateToVulkan(vert, shaderPass.shaderInfo.vertProperties);
         std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".vert");
         if (! vulkanVertShaderFile.is_open()) {
             LOG_ERROR("Failed to open vertex shader file: {}", vulkanShaderPath.string());
@@ -721,10 +724,10 @@ void FrameWork::ResourceManager::CompileCaIShader(const std::string &path, Shade
         vulkanVertShaderFile << vulkanVertCode;
         vulkanVertShaderFile.close();
         CompileShader(vulkanShaderPath.string() + ".vert");
-        shaderPass.vertShaderCode = std::move(LoadShaderSpv(vulkanShaderPath.string() + ".spv", shaderPass.vertShaderSize));
+        shaderPass.vertShaderCode = std::move(LoadShaderSpv(vulkanShaderPath.string() + ".vert.spv", shaderPass.vertShaderSize));
     }
     if (hasFrag) {
-        vulkanFragCode = ShaderParse::TranslateToVulkan(frag, shaderInfo.fragProperties);
+        vulkanFragCode = ShaderParse::TranslateToVulkan(frag, shaderPass.shaderInfo.fragProperties);
         std::ofstream vulkanFragShaderFile(vulkanShaderPath.string() + ".frag");
         if (! vulkanFragShaderFile.is_open()) {
             LOG_ERROR("Failed to open fragment shader file: {}", vulkanShaderPath.string());
@@ -733,7 +736,7 @@ void FrameWork::ResourceManager::CompileCaIShader(const std::string &path, Shade
         vulkanFragShaderFile << vulkanFragCode;
         vulkanFragShaderFile.close();
         CompileShader(vulkanShaderPath.string() + ".frag");
-        shaderPass.fragShaderCode = std::move(LoadShaderSpv(vulkanShaderPath.string() + ".spv", shaderPass.fragShaderSize));
+        shaderPass.fragShaderCode = std::move(LoadShaderSpv(vulkanShaderPath.string() + ".frag.spv", shaderPass.fragShaderSize));
     }
 }
 
@@ -918,16 +921,16 @@ uint32_t FrameWork::ResourceManager::LoadTextureAssetFromSource(const std::strin
         totalSize = textureAsset.width * textureAsset.height * textureAsset.numChannel;
     }
 
-    std::string jsonPath = std::filesystem::absolute (std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
+    std::string jsonPath = (std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
         std::filesystem::path(std::filesystem::path(path).stem().string() + std::string(".json"))).string();
-    std::string binPath = std::filesystem::absolute(std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
+    std::string binPath = (std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
         std::filesystem::path(std::filesystem::path(path).stem().string() + std::string(".bin"))).string();
 
     SaveTextureBin(binPath, textureAsset.data, totalSize);
 
     Asset_Impl::TextureAsset_Impl textureAsset_Impl = {
         .name = textureAsset.name,
-        .sourcePath = std::filesystem::absolute(std::filesystem::path(textureAsset.sourcePath)).string(),
+        .sourcePath = (std::filesystem::path(textureAsset.sourcePath)).string(),
         .contentHash = textureAsset.contentHash,
         .fileTime = textureAsset.fileTime,
         .width = textureAsset.width,
@@ -947,8 +950,74 @@ uint32_t FrameWork::ResourceManager::LoadTextureAssetFromSource(const std::strin
 uint32_t FrameWork::ResourceManager::LoadShaderAssetFromSource(const std::string &path) {
     auto j = LoadJSONFromPath(path);
     ShaderSource shaderSource;
+    try {
+        j.get_to<ShaderSource>(shaderSource);
+    }catch (const std::exception &e) {
+        LOG_ERROR("Failed to load shader source from source: {} , Becasue: {}", path, std::string(e.what()));
+        throw std::runtime_error("Failed to load shader source from source: " + path + "\nError: " + e.what());
+    }
 
-    return {};
+    //算hash
+    ShaderAsset shaderAsset;
+    shaderAsset.name = shaderSource.name;
+    for(auto &[shaderTag ,shaderPath] : shaderSource.passes){
+        if(!std::filesystem::exists(shaderPath)){
+            LOG_ERROR("Shader file not found: {}", shaderPath);
+            throw std::runtime_error("Shader file not found: " + shaderPath);
+        }
+        auto shaderHash = ComputeFileSHA256(shaderPath);
+        auto fileTime = std::filesystem::last_write_time(shaderPath);
+        ShaderPass shaderPass;
+        if(assetCacheTable.contains(shaderPath)){
+            if(std::filesystem::exists(assetCacheTable[shaderPath])){
+                std::ifstream shaderPassJson(assetCacheTable[shaderPath]);
+                auto shaderPass_Impl = nlohmann::json::parse(shaderPassJson).get<Asset_Impl::ShaderPass_Impl>();
+                if(shaderPass_Impl.contentHash == shaderHash && shaderPass_Impl.fileTime == fileTime){
+                    shaderPass = LoadShaderPassFromJSON(assetCacheTable[shaderPath]);
+                }
+            }
+        }else{
+            //不存在则创建
+            CompileCaIShader(shaderPath, shaderPass);
+
+            shaderPass.shaderTag = shaderTag;
+            shaderPass.contentHash = shaderHash;
+            shaderPass.fileTime = fileTime;
+            shaderPass.sourcePath = shaderPath;
+
+            //存储
+            Asset_Impl::ShaderPass_Impl shaderPass_Impl = {};
+            shaderPass_Impl.shaderTag = shaderPass.shaderTag;
+            shaderPass_Impl.contentHash = shaderPass.contentHash;
+            shaderPass_Impl.fileTime = shaderPass.fileTime;
+            shaderPass_Impl.sourcePath = shaderPass.sourcePath;
+            shaderPass_Impl.shaderInfo = shaderPass.shaderInfo;
+
+            shaderPass_Impl.vertShaderSize = shaderPass.vertShaderSize;
+            shaderPass_Impl.fragShaderSize = shaderPass.fragShaderSize;
+
+            //存储Bin
+            std::string jsonPath = assetCachePath + "Shaders/" + shaderTag + ".json";
+            std::string vertBinPath = assetCachePath + "Shaders/" + shaderTag + ".vert.bin";
+            std::string fragBinPath = assetCachePath + "Shaders/" + shaderTag + ".frag.bin";
+            shaderPass_Impl.vertBinPath = vertBinPath;
+            shaderPass_Impl.fragBinPath = fragBinPath;
+            SaveShaderCodeBin(vertBinPath, shaderPass.vertShaderCode.get(), shaderPass.vertShaderSize);
+            SaveShaderCodeBin(fragBinPath, shaderPass.fragShaderCode.get(), shaderPass.fragShaderSize);
+
+            //存储JSON
+            nlohmann::json shaderJson = shaderPass_Impl;
+            assetCacheTable[shaderPath] = jsonPath;
+            std::ofstream jsonFile(jsonPath);
+            jsonFile << std::setw(4) << shaderJson;
+            jsonFile.close();
+        }
+
+        shaderAsset.passes[shaderTag] = std::move(shaderPass);
+    }
+
+
+    return AddAsset(std::make_shared<ShaderAsset>(std::move(shaderAsset)));
 }
 
 uint32_t FrameWork::ResourceManager::LoadModelAssetFromSource(const std::string &path) {

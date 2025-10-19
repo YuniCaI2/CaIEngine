@@ -12,10 +12,20 @@ void testLoadTexture(){
     }
 }
 
+void testLoadShader() {
+    std::string shaderTestPath = "../../resources/test/testShader.json";
+    try {
+        FrameWork::ResourceManager::GetInstance().LoadShaderAssetFromSource(shaderTestPath);
+    }catch (std::exception& e) {
+        LOG_ERROR("{}",e.what());
+    }
+}
+
 int main(){
     LOG.Run();
 
-    testLoadTexture();
+    // testLoadTexture();
+    testLoadShader();
 
     LOG.Stop();
 }

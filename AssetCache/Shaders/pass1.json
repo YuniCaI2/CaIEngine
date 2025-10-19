@@ -1,0 +1,91 @@
+{
+    "contentHash": "42f219089e219dd15deaae264585af8ff4e93b911798e538129466a608cb4d76",
+    "fileTime": 1756964663,
+    "fragBinPath": "../../AssetCache/Shaders/pass1.frag.bin",
+    "fragShaderSize": 1460,
+    "shaderInfo": {
+        "fragProperties": {
+            "baseProperties": [
+                {
+                    "align": 16,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 1,
+                    "name": "tintColor",
+                    "offset": 0,
+                    "size": 16,
+                    "type": "VEC4"
+                },
+                {
+                    "align": 4,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 1,
+                    "name": "brightness",
+                    "offset": 16,
+                    "size": 4,
+                    "type": "FLOAT"
+                }
+            ],
+            "textureProperties": [
+                {
+                    "align": 0,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 2,
+                    "name": "mainTexture",
+                    "offset": 0,
+                    "size": 0,
+                    "type": "SAMPLER_2D"
+                }
+            ]
+        },
+        "shaderFormatsInfo": {
+            "shaderFormats": [
+                "SWAPCHAIN_FORMAT"
+            ]
+        },
+        "shaderState": {
+            "blendOp": "ADD",
+            "depthCompareOp": "LESS_OR_EQUAL",
+            "depthWrite": true,
+            "dstBlendFactor": "ONE_MINUS_SRC_ALPHA",
+            "faceCullOp": "Back",
+            "inputVertex": true,
+            "msaa": false,
+            "outputNums": 1,
+            "polygonMode": "Fill",
+            "srcBlendFactor": "SRC_ALPHA"
+        },
+        "shaderTypeFlags": 12,
+        "vertProperties": {
+            "baseProperties": [
+                {
+                    "align": 8,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 0,
+                    "name": "scale",
+                    "offset": 0,
+                    "size": 8,
+                    "type": "VEC2"
+                },
+                {
+                    "align": 8,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 0,
+                    "name": "translate",
+                    "offset": 8,
+                    "size": 8,
+                    "type": "VEC2"
+                }
+            ],
+            "textureProperties": []
+        }
+    },
+    "shaderTag": "pass1",
+    "sourcePath": "../../resources/test/testShader.caishader",
+    "vertBinPath": "../../AssetCache/Shaders/pass1.vert.bin",
+    "vertShaderSize": 1484
+}

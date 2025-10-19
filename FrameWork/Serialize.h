@@ -5,6 +5,7 @@
 #ifndef CAIENGINE_SERIALIZE_H
 #define CAIENGINE_SERIALIZE_H
 #include "variable_traits.h"
+#include <chrono>
 #include<string>
 #include<glm/glm.hpp>
 #include<nlohmann/json.hpp>
@@ -138,8 +139,15 @@ struct nlohmann::adl_serializer<std::shared_ptr<T>> {
 template<>
 struct nlohmann::adl_serializer<std::filesystem::file_time_type> {
     static void to_json(nlohmann::json& j, const std::filesystem::file_time_type& p) {
+        #ifdef _WIN32
         auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(p);
         j = std::chrono::system_clock::to_time_t(sctp);
+        #else
+        auto sysTimeDur = std::chrono::file_clock::to_sys(p);
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(sysTimeDur);
+        j = std::chrono::system_clock::to_time_t(sctp);
+        #endif
+
     }
     static void from_json(const nlohmann::json& j, std::filesystem::file_time_type& p) {
         std::time_t t;

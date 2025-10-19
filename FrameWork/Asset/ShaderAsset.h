@@ -46,6 +46,7 @@ namespace Asset_Impl {
         std::string sourcePath; //检测sourcePath是否修改，修改则重新编译
         std::string contentHash;
         std::filesystem::file_time_type fileTime; //shader加载时间
+
         FrameWork::ShaderInfo shaderInfo; //其中包括如何操作队列
         uint32_t vertShaderSize{};
         std::string vertBinPath{};

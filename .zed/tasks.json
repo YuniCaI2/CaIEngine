@@ -14,5 +14,17 @@
     "command": "cmd /c \"call \"\"D:\\APP\\Visual Studio\\VC\\Auxiliary\\Build\\vcvarsall.bat\"\" x64 && cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_TOOLCHAIN_FILE=C:/Users/51092/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_VERBOSE_MAKEFILE=OFF\"",
     "use_new_terminal": true,
     "reveal": "always"
+  },
+  {
+    "label": "MacOS Build CMake",
+    "command": "cmake -G \"Ninja\" -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    "use_new_terminal": false,
+    "reveal": "always"
+  },
+  {
+    "label": "Build All",
+    "command": "/bin/zsh",
+    "args": ["-lic", "cmake --build \"$ZED_WORKTREE_ROOT/build\" -j8"],
+    "use_new_terminal": false
   }
 ]
