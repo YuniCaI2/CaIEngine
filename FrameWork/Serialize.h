@@ -136,27 +136,40 @@ struct nlohmann::adl_serializer<std::shared_ptr<T>> {
     }
 };
 
-template<>
-struct nlohmann::adl_serializer<std::filesystem::file_time_type> {
-    static void to_json(nlohmann::json& j, const std::filesystem::file_time_type& p) {
-        #ifdef _WIN32
-        auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(p);
-        j = std::chrono::system_clock::to_time_t(sctp);
-        #else
-        auto sysTimeDur = std::chrono::file_clock::to_sys(p);
-        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(sysTimeDur);
-        j = std::chrono::system_clock::to_time_t(sctp);
-        #endif
+    template<>
+    struct nlohmann::adl_serializer<std::filesystem::file_time_type> {
+        static void to_json(nlohmann::json& j, const std::filesystem::file_time_type& p) {
+            using namespace std::chrono;
+#ifdef _WIN32
+            // MSVC：file_clock <-> utc_time
+            const auto utc_tp = file_clock::to_utc(p); // utc_time<file_clock::duration>
+            const auto utc_ns = time_point_cast<nanoseconds>(utc_tp);
+            j = utc_ns.time_since_epoch().count();
+#else
+            // libstdc++/libc++：file_clock <-> sys_time
+            const auto sys_tp = file_clock::to_sys(p); // sys_time<file_clock::duration>
+            const auto sys_ns = time_point_cast<nanoseconds>(sys_tp);
+            j = sys_ns.time_since_epoch().count();
+#endif
+        }
 
-    }
-    static void from_json(const nlohmann::json& j, std::filesystem::file_time_type& p) {
-        std::time_t t;
-        j.get_to(t);
-        using namespace std::chrono;
-        p = std::filesystem::file_time_type::clock::now() +
-            (system_clock::from_time_t(t) - system_clock::now());
-    }
-};
+        static void from_json(const nlohmann::json& j, std::filesystem::file_time_type& p) {
+            using namespace std::chrono;
+            long long ns = 0;
+            j.get_to(ns);
+#ifdef _WIN32
+            // 先还原为 utc_time<nanoseconds>，再按 file_clock::duration 截断/转换
+            utc_time<nanoseconds> utc_tp{nanoseconds{ns}};
+            auto utc_tp_fc_res = time_point_cast<file_clock::duration>(utc_tp);
+            p = file_clock::from_utc(utc_tp_fc_res);
+#else
+            // 非 Windows：sys_time 路径
+            sys_time<nanoseconds> sys_tp{nanoseconds{ns}};
+            auto sys_tp_fc_res = time_point_cast<file_clock::duration>(sys_tp);
+            p = file_clock::from_sys(sys_tp_fc_res);
+#endif
+        }
+    };
 } // namespace nlohmann
 
 

@@ -43,7 +43,7 @@ namespace FG {
         VkFormat format{};
         uint32_t mipLevels{};
         uint32_t arrayLayers{};
-        VkSampleCountFlagBits samples{};
+        VkSampleCountFlagBits samples{}; //跨平台这里要进行映射重写
         VkImageUsageFlags usages{};
 
         bool Equal( BaseDescription *description) override {

@@ -1,0 +1,22 @@
+{
+    "binPath": "../../AssetCache/Textures\\doro.bin",
+    "contentHash": "da2ea732ac1cdb9c5d3afafaec8abec67a90eac90ead3c28a8cac40778a0abcc",
+    "fileTime": 1739337778207529100,
+    "height": 844,
+    "name": "doro",
+    "numChannel": 4,
+    "sourcePath": "../../resources/Pic/doro.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 850
+}

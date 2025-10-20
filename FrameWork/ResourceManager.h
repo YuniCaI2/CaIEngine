@@ -53,6 +53,8 @@ namespace FrameWork {
         std::vector<std::shared_ptr<TextureAsset>> textureAssetPool;
         std::shared_mutex materialAssetPoolMutex;
         std::vector<std::shared_ptr<MaterialAsset>> materialAssetPool;
+        std::shared_mutex shaderPassPoolMutex;
+        std::vector<std::shared_ptr<ShaderPass>> shaderPassPool;
         std::shared_mutex shaderAssetPoolMutex;
         std::vector<std::shared_ptr<ShaderAsset>> shaderAssetPool;
         std::shared_mutex meshAssetPoolMutex;
@@ -77,6 +79,9 @@ namespace FrameWork {
             if constexpr (std::is_same_v<T, ShaderAsset>) {
                 return shaderAssetPoolMutex;
             }
+            if constexpr (std::is_same_v<T, ShaderPass>) {
+                return shaderPassPoolMutex;
+            }
         }
 
         template<typename T>
@@ -95,6 +100,9 @@ namespace FrameWork {
             }
             if constexpr (std::is_same_v<T, ShaderAsset>) {
                 return shaderAssetPool;
+            }
+            if constexpr (std::is_same_v<T, ShaderPass>) {
+                return shaderPassPool;
             }
         }
 
@@ -152,12 +160,14 @@ namespace FrameWork {
         //Path To Index
         std::unordered_map<std::string, uint32_t> texturePathToIndex;
         std::unordered_map<std::string, uint32_t> materialPathToIndex;
+        std::unordered_map<std::string, uint32_t> shaderPassPathToIndex;
         std::unordered_map<std::string, uint32_t> shaderPathToIndex;
         std::unordered_map<std::string, uint32_t> meshPathToIndex;
         std::unordered_map<std::string, uint32_t> modelPathToIndex;
 
         std::shared_mutex texturePathToIndexMutex;
         std::shared_mutex materialPathToIndexMutex;
+        std::shared_mutex shaderPassPathToIndexMutex;
         std::shared_mutex shaderPathToIndexMutex;
         std::shared_mutex meshPathToIndexMutex;
         std::shared_mutex modelPathToIndexMutex;
@@ -167,28 +177,30 @@ namespace FrameWork {
         //AssetCache
         std::string assetCacheTablePath = "../../AssetCache/assetTable.json";
         // std::string assetCacheTablePath = "../AssetCache/assetTable.json";
+
+        std::shared_mutex assetCacheTableMutex;
         std::unordered_map<std::string, std::string> assetCacheTable; //原始路径到cache路径映射
         std::string assetCachePath =  "../../AssetCache/";
         // std::string assetCachePath =  "../AssetCache/";
 
         //从.caishader -> .spv
-        void CompileCaIShader(const std::string& path, ShaderPass& shaderPass);
+        void CompileCaIShader(const std::string& path, std::shared_ptr<ShaderPass> shaderPass);
 
         //Asset Op
         // Load 对应JSON
         uint32_t LoadTextureAssetFromJSON(const std::string& path); //加载纹理且生成默认Import 和.bin
         uint32_t LoadMaterialAssetFromJSON(const std::string& path);
 
-        ShaderPass LoadShaderPassFromJSON(const std::string& path);
-        uint32_t LoadShaderAssetFromJSON(const std::string& path);
+        std::shared_ptr<ShaderPass> LoadShaderPassFromJSON(const std::string& path);
 
         uint32_t LoadModelAssetFromJSON(const std::string& path);
         uint32_t LoadMeshAssetFromJSON(const std::string& path);
     public:
 
-        uint32_t LoadTextureAssetFromSource(const std::string& path);
-        uint32_t LoadModelAssetFromSource(const std::string& path);
-        uint32_t LoadShaderAssetFromSource(const std::string& path);
+        uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true);
+        uint32_t LoadModelAssetFromSource(const std::string& path, bool overlap = true);
+        uint32_t LoadShaderAssetFromSource(const std::string& path, bool overlap = true);
+        uint32_t LoadMaterialAssetFromSource(const std::string& path, bool overlap = true);
 
 
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载

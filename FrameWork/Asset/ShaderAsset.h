@@ -9,10 +9,10 @@
 #include<string>
 #include"../PublicStruct.h"
 #include<nlohmann/json.hpp>
-#include "../Logger.h"
 
 //Graphics Shader
 struct ShaderPass {
+    std::string name;
     std::string shaderTag;
     std::string sourcePath; //检测sourcePath是否修改，修改则重新编译
     std::string contentHash;
@@ -27,7 +27,8 @@ struct ShaderPass {
 
 struct ShaderAsset {
     std::string name;
-    std::unordered_map<std::string, ShaderPass> passes; //对应shaderTag To Shader Tag
+    std::unordered_map<std::string, std::shared_ptr<ShaderPass>> passes; //对应shaderTag To Shader Tag
+    //Pass 需要能够共享
 };
 
 
@@ -42,6 +43,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderSource, name, passes)
 
 namespace Asset_Impl {
     struct ShaderPass_Impl {
+        std::string name;
         std::string shaderTag;
         std::string sourcePath; //检测sourcePath是否修改，修改则重新编译
         std::string contentHash;
@@ -53,7 +55,7 @@ namespace Asset_Impl {
         uint32_t fragShaderSize{};
         std::string fragBinPath{};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, shaderTag, sourcePath, contentHash, fileTime, shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime, shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
 
     struct ShaderAsset_Impl {
         std::string name;

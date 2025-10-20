@@ -13,25 +13,47 @@
 struct MaterialAsset {
     std::string name;
     std::string contentHash;
-    std::filesystem::file_time_type fileTime; //shader加载时间
+    std::filesystem::file_time_type fileTime; //加载时间
     std::string shaderPath;
 
     template<class T>
     using ParamMap = std::map<std::string, T>;
     //Uniform
-    ParamMap<float> floatParams{};
-    ParamMap<uint32_t> uintParams{};
-    ParamMap<int> intParams{};
-    ParamMap<glm::vec2> vec2Params{};
-    ParamMap<glm::vec3> vec3Params{};
-    ParamMap<glm::vec4> vec4Params{};
-    ParamMap<std::string> textures; //对应其路径
+    ParamMap<float> floats{};
+    ParamMap<uint32_t> uints{};
+    ParamMap<int> ints{};
+    ParamMap<glm::vec2> vec2s{};
+    ParamMap<glm::vec3> vec3s{};
+    ParamMap<glm::vec4> vec4s{};
+    ParamMap<std::string> textures; //对应其路径 //相当于依赖项
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    MaterialAsset, name, contentHash, fileTime,shaderPath, floatParams, uintParams, intParams, vec2Params,
-    vec3Params, vec4Params, textures
+    MaterialAsset, name, contentHash, fileTime, shaderPath, floats, uints, ints, vec2s,
+    vec3s, vec4s, textures
     )
+
+struct MaterialSource {
+    std::string name;
+    std::string shaderPath;
+
+    template<class T>
+    using ParamMap = std::map<std::string, T>;
+    //Uniform
+    ParamMap<float> floats{};
+    ParamMap<uint32_t> uints{};
+    ParamMap<int> ints{};
+    ParamMap<glm::vec2> vec2s{};
+    ParamMap<glm::vec3> vec3s{};
+    ParamMap<glm::vec4> vec4s{};
+    ParamMap<std::string> textures; //对应其路径 //相当于依赖项
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    MaterialSource, name, shaderPath, floats, uints, ints, vec2s,
+    vec3s, vec4s, textures
+    )
+
 
 
 #endif //CAIENGINE_MATERIAL_H

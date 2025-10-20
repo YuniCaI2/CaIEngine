@@ -24,7 +24,7 @@ void testLoadShader() {
 int main(){
     LOG.Run();
 
-    // testLoadTexture();
+    testLoadTexture();
     testLoadShader();
 
     LOG.Stop();
