@@ -140,4 +140,5 @@ build
 CLAUDE.md
 .vs
 out
-./cache
+.cache/clangd/index/
+./resources/CaIShaders/caiShaderTimeCache.bin

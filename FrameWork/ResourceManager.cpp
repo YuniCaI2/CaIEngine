@@ -1010,7 +1010,7 @@ uint32_t FrameWork::ResourceManager::LoadShaderAssetFromSource(const std::string
                 //存储JSON
                 nlohmann::json shaderJson = shaderPass_Impl;
                 {
-                    std::scoped_lock(assetCacheMutex);
+                    std::scoped_lock lock(assetCacheTableMutex);
                     assetCacheTable[shaderPath] = jsonPath;
                 }
                 std::ofstream jsonFile(jsonPath);
