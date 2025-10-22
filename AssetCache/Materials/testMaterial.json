@@ -1,0 +1,16 @@
+{
+    "contentHash": "155d543dffb66a1462cf556bac3a56c6c332c6970660fdabc488e1c5710ee559",
+    "fileTime": 1761106131569567574,
+    "floats": {},
+    "ints": {},
+    "mat4s": {},
+    "name": "testMaterial",
+    "shaderPath": "../../resources/test/testShader.json",
+    "textures": {
+        "diffuse": "../../resources/Pic/doro.png"
+    },
+    "uints": {},
+    "vec2s": {},
+    "vec3s": {},
+    "vec4s": {}
+}

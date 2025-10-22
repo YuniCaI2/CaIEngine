@@ -1,3 +1,4 @@
+#include "Asset/MaterialAsset.h"
 #include "Asset/ShaderAsset.h"
 #include"Serialize.h"
 #include "ResourceManager.h"
@@ -11,7 +12,9 @@
 #include <exception>
 #include <fstream>
 #include <future>
+#include <iomanip>
 #include <memory>
+#include <mutex>
 #include <openssl/e_os2.h>
 #include<openssl/sha.h>
 #include <vulkan/vulkan_core.h>
@@ -751,6 +754,12 @@ uint32_t FrameWork::ResourceManager::LoadTextureAssetFromJSON(const std::string 
         throw std::runtime_error( "Error :" + std::string(e.what()));
     }
 
+    {   //检测内存是否已加载，加载后直接返回
+        std::shared_lock lock(texturePathToIndexMutex);
+        if (texturePathToIndex.contains(textureAsset_Impl.sourcePath)) {
+            return texturePathToIndex[textureAsset_Impl.sourcePath];
+        }
+    }
     //提取bin
     auto binPath = textureAsset_Impl.binPath;
     if (!std::filesystem::exists(binPath)) {
@@ -785,14 +794,12 @@ uint32_t FrameWork::ResourceManager::LoadTextureAssetFromJSON(const std::string 
         .data = textureData
     };
 
+    int index = AddAsset(std::make_shared<TextureAsset>(textureAsset));
     {
-        std::shared_lock lock(texturePathToIndexMutex);
-        if (texturePathToIndex.contains(textureAsset.sourcePath)) {
-            return texturePathToIndex[textureAsset.sourcePath];
-        }
+        std::scoped_lock lock(texturePathToIndexMutex);
+        texturePathToIndex[textureAsset.sourcePath] = index; //进行记录
     }
-
-    return AddAsset(std::make_shared<TextureAsset>(textureAsset));
+    return index;
 }
 
 uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromJSON(const std::string &path) {
@@ -804,10 +811,8 @@ uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromJSON(const std::string
         LOG_ERROR("Error : {}", std::string(e.what()));
         throw std::runtime_error( "Error :" + std::string(e.what()));
     }
-
-
-
-    return {};
+    //Material 无bin，所以可以忽略
+    return AddAsset(std::make_shared<MaterialAsset>(std::move(materialAsset)));
 }
 
 std::shared_ptr<ShaderPass> FrameWork::ResourceManager::LoadShaderPassFromJSON(const std::string &path) {
@@ -837,6 +842,11 @@ std::shared_ptr<ShaderPass> FrameWork::ResourceManager::LoadShaderPassFromJSON(c
         throw std::runtime_error("Error : " + std::string(e.what()));
     }
     auto shaderPassPtr = std::make_shared<ShaderPass>(std::move(shaderPass));
+    {
+        int index = AddAsset(shaderPassPtr);
+        std::scoped_lock lock(shaderPassPathToIndexMutex);
+        shaderPassPathToIndex[shaderPassPtr->sourcePath] = index; //从磁盘加载到内存
+    }
 
     return shaderPassPtr;
 }
@@ -1049,19 +1059,48 @@ uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromSource(const std::stri
         LOG_ERROR("Error loading material source from {}", path);
         throw std::runtime_error("Error loading material source from " + path + std::string(e.what()));
     }
-    if (std::filesystem::last_write_time(path) == std::filesystem::last_write_time(materialSourceJson)) {
-        if (std::filesystem::exists(assetCacheTable[path])) {
-            auto materialAsset = LoadJSONFromPath(assetCacheTable[path]).get<MaterialAsset>();
-            //递归加载
-            for (auto& [textureName, texturePath] : materialAsset.textures) {
-                LoadTextureAssetFromSource(texturePath, true);
-            }
-            LoadShaderAssetFromSource(materialAsset.shaderPath, true);
+    if(!overlap){
+        if(materialPathToIndex.find(path) != materialPathToIndex.end()){
+            return materialPathToIndex[path];
         }
     }
-    MaterialAsset materialAsset;
 
-    return {};
+    MaterialAsset materialAsset;
+    materialAsset.fileTime = std::filesystem::last_write_time(path);
+    materialAsset.contentHash = ComputeFileSHA256(path);
+    materialAsset.name = materialSource.name;
+    materialAsset.shaderPath = materialSource.shaderPath;
+    materialAsset.ints = materialSource.ints;
+    materialAsset.uints = materialSource.uints;
+    materialAsset.floats = materialSource.floats;
+    materialAsset.vec2s = materialSource.vec2s;
+    materialAsset.vec3s = materialSource.vec3s;
+    materialAsset.vec4s = materialSource.vec4s;
+    materialAsset.mat4s = materialSource.mat4s;
+    materialAsset.textures = materialSource.textures;
+
+    for (auto& [textureName, texturePath] : materialAsset.textures) {
+        LoadTextureAssetFromSource(texturePath, true);//递归加载检测依赖资源是否改变
+    }
+    LoadShaderAssetFromSource(materialAsset.shaderPath, true);
+
+    if(materialAsset.name.empty()) materialAsset.name = std::filesystem::path(path).stem().string();
+    std::string jsonPath = assetCachePath + "Materials/" + materialAsset.name + ".json";
+    {
+        std::scoped_lock lock(assetCacheTableMutex);
+        assetCacheTable[path] = jsonPath;
+    }
+
+    std::ofstream jsonFile(jsonPath);
+    jsonFile << std::setw(4) << nlohmann::json(materialAsset);
+    jsonFile.close();
+
+    uint32_t index = AddAsset(std::make_shared<MaterialAsset>(materialAsset));
+    {
+        std::scoped_lock lock(materialPathToIndexMutex);
+        materialPathToIndex[path] = index;
+    }
+    return index;
 }
 
 uint32_t FrameWork::ResourceManager::LoadModelAssetFromSource(const std::string &path, bool overlap) {

@@ -25,12 +25,13 @@ struct MaterialAsset {
     ParamMap<glm::vec2> vec2s{};
     ParamMap<glm::vec3> vec3s{};
     ParamMap<glm::vec4> vec4s{};
-    ParamMap<std::string> textures; //对应其路径 //相当于依赖项
+    ParamMap<glm::mat4> mat4s{};
+    ParamMap<std::string> textures{}; //对应其路径 //相当于依赖项
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     MaterialAsset, name, contentHash, fileTime, shaderPath, floats, uints, ints, vec2s,
-    vec3s, vec4s, textures
+    vec3s, vec4s, mat4s,textures
     )
 
 struct MaterialSource {
@@ -46,12 +47,14 @@ struct MaterialSource {
     ParamMap<glm::vec2> vec2s{};
     ParamMap<glm::vec3> vec3s{};
     ParamMap<glm::vec4> vec4s{};
-    ParamMap<std::string> textures; //对应其路径 //相当于依赖项
+    ParamMap<glm::mat4> mat4s{};
+    ParamMap<std::string> textures{}; //对应其路径 //相当于依赖项
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+//使用Default 可以不需要完全Material中的Param参数，Like："vec2" : {}
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     MaterialSource, name, shaderPath, floats, uints, ints, vec2s,
-    vec3s, vec4s, textures
+    vec3s, vec4s, mat4s, textures
     )
 
 

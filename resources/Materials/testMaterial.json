@@ -1,0 +1,7 @@
+{
+  "name": "testMaterial",
+  "shaderPath": "../../resources/test/testShader.json",
+  "textures": {
+    "diffuse": "../../resources/Pic/doro.png"
+  }
+}

@@ -21,11 +21,21 @@ void testLoadShader() {
     }
 }
 
+void testLoadMaterial() {
+    std::string materialTestPath = "../../resources/Materials/testMaterial.json";
+    try {
+        FrameWork::ResourceManager::GetInstance().LoadMaterialAssetFromSource(materialTestPath);
+    }catch (std::exception& e) {
+        LOG_ERROR("{}",e.what());
+    }
+}
+
 int main(){
     LOG.Run();
 
-    testLoadTexture();
-    testLoadShader();
+    // testLoadTexture();
+    // testLoadShader();
+    testLoadMaterial();
 
     LOG.Stop();
 }

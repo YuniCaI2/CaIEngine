@@ -157,7 +157,7 @@ namespace FrameWork {
 
 
         //Table
-        //Path To Index
+        //Path To Index, 此处的Path指的是source Path
         std::unordered_map<std::string, uint32_t> texturePathToIndex;
         std::unordered_map<std::string, uint32_t> materialPathToIndex;
         std::unordered_map<std::string, uint32_t> shaderPassPathToIndex;
