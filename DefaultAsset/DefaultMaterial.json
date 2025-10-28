@@ -1,0 +1,7 @@
+﻿{
+  "name": "DefaultMaterial",
+  "shaderPath": "../../resources/test/testShader.json",
+  "textures": {
+      "colorSampler": "./DefaultTexture.png"
+  }
+}

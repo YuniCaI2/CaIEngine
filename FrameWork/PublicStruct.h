@@ -444,13 +444,6 @@ namespace FrameWork {
     //Parent 在加载前处理，树形结构得到parent
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PrefabStruct, name, components, modelDataPath, materialData)
 
-    //以树的结构加载模型
-    struct ModelNode {
-        std::string name{};
-        ModelNode* parent = nullptr; //默认root Node
-        std::vector<std::unique_ptr<ModelNode>> children;
-        std::vector<std::unique_ptr<MeshData>> meshDatas;
-    };
 }
 
 

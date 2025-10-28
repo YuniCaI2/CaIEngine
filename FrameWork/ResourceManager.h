@@ -35,7 +35,6 @@ namespace FrameWork {
 
         void processNode(aiNode *node, const aiScene *scene, std::vector<MeshData>& meshes, ModelType modelType, std::string, TextureTypeFlags textureFlags);
         FrameWork::MeshData processMesh(aiMesh *mesh, ModelType modelType, const aiScene *scene, std::string, TextureTypeFlags textureFlags);
-        std::unique_ptr<ModelNode> LoadModelNode_Impl(std::unique_ptr<ModelNode> modelNode , aiScene* scene, aiNode* node,const std::string& directory,ModelType modelType, TextureTypeFlags textureFlags);
         TextureFullData CreateDefaultTexture(TextureTypeFlagBits textureFlagBits);
 
         void SaveCache(const std::string& filePath, const ShaderTimeCache& shaderTimeCache) const;
@@ -156,6 +155,8 @@ namespace FrameWork {
 
 
 
+
+
         //Table
         //Path To Index, 此处的Path指的是source Path
         std::unordered_map<std::string, uint32_t> texturePathToIndex;
@@ -195,6 +196,25 @@ namespace FrameWork {
 
         uint32_t LoadModelAssetFromJSON(const std::string& path);
         uint32_t LoadMeshAssetFromJSON(const std::string& path);
+
+        //加载模型节点和节点的Mesh
+        //Assimp处理模型
+
+        std::string LoadMeshAssetFromModel(aiMesh* mesh, const std::string& modelPath);
+        void LoadModelAssetNode(std::shared_ptr<ModelAsset> modelAsset,aiScene* scene, const aiNode* node, const std::string& modelPath);
+
+
+        //Table
+        static constexpr std::pair<aiTextureType, const char*>  aiTextureTypeToString[] = {
+            { aiTextureType_DIFFUSE,           "albedo" },
+            { aiTextureType_NORMALS,           "normal" },
+            { aiTextureType_SPECULAR,          "specular" },
+            { aiTextureType_METALNESS,         "metallic" },
+            { aiTextureType_DIFFUSE_ROUGHNESS, "roughness" },
+            { aiTextureType_AMBIENT_OCCLUSION, "ao" },
+            { aiTextureType_EMISSIVE,          "emissive" },
+            { aiTextureType_OPACITY,           "opacity" }
+        };
     public:
 
         uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true);
@@ -230,6 +250,8 @@ namespace FrameWork {
         std::string generalModelPath{"../resources/models/"};
         std::string caiShaderTimeCachePath{"../resources/CaIShaders/caiShaderTimeCache.bin"};
 
+        //Default Source Path
+        std::string defaultMaterialPath = "../DefaultAsset/DefaultMaterial"; //加载模型时使用, 组织结构
     };
 }
 

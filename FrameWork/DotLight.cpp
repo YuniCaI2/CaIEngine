@@ -16,6 +16,7 @@ glm::vec3 FrameWork::DotLight::GetPosition() {
     return position;
 }
 
+
 LightType FrameWork::DotLight::GetType() {
     return type;
 }

@@ -27,6 +27,8 @@ struct MaterialAsset {
     ParamMap<glm::vec4> vec4s{};
     ParamMap<glm::mat4> mat4s{};
     ParamMap<std::string> textures{}; //对应其路径 //相当于依赖项
+
+    bool dirty {false}; //记录是否被运行时修改，决定是否写回
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(

@@ -36,22 +36,22 @@ endif()
 
 add_subdirectory(thirdPart)
 
-file(GLOB frameWorkPath
+file(GLOB frameWorkPath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 
-file(GLOB frameGraphPath
+file(GLOB frameGraphPath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/*.cpp"
 )
 
-file(GLOB uniformPassPath
+file(GLOB uniformPassPath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/UniformPass/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/FrameGraph/UniformPass/*.cpp"
 )
 
-file(GLOB ECSPath
+file(GLOB ECSPath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Components/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Components/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/Systems/*.cpp"

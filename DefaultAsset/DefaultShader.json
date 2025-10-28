@@ -1,0 +1,6 @@
+﻿{
+  "name": "DefaultShaderSource",
+  "passes": {
+    "pass1": "./DefaultShader.caishader"
+  }
+}

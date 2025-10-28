@@ -30,12 +30,12 @@ void testLoadMaterial() {
     }
 }
 
+
 int main(){
     LOG.Run();
-
     // testLoadTexture();
     // testLoadShader();
-    testLoadMaterial();
+    // testLoadMaterial();
 
     LOG.Stop();
 }

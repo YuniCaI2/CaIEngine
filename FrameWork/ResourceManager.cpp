@@ -28,6 +28,7 @@
 #include <stb_image.h>
 #include <filesystem>
 #include "Logger.h"
+#include "Schema.h"
 #include "FrameGraph/ThreadPool.h"
 
 void FrameWork::ResourceManager::processNode(aiNode *node, const aiScene *scene, std::vector<MeshData> &meshes,
@@ -120,43 +121,6 @@ FrameWork::MeshData FrameWork::ResourceManager::processMesh(aiMesh *mesh, ModelT
     return meshData;
 }
 
-std::unique_ptr<FrameWork::ModelNode> FrameWork::ResourceManager::LoadModelNode_Impl(std::unique_ptr<ModelNode> modelNode, aiScene* scene, aiNode* node,
-    const std::string& directory,ModelType modelType, TextureTypeFlags textureFlags){
-    //加载Mesh
-    //Async
-    std::vector<std::future<MeshData>> meshFutures;
-    for(int i = 0; i < node->mNumMeshes; i++) {
-        auto task = [this, scene, node, directory, modelType, textureFlags, i]() {
-            return processMesh(scene->mMeshes[node->mMeshes[i]], modelType, scene, directory, textureFlags);
-        };
-        meshFutures.push_back(
-            ThreadPool::GetInstance().Enqueue(
-                task
-            )
-        );
-    }
-    for(int i = 0; i < meshFutures.size(); i++){
-        modelNode->meshDatas.push_back(std::make_unique<MeshData>(std::move(meshFutures[i].get())));
-        modelNode->meshDatas.back()->name = scene->mMeshes[node->mMeshes[i]]->mName.C_Str(); //获取到网格的名字
-    }
-    std::vector<std::future<std::unique_ptr<ModelNode>>> modelNodeFutures;
-    for(int i = 0; i < node->mNumChildren; i++) {
-
-        auto task = [this, scene, node, directory, modelType, textureFlags, i]() {
-            return LoadModelNode_Impl(std::make_unique<ModelNode>(), scene, node->mChildren[i], directory, modelType, textureFlags);
-        };
-        modelNodeFutures.push_back(
-            ThreadPool::GetInstance().Enqueue(
-                task
-            )
-        );
-    }
-    for(int i = 0; i < modelNodeFutures.size(); i++){
-        modelNode->children.push_back(std::move(modelNodeFutures[i].get()));
-        modelNode->children.back()->parent = modelNode.get();
-    }
-    return modelNode;
-}
 
 FrameWork::TextureFullData FrameWork::ResourceManager::CreateDefaultTexture(TextureTypeFlagBits type) {
     int width = 100, height = 100, numChannels = 4;
@@ -843,7 +807,7 @@ std::shared_ptr<ShaderPass> FrameWork::ResourceManager::LoadShaderPassFromJSON(c
     }
     auto shaderPassPtr = std::make_shared<ShaderPass>(std::move(shaderPass));
     {
-        int index = AddAsset(shaderPassPtr);
+        auto index = AddAsset(shaderPassPtr);
         std::scoped_lock lock(shaderPassPathToIndexMutex);
         shaderPassPathToIndex[shaderPassPtr->sourcePath] = index; //从磁盘加载到内存
     }
@@ -861,7 +825,120 @@ uint32_t FrameWork::ResourceManager::LoadModelAssetFromJSON(const std::string &p
 
 uint32_t FrameWork::ResourceManager::LoadMeshAssetFromJSON(const std::string &path) {
     auto j = LoadJSONFromPath(path);
-    return {};
+    auto meshAsset_Impl = j.get<Asset_Impl::MeshAsset_Impl>();
+    {
+        //检测是否已经加载 , 和Shader同理
+        std::shared_lock lock(meshPathToIndexMutex);
+        if (meshPathToIndex.contains(meshAsset_Impl.sourcePath)) {
+            return meshPathToIndex[meshAsset_Impl.sourcePath];
+        }
+    }
+
+    //取出bin文件
+    MeshAsset meshAsset = {
+        .name = meshAsset_Impl.name,
+        .contentHash = meshAsset_Impl.contentHash,
+        .sourcePath = meshAsset_Impl.sourcePath,
+        .fileTime = meshAsset_Impl.fileTime
+    };
+    LoadMeshBin(meshAsset, meshAsset_Impl.binPath);
+    auto index = AddAsset(std::make_shared<MeshAsset>(std::move(meshAsset)));
+    {
+        std::scoped_lock lock(meshPathToIndexMutex);
+        meshPathToIndex[meshAsset_Impl.sourcePath] = index; //Mesh Source 的地址是虚拟化的，类似与嵌入的纹理
+    }
+    return index;
+}
+
+std::string FrameWork::ResourceManager::LoadMeshAssetFromModel(aiMesh *mesh,
+    const std::string & modelPath) {
+    MeshAsset meshAsset = {};
+
+    //构建虚拟的Mesh Source
+    //format : modelPath-Embedding/Meshes/MeshName
+    std::string meshPath = modelPath + "/Meshes/" + meshAsset.name;
+    meshAsset.sourcePath = meshPath;
+
+    if (assetCacheTable.contains(meshAsset.sourcePath)) {
+        LoadMeshAssetFromJSON(meshAsset.sourcePath); //返回值似乎无用-使用string作为索引
+        return meshAsset.sourcePath;
+    }
+
+    //Vertex
+    for (int i = 0; i < mesh->mNumVertices; i++) {
+        VertexData vertex{};
+        vertex.position.x = mesh->mVertices[i].x;
+        vertex.position.y = mesh->mVertices[i].y;
+        vertex.position.z = mesh->mVertices[i].z;
+
+        vertex.normal.x = mesh->mNormals[i].x;
+        vertex.normal.y = mesh->mNormals[i].y;
+        vertex.normal.z = mesh->mNormals[i].z;
+
+        vertex.tangent.x = mesh->mTangents[i].x;
+        vertex.tangent.y = mesh->mTangents[i].y;
+        vertex.tangent.z = mesh->mTangents[i].z;
+
+        if (mesh->mTextureCoords[0]) {
+            vertex.texCoord.x = mesh->mTextureCoords[0][i].x;
+            vertex.texCoord.y = mesh->mTextureCoords[0][i].y;
+        }else {
+            LOG_WARNING("Can't Find Mesh texcoord ! in %s", mesh->mName.data);
+        }
+        meshAsset.vertices.push_back(std::move(vertex));
+    }
+    //Indices
+    for (int i = 0; i < mesh->mNumFaces; i++) {
+        aiFace face = mesh->mFaces[i];
+        for (uint32_t j = 0; j < face.mNumIndices; j++) {
+            meshAsset.indices.push_back(face.mIndices[j]);
+        }
+    }
+    //name
+    meshAsset.name = mesh->mName.data;
+
+    //因为Mesh完全依附于Model,所以此处先不使用contentHash 和 fileTime
+
+    //format : modelName_Mesh_MeshName.json
+    std::string modelName = std::filesystem::path(modelPath).stem().string();
+    std::string jsonPath = assetCachePath + "Meshes/" + modelName + "_Mesh_" + meshAsset.name + ".json";
+    std::string binPath = modelPath + "/Meshes/" + modelName + "_Mesh_" + meshAsset.name + ".bin";
+    SaveMeshBin(meshAsset, binPath);
+    Asset_Impl::MeshAsset_Impl meshAssetImpl = {
+        .name = meshAsset.name,
+        .contentHash = meshAsset.contentHash,
+        .sourcePath = meshAsset.sourcePath,
+        .fileTime = meshAsset.fileTime,
+        .binPath =  binPath
+    };
+    nlohmann::json j = meshAssetImpl;
+    std::ofstream of(jsonPath);
+    of << std::setw(4) << j; //写入
+    of.close();
+
+
+    //写入内存
+    {
+        auto index = AddAsset(std::make_shared<MeshAsset>(std::move(meshAsset)));
+        std::scoped_lock lock(meshPathToIndexMutex);
+        meshPathToIndex[meshAsset.sourcePath] = index;
+    }
+
+    return meshAsset.sourcePath;
+}
+
+void FrameWork::ResourceManager::LoadModelAssetNode(std::shared_ptr<ModelAsset> modelAsset,aiScene *scene, const aiNode *node,
+                                                    const std::string & modelPath) {
+    ModelNode modelNode{};
+    for (int i = 0; i < node->mNumMeshes; i++) {
+        //加载Mesh
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        LoadMeshAssetFromModel(mesh, modelPath);
+
+    }
+    for (int i = 0; i < node->mNumChildren; i++) {
+        LoadModelAssetNode(modelAsset, scene, node, modelPath);
+    }
 }
 
 uint32_t FrameWork::ResourceManager::LoadTextureAssetFromSource(const std::string &path, bool overlap) {
@@ -1065,6 +1142,7 @@ uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromSource(const std::stri
         }
     }
 
+    //这里的Hash意义似乎不是很大，因为其是结构化资源，二进制资源作为其依赖
     MaterialAsset materialAsset;
     materialAsset.fileTime = std::filesystem::last_write_time(path);
     materialAsset.contentHash = ComputeFileSHA256(path);
@@ -1103,7 +1181,15 @@ uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromSource(const std::stri
     return index;
 }
 
+//加载模型节点
+//对应处理多种模型
+
+
 uint32_t FrameWork::ResourceManager::LoadModelAssetFromSource(const std::string &path, bool overlap) {
+    //Model 比较复杂，可能需要加载嵌入式纹理，还要为Mesh和嵌入式纹理生成虚拟地址
+    auto modelAsset = std::make_shared<ModelAsset>();
+    modelAsset->name = std::filesystem::path(path).stem().string();
+
     return {};
 }
 

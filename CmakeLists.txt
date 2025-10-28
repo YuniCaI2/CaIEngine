@@ -1,17 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
 
 
+project(CaIEngine)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(CAIENGINE_TEST "Whether to start test" ON)
 if (APPLE)
     # 对于 macOS，可能需要
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-limit-debug-info")
 endif ()
 
-project(CaIEngine)
 
-file(GLOB scenePath
+# Demo 场景信息
+file(GLOB scenePath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.cpp"
 )
@@ -21,8 +24,10 @@ add_subdirectory(FrameWork)
 add_executable(${PROJECT_NAME} Renderer.cpp ${scenePath}
 )
 
-enable_testing()
-add_subdirectory(test)
+if (CAIENGINE_TEST)
+    enable_testing()
+    add_subdirectory(test)
+endif ()
 
 target_link_libraries(${PROJECT_NAME} FrameWork)
 

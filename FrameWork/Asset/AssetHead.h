@@ -4,6 +4,10 @@
 
 #ifndef CAIENGINE_ASSETHEAD_H
 #define CAIENGINE_ASSETHEAD_H
+
+
+
+
 #include "MaterialAsset.h"
 #include "ModelAsset.h"
 #include "ShaderAsset.h"
