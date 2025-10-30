@@ -34,7 +34,7 @@ void testLoadMaterial() {
 int main(){
     LOG.Run();
     // testLoadTexture();
-    // testLoadShader();
+    testLoadShader();
     // testLoadMaterial();
 
     LOG.Stop();

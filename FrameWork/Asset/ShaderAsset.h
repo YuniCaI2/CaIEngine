@@ -26,17 +26,22 @@ struct ShaderPass {
 };
 
 struct ShaderAsset {
+    std::string sourcePath;
     std::string name;
-    std::unordered_map<std::string, std::shared_ptr<ShaderPass>> passes; //对应shaderTag To Shader Tag
+    std::unordered_map<std::string, std::string> passes; //对应shaderTag To Shader Tag
     //Pass 需要能够共享
+    bool dirty {false};
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderAsset, sourcePath, name, passes)
+
 
 
 //用户操作的资源
 struct ShaderSource {
     std::string name;
     //ShaderTag To CaIShaderSource
-    std::unordered_map<std::string, std::string> passes;
+    std::unordered_map<std::string, std::string> passes; //后一个str为ShaderPass sourcePath, 也就是caishader Path，不是jsonPath
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderSource, name, passes)
 
@@ -56,12 +61,6 @@ namespace Asset_Impl {
         std::string fragBinPath{};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime, shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
-
-    struct ShaderAsset_Impl {
-        std::string name;
-        std::unordered_map<std::string, ShaderPass_Impl> passes;
-    };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderAsset_Impl, name, passes);
 }
 
 inline static void SaveShaderCodeBin(const std::string& path, const uint32_t* shaderCode, uint32_t shaderSize){

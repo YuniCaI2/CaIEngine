@@ -1,5 +1,6 @@
 {
     "../../resources/Materials/testMaterial.json": "../../AssetCache/Materials/testMaterial.json",
     "../../resources/Pic/doro.png": "../../AssetCache/Textures/doro.json",
-    "../../resources/test/testShader.caishader": "../../AssetCache/Shaders/testShader.json"
+    "../../resources/test/testShader.caishader": "../../AssetCache/ShaderPasses/testShader.json",
+    "../../resources/test/testShader.json": "../../AssetCache/Shaders/testShaderSource.json"
 }

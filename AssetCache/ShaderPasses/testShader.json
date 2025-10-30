@@ -1,7 +1,7 @@
 {
     "contentHash": "42f219089e219dd15deaae264585af8ff4e93b911798e538129466a608cb4d76",
     "fileTime": 1756964663799569739,
-    "fragBinPath": "../../AssetCache/Shaders/testShader.frag.bin",
+    "fragBinPath": "../../AssetCache/ShaderPasses/testShader.frag.bin",
     "fragShaderSize": 1460,
     "name": "testShader",
     "shaderInfo": {
@@ -87,6 +87,6 @@
     },
     "shaderTag": "pass1",
     "sourcePath": "../../resources/test/testShader.caishader",
-    "vertBinPath": "../../AssetCache/Shaders/testShader.vert.bin",
+    "vertBinPath": "../../AssetCache/ShaderPasses/testShader.vert.bin",
     "vertShaderSize": 1484
 }

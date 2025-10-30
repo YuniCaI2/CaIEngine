@@ -48,6 +48,9 @@ namespace FrameWork {
         static void LoadSTBTextureAsset(const std::string& filePath, TextureAsset& textureAsset);
 
         //Asset Pool
+        //Texture, Model, ShaderPass都是可以直接从外部资源导入,所以从外部进行修改
+        //Material,Mesh,Shader都是引擎内部资源, 属于结构化资源，持有外部资源的应用，或者组成外部资源
+
         std::shared_mutex textureAssetPoolMutex;
         std::vector<std::shared_ptr<TextureAsset>> textureAssetPool;
         std::shared_mutex materialAssetPoolMutex;
@@ -156,7 +159,6 @@ namespace FrameWork {
 
 
 
-
         //Table
         //Path To Index, 此处的Path指的是source Path
         std::unordered_map<std::string, uint32_t> texturePathToIndex;
@@ -191,15 +193,17 @@ namespace FrameWork {
         // Load 对应JSON
         uint32_t LoadTextureAssetFromJSON(const std::string& path); //加载纹理且生成默认Import 和.bin
         uint32_t LoadMaterialAssetFromJSON(const std::string& path);
+        uint32_t LoadShaderAssetFromJSON(const std::string& path);
+        uint32_t LoadShaderPassFromJSON(const std::string& path);
 
-        std::shared_ptr<ShaderPass> LoadShaderPassFromJSON(const std::string& path);
 
         uint32_t LoadModelAssetFromJSON(const std::string& path);
         uint32_t LoadMeshAssetFromJSON(const std::string& path);
 
         //加载模型节点和节点的Mesh
         //Assimp处理模型
-
+        std::string LoadEmbeddingTexture(const aiTexture* texData, const std::string& modelPath, TextureImport* textureImport = nullptr); //支持自定义TextureImport
+        std::string LoadMaterialAssetFromModel(aiScene* scene, aiMesh* mesh, const std::string& modelPath);
         std::string LoadMeshAssetFromModel(aiMesh* mesh, const std::string& modelPath);
         void LoadModelAssetNode(std::shared_ptr<ModelAsset> modelAsset,aiScene* scene, const aiNode* node, const std::string& modelPath);
 
@@ -217,10 +221,18 @@ namespace FrameWork {
         };
     public:
 
-        uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true);
+        uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true, TextureImport* textureImport = nullptr);
         uint32_t LoadModelAssetFromSource(const std::string& path, bool overlap = true);
         uint32_t LoadShaderAssetFromSource(const std::string& path, bool overlap = true);
+        uint32_t LoadShaderPassFromSource(const std::string& path, bool overlap = true); // 直接加载caishader
+
         uint32_t LoadMaterialAssetFromSource(const std::string& path, bool overlap = true);
+
+        //结构化资源需要创建
+        //会自动的生成虚拟的ShaderAsset和Material Asset 的path
+        uint32_t CreateMaterialAsset(const std::string& name); //创建空的Material Asset
+        uint32_t CreateShaderAsset(const std::string& name); //创建空的ShaderAsset存储ShaderPass
+
 
 
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
@@ -252,6 +264,8 @@ namespace FrameWork {
 
         //Default Source Path
         std::string defaultMaterialPath = "../DefaultAsset/DefaultMaterial"; //加载模型时使用, 组织结构
+        // std::string defaultShaderPath = "../DefaultAsset/DefaultShader.json";
+        std::string defaultShaderPath = "../../DefaultAsset/DefaultShader.json";
     };
 }
 

@@ -1,0 +1,6 @@
+{
+    "name": "testShaderSource",
+    "passes": {
+        "pass1": "../ShaderPasses/testShader.json"
+    }
+}
