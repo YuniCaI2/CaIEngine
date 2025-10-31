@@ -11,27 +11,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 if(WIN32)
-    find_package(imgui CONFIG REQUIRED)
     find_package(directxtex CONFIG REQUIRED)
-elseif(APPLE)
-    set(MacOSImGuiPath "/Users/yunicai/Code_file/include/imgui/")
-    add_library(imgui_lib STATIC
-            ${MacOSImGuiPath}/imgui.cpp
-            ${MacOSImGuiPath}/imgui_draw.cpp
-            ${MacOSImGuiPath}/imgui_tables.cpp
-            ${MacOSImGuiPath}/imgui_widgets.cpp
-            ${MacOSImGuiPath}/backends/imgui_impl_glfw.cpp
-            ${MacOSImGuiPath}/backends/imgui_impl_vulkan.cpp
-    )
-    target_include_directories(imgui_lib PUBLIC
-            ${MacOSImGuiPath}
-            ${MacOSImGuiPath}/backends
-    )
-    target_link_libraries(imgui_lib PUBLIC
-            glfw
-            Vulkan::Vulkan
-            assimp::assimp
-    )
 endif()
 
 add_subdirectory(thirdPart)
@@ -96,17 +76,17 @@ target_link_libraries(FrameWork PUBLIC
 
 # 平台特定的库和配置
 if(WIN32)
-    target_link_libraries(FrameWork PUBLIC imgui::imgui)
     target_link_libraries(FrameWork PRIVATE Microsoft::DirectXTex)
 elseif(APPLE)
-    target_link_libraries(FrameWork PUBLIC imgui_lib)
-    target_include_directories(FrameWork PUBLIC ${MacOSImGuiPath} ${MacOSImGuiPath}/backend)
 endif()
+target_link_libraries(FrameWork PUBLIC imgui)
+
 
 # 第三方库头文件路径
 target_include_directories(FrameWork PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/glm
         ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/stb
+        ${CMAKE_CURRENT_SOURCE_DIR}/thirdPart/imgui
 )
 
 # 保证target_link_library可以找到FrameWork

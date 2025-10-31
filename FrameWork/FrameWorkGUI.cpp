@@ -9,6 +9,7 @@
 
 
 
+
 void FrameWork::FrameWorkGUI::ReleaseGUIResources() const {
     vkDeviceWaitIdle(device);
     ImGui_ImplVulkan_Shutdown();
@@ -184,32 +185,35 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
     }
 
 
-    ImGui_ImplVulkan_InitInfo vulkanInitInfo = {
-        .Instance = vulkanRenderAPI.GetVulkanInstance(),
-        .PhysicalDevice = vulkanRenderAPI.GetVulkanPhysicalDevice(),
-        .Device = vulkanRenderAPI.vulkanDevice->logicalDevice,
-        .QueueFamily = vulkanRenderAPI.vulkanDevice->queueFamilyIndices.graphics,
-        .Queue = vulkanRenderAPI.GetVulkanGraphicsQueue(),
-        .DescriptorPool = descriptorPool,
-        .RenderPass = renderPass,
-        .MinImageCount = vulkanRenderAPI.GetVulkanSwapChain().minImageCount,
-        .ImageCount = (uint32_t) vulkanRenderAPI.GetVulkanSwapChain().imageViews.size(),
-        .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
-        .PipelineCache = pipelineCache,
-        .Subpass = 0,
-        .DescriptorPoolSize = 0,
-        .UseDynamicRendering = false,
-        .PipelineRenderingCreateInfo = {},
-        .Allocator = nullptr,
-        .CheckVkResultFn = nullptr,
-        .MinAllocationSize = 1024 * 1024
-    };
 
 
-    ImGui_ImplVulkan_Init(&vulkanInitInfo);
-#ifdef _WIN32
-    ImGui_ImplVulkan_CreateFontsTexture();
-#endif
+    ImGui_ImplVulkan_InitInfo info{};
+    info.ApiVersion      = VK_API_VERSION_1_3;
+    info.Instance        = vulkanRenderAPI.GetVulkanInstance();
+    info.PhysicalDevice  = vulkanRenderAPI.GetVulkanPhysicalDevice();
+    info.Device          = vulkanRenderAPI.vulkanDevice->logicalDevice;
+    info.QueueFamily     = vulkanRenderAPI.vulkanDevice->queueFamilyIndices.graphics;
+    info.Queue           = vulkanRenderAPI.GetVulkanGraphicsQueue();
+    info.DescriptorPool  = descriptorPool;
+    info.DescriptorPoolSize = 0; // 使用外部池
+    info.MinImageCount   = vulkanRenderAPI.GetVulkanSwapChain().minImageCount;
+    info.ImageCount      = static_cast<uint32_t>(vulkanRenderAPI.GetVulkanSwapChain().imageViews.size());
+    info.PipelineCache   = pipelineCache;
+    info.UseDynamicRendering = false;
+    info.MinAllocationSize   = 1024ull * 1024ull;
+
+    // 非动态渲染：必须提供 RenderPass/Subpass/MSAASamples
+    info.PipelineInfoMain = {};
+    info.PipelineInfoMain.RenderPass   = renderPass;
+    info.PipelineInfoMain.Subpass      = 0;
+    info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
+
+    // 然后初始化
+    ImGui_ImplVulkan_Init(&info);
+
+// #ifdef _WIN32
+//     ImGui_ImplVulkan_CreateFontsTexture();
+// #endif
 
 
     auto windowResizeCallback = [this]() {
