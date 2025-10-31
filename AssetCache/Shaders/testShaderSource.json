@@ -1,6 +1,7 @@
 {
     "name": "testShaderSource",
     "passes": {
-        "pass1": "../ShaderPasses/testShader.json"
-    }
+        "pass1": "../../resources/test/testShader.caishader"
+    },
+    "sourcePath": ""
 }

@@ -783,19 +783,17 @@ uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromJSON(const std::string
 }
 
 uint32_t FrameWork::ResourceManager::LoadShaderAssetFromJSON(const std::string &path) {
+    //From JSON则代表assetTable中已经有资源了
+
     std::ifstream file(path);
     if (!file.is_open()) {
         LOG_ERROR("Can't open Shader Asset Json file : {}", path);
         throw std::runtime_error("Can't open Shader Asset Json file :" + path);
     }
     auto shaderAsset = nlohmann::json::parse(file).get<ShaderAsset>();
-
-    {
-        std::shared_lock lock(assetCacheTableMutex);
-        if (assetCacheTable.contains(shaderAsset.sourcePath)) {
-            std::shared_lock shaderPathLock(shaderPathToIndexMutex);
-            return shaderPathToIndex[shaderAsset.sourcePath];
-        }
+    if (assetCacheTable.contains(shaderAsset.sourcePath)) {
+        std::shared_lock shaderPathLock(shaderPathToIndexMutex);
+        return shaderPathToIndex[shaderAsset.sourcePath];
     }
 
     std::vector<std::future<void>> shaderPasseFutures;
@@ -818,10 +816,6 @@ uint32_t FrameWork::ResourceManager::LoadShaderAssetFromJSON(const std::string &
     {
         std::scoped_lock lock(shaderPathToIndexMutex);
         shaderPathToIndex[shaderAsset.sourcePath] = index;
-    }
-    {
-        std::scoped_lock lock(assetCacheTableMutex);
-        assetCacheTable[shaderAsset.sourcePath] = path;
     }
 
     return index;
@@ -859,12 +853,13 @@ uint32_t FrameWork::ResourceManager::CreateShaderAsset(const std::string& name) 
     //创建引擎Asset，不是外部导入也不是嵌入
     std::string sourcePath = std::format("EngineAsset_Shader/{}",name);
     std::string jsonPath = std::format("{}Shaders/{}.json", assetCachePath, name); //地址
+    LOG_DEBUG("Create Shader Asset: {}", jsonPath);
     if (std::filesystem::exists(jsonPath)) {
         LOG_WARNING("The Shader name: {} has existed", name);
     }
-    ShaderAsset shaderAsset = {
-        .name = name
-    };
+    ShaderAsset shaderAsset = {};
+    shaderAsset.name = name;
+    shaderAsset.sourcePath = sourcePath;
 
     nlohmann::json json = shaderAsset;
     std::ofstream jsonFile(jsonPath);
@@ -874,7 +869,7 @@ uint32_t FrameWork::ResourceManager::CreateShaderAsset(const std::string& name) 
     auto index  = AddAsset(std::make_shared<ShaderAsset>(shaderAsset));
     {
         std::scoped_lock lock(shaderPathToIndexMutex);
-        shaderPathToIndex[shaderAsset.name] = index;
+        shaderPathToIndex[sourcePath] = index;
     }
     {
         std::scoped_lock lock(assetCacheTableMutex);
@@ -889,6 +884,16 @@ uint32_t FrameWork::ResourceManager::LoadShaderPassFromSource(const std::string 
         LOG_ERROR("Shader file not found: {}", shaderPath);
         throw std::runtime_error("Shader file not found: " + shaderPath);
     }
+    if (!overlap) {
+        std::shared_lock lock(assetCacheTableMutex);
+        if (assetCacheTable.contains(shaderPath)) {
+            std::shared_lock shaderPassLock(shaderPassPathToIndexMutex);
+            if (shaderPassPathToIndex.contains(shaderPath)) {
+                return shaderPassPathToIndex[shaderPath];
+            }
+        }
+    }
+
     auto shaderHash = ComputeFileSHA256(shaderPath);
     auto fileTime = std::filesystem::last_write_time(shaderPath);
     auto shaderPass = std::make_shared<ShaderPass>();
@@ -1091,8 +1096,10 @@ std::string FrameWork::ResourceManager::LoadMaterialAssetFromModel(aiScene* scen
     materialAsset.name = std::filesystem::path(modelPath).stem().string() + mesh->mName.C_Str() + "_Material";
     //类似Mesh， Material生成虚拟Path打入表
     materialAsset.sourcePath = modelPath + "-Embedding/Material" + materialAsset.name;
+    auto modelName = std::filesystem::path(modelPath).stem().string();
     //嵌入不需要使用fileTime和contentHash
-    LoadShaderAssetFromSource(defaultShaderPath, false); //加载
+    // LoadShaderAssetFromSource(defaultShaderPath, false); //加载
+    //创建这个模型的默认shader,1.创建一个shaderAsset 2.使用默认的shaderPass
     materialAsset.shaderPath = defaultShaderPath;
 
     //便利所有情况
@@ -1101,7 +1108,7 @@ std::string FrameWork::ResourceManager::LoadMaterialAssetFromModel(aiScene* scen
         for(int i = 0; i < nums; i++){
             aiString path;
             mat->GetTexture(p.first, i, &path);
-            std::string texturePath = std::filesystem::path(modelPath).parent_path() / std::filesystem::path(path.C_Str());
+            std::string texturePath = (std::filesystem::path(modelPath).parent_path() / std::filesystem::path(path.C_Str())).string();
 
             TextureImport textureImport{};
             switch (p.first) {
@@ -1312,186 +1319,127 @@ uint32_t FrameWork::ResourceManager::LoadTextureAssetFromSource(const std::strin
     return index;
 }
 
-uint32_t FrameWork::ResourceManager::LoadShaderAssetFromSource(const std::string &path, bool overlap) {
-    auto j = LoadJSONFromPath(path);
-    ShaderSource shaderSource;
-    try {
-        j.get_to<ShaderSource>(shaderSource);
-    }catch (const std::exception &e) {
-        LOG_ERROR("Failed to load shader source from source: {} , Becasue: {}", path, std::string(e.what()));
-        throw std::runtime_error("Failed to load shader source from source: " + path + "\nError: " + e.what());
-    }
-
-    if (!overlap) {
-        std::shared_lock readLock(shaderPathToIndexMutex);
-        if (shaderPathToIndex.contains(path)) {
-            return shaderPathToIndex[path];
-        }
-    }
-    //算hash
-
-    ShaderAsset shaderAsset;
-    shaderAsset.name = shaderSource.name;
-
-    Asset_Impl::ShaderAsset_Impl shaderAsset_Impl = {
-        .name = shaderAsset.name,
-    };
-
-    std::vector<std::future<std::shared_ptr<ShaderPass>>> passFutures;
-    auto& threadPool = ThreadPool::GetInstance();
-    for(auto &[shaderTag ,shaderPath] : shaderSource.passes){
-        passFutures.push_back( threadPool.Enqueue(
-            [this](const std::string& shaderTag, const std::string& shaderPath)-> std::shared_ptr<ShaderPass> {
-                if(!std::filesystem::exists(shaderPath)){
-                    LOG_ERROR("Shader file not found: {}", shaderPath);
-                    throw std::runtime_error("Shader file not found: " + shaderPath);
-                }
-                auto shaderHash = ComputeFileSHA256(shaderPath);
-                auto fileTime = std::filesystem::last_write_time(shaderPath);
-                auto shaderPass = std::make_shared<ShaderPass>();
-                bool hasContain = false;
-                {
-                    std::shared_lock readLock(assetCacheTableMutex);
-                    hasContain = assetCacheTable.contains(shaderPath);
-                }
-                if(hasContain){
-                    if(std::filesystem::exists(assetCacheTable[shaderPath])){
-                        std::ifstream shaderPassJson(assetCacheTable[shaderPath]);
-                        auto shaderPass_Impl = nlohmann::json::parse(shaderPassJson).get<Asset_Impl::ShaderPass_Impl>();
-                        if(shaderPass_Impl.contentHash == shaderHash && shaderPass_Impl.fileTime == fileTime){
-                            return LoadShaderPassFromJSON(assetCacheTable[shaderPath]);
-                        }
-                    }
-                }
-                //不存在则创建
-                CompileCaIShader(shaderPath, shaderPass);
-
-                shaderPass->name = std::filesystem::path(shaderPath).stem().string();
-                shaderPass->shaderTag = shaderTag;
-                shaderPass->contentHash = shaderHash;
-                shaderPass->fileTime = fileTime;
-                shaderPass->sourcePath = shaderPath;
-
-                //存储
-                Asset_Impl::ShaderPass_Impl shaderPass_Impl = {};
-                shaderPass_Impl.name = shaderPass->name;
-                shaderPass_Impl.shaderTag = shaderPass->shaderTag;
-                shaderPass_Impl.contentHash = shaderPass->contentHash;
-                shaderPass_Impl.fileTime = shaderPass->fileTime;
-                shaderPass_Impl.sourcePath = shaderPass->sourcePath;
-                shaderPass_Impl.shaderInfo = shaderPass->shaderInfo;
-
-                shaderPass_Impl.vertShaderSize = shaderPass->vertShaderSize;
-                shaderPass_Impl.fragShaderSize = shaderPass->fragShaderSize;
-
-                //存储Bin
-                std::string jsonPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".json";
-                std::string vertBinPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".vert.bin";
-                std::string fragBinPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".frag.bin";
-                shaderPass_Impl.vertBinPath = vertBinPath;
-                shaderPass_Impl.fragBinPath = fragBinPath;
-                SaveShaderCodeBin(vertBinPath, shaderPass->vertShaderCode.get(), shaderPass->vertShaderSize);
-                SaveShaderCodeBin(fragBinPath, shaderPass->fragShaderCode.get(), shaderPass->fragShaderSize);
-
-                //存储JSON
-                nlohmann::json shaderJson = shaderPass_Impl;
-                {
-                    std::scoped_lock lock(assetCacheTableMutex);
-                    assetCacheTable[shaderPath] = jsonPath;
-                }
-                std::ofstream jsonFile(jsonPath);
-                jsonFile << std::setw(4) << shaderJson;
-                jsonFile.close();
-                {
-                    //将加载的ShaderPass存到内存
-                    auto index = AddAsset(shaderPass);
-                    std::scoped_lock lock(shaderPassPathToIndexMutex);
-                    shaderPassPathToIndex[shaderPath] = index;
-                }
-                return shaderPass;
-            }, shaderTag, shaderPath
-            ));
-    }
-
-    for (auto& f : passFutures) {
-        auto shaderPass = f.get();
-        shaderAsset.passes[shaderPass->shaderTag] = shaderPass;
-        shaderAsset_Impl.passes[shaderPass->shaderTag] = "../ShaderPasses/" + shaderPass->name + ".json"; //这里存储json的地址
-    }
-    auto index = AddAsset(std::make_shared<ShaderAsset>(std::move(shaderAsset)));
-    {
-        std::scoped_lock lock(shaderPathToIndexMutex);
-        shaderPathToIndex[path] = index;
-    }
-
-    //Shader Asset 缓存
-    std::string jsonPath =  assetCachePath + "Shaders/" + shaderAsset_Impl.name + ".json";
-    nlohmann::json shaderJson = shaderAsset_Impl;
-    std::ofstream jsonFile(jsonPath);
-    jsonFile << std::setw(4) << shaderJson;
-    jsonFile.close();
-    {
-        std::scoped_lock lock(assetCacheTableMutex);
-        assetCacheTable[path] = jsonPath;
-    }
-
-    return index;
-}
-
-uint32_t FrameWork::ResourceManager::LoadMaterialAssetFromSource(const std::string &path, bool overlap) {
-    auto materialSourceJson = LoadJSONFromPath(path);
-    MaterialSource materialSource;
-    try {
-        materialSource = materialSourceJson.get<MaterialSource>();
-    } catch (std::exception& e) {
-        LOG_ERROR("Error loading material source from {}", path);
-        throw std::runtime_error("Error loading material source from " + path + std::string(e.what()));
-    }
-    if(!overlap){
-        if(materialPathToIndex.find(path) != materialPathToIndex.end()){
-            return materialPathToIndex[path];
-        }
-    }
-
-    //这里的Hash意义似乎不是很大，因为其是结构化资源，二进制资源作为其依赖
-    MaterialAsset materialAsset;
-    materialAsset.fileTime = std::filesystem::last_write_time(path);
-    materialAsset.contentHash = ComputeFileSHA256(path);
-    materialAsset.name = materialSource.name;
-    materialAsset.sourcePath = path; //存储地址
-    materialAsset.shaderPath = materialSource.shaderPath;
-    materialAsset.ints = materialSource.ints;
-    materialAsset.uints = materialSource.uints;
-    materialAsset.floats = materialSource.floats;
-    materialAsset.vec2s = materialSource.vec2s;
-    materialAsset.vec3s = materialSource.vec3s;
-    materialAsset.vec4s = materialSource.vec4s;
-    materialAsset.mat4s = materialSource.mat4s;
-    materialAsset.textures = materialSource.textures;
-
-    for (auto& [textureName, texturePath] : materialAsset.textures) {
-        LoadTextureAssetFromSource(texturePath, true);//递归加载检测依赖资源是否改变
-    }
-    LoadShaderAssetFromSource(materialAsset.shaderPath, true);
-
-    if(materialAsset.name.empty()) materialAsset.name = std::filesystem::path(path).stem().string();
-    std::string jsonPath = assetCachePath + "Materials/" + materialAsset.name + ".json";
-    {
-        std::scoped_lock lock(assetCacheTableMutex);
-        assetCacheTable[path] = jsonPath;
-    }
-
-    std::ofstream jsonFile(jsonPath);
-    jsonFile << std::setw(4) << nlohmann::json(materialAsset);
-    jsonFile.close();
-
-    uint32_t index = AddAsset(std::make_shared<MaterialAsset>(materialAsset));
-    {
-        std::scoped_lock lock(materialPathToIndexMutex);
-        materialPathToIndex[path] = index;
-    }
-    return index;
-}
+// uint32_t FrameWork::ResourceManager::LoadShaderAssetFromSource(const std::string &path, bool overlap) {
+//     auto j = LoadJSONFromPath(path);
+//     ShaderSource shaderSource;
+//     try {
+//         j.get_to<ShaderSource>(shaderSource);
+//     }catch (const std::exception &e) {
+//         LOG_ERROR("Failed to load shader source from source: {} , Becasue: {}", path, std::string(e.what()));
+//         throw std::runtime_error("Failed to load shader source from source: " + path + "\nError: " + e.what());
+//     }
+//
+//     if (!overlap) {
+//         std::shared_lock readLock(shaderPathToIndexMutex);
+//         if (shaderPathToIndex.contains(path)) {
+//             return shaderPathToIndex[path];
+//         }
+//     }
+//     //算hash
+//
+//     ShaderAsset shaderAsset;
+//     shaderAsset.name = shaderSource.name;
+//
+//     std::vector<std::future<uint32_t>> passFutures;
+//     auto& threadPool = ThreadPool::GetInstance();
+//     for(auto &[shaderTag ,shaderPath] : shaderSource.passes){
+//         passFutures.push_back( threadPool.Enqueue(
+//             [this](const std::string& shaderTag, const std::string& shaderPath)-> uint32_t {
+//                 if(!std::filesystem::exists(shaderPath)){
+//                     LOG_ERROR("Shader file not found: {}", shaderPath);
+//                     throw std::runtime_error("Shader file not found: " + shaderPath);
+//                 }
+//                 auto shaderHash = ComputeFileSHA256(shaderPath);
+//                 auto fileTime = std::filesystem::last_write_time(shaderPath);
+//                 auto shaderPass = std::make_shared<ShaderPass>();
+//                 bool hasContain = false;
+//                 {
+//                     std::shared_lock readLock(assetCacheTableMutex);
+//                     hasContain = assetCacheTable.contains(shaderPath);
+//                 }
+//                 if(hasContain){
+//                     if(std::filesystem::exists(assetCacheTable[shaderPath])){
+//                         std::ifstream shaderPassJson(assetCacheTable[shaderPath]);
+//                         auto shaderPass_Impl = nlohmann::json::parse(shaderPassJson).get<Asset_Impl::ShaderPass_Impl>();
+//                         if(shaderPass_Impl.contentHash == shaderHash && shaderPass_Impl.fileTime == fileTime){
+//                             return LoadShaderPassFromJSON(assetCacheTable[shaderPath]);
+//                         }
+//                     }
+//                 }
+//                 //不存在则创建
+//                 CompileCaIShader(shaderPath, shaderPass);
+//
+//                 shaderPass->name = std::filesystem::path(shaderPath).stem().string();
+//                 shaderPass->shaderTag = shaderTag;
+//                 shaderPass->contentHash = shaderHash;
+//                 shaderPass->fileTime = fileTime;
+//                 shaderPass->sourcePath = shaderPath;
+//
+//                 //存储
+//                 Asset_Impl::ShaderPass_Impl shaderPass_Impl = {};
+//                 shaderPass_Impl.name = shaderPass->name;
+//                 shaderPass_Impl.shaderTag = shaderPass->shaderTag;
+//                 shaderPass_Impl.contentHash = shaderPass->contentHash;
+//                 shaderPass_Impl.fileTime = shaderPass->fileTime;
+//                 shaderPass_Impl.sourcePath = shaderPass->sourcePath;
+//                 shaderPass_Impl.shaderInfo = shaderPass->shaderInfo;
+//
+//                 shaderPass_Impl.vertShaderSize = shaderPass->vertShaderSize;
+//                 shaderPass_Impl.fragShaderSize = shaderPass->fragShaderSize;
+//
+//                 //存储Bin
+//                 std::string jsonPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".json";
+//                 std::string vertBinPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".vert.bin";
+//                 std::string fragBinPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".frag.bin";
+//                 shaderPass_Impl.vertBinPath = vertBinPath;
+//                 shaderPass_Impl.fragBinPath = fragBinPath;
+//                 SaveShaderCodeBin(vertBinPath, shaderPass->vertShaderCode.get(), shaderPass->vertShaderSize);
+//                 SaveShaderCodeBin(fragBinPath, shaderPass->fragShaderCode.get(), shaderPass->fragShaderSize);
+//
+//                 //存储JSON
+//                 nlohmann::json shaderJson = shaderPass_Impl;
+//                 {
+//                     std::scoped_lock lock(assetCacheTableMutex);
+//                     assetCacheTable[shaderPath] = jsonPath;
+//                 }
+//                 std::ofstream jsonFile(jsonPath);
+//                 jsonFile << std::setw(4) << shaderJson;
+//                 jsonFile.close();
+//                 auto index = AddAsset(shaderPass);
+//                 {
+//                     //将加载的ShaderPass存到内存
+//                     std::scoped_lock lock(shaderPassPathToIndexMutex);
+//                     shaderPassPathToIndex[shaderPath] = index;
+//                 }
+//                 return index;
+//             }, shaderTag, shaderPath
+//             ));
+//     }
+//
+//     for (auto& f : passFutures) {
+//         auto shaderPass = shaderPassPool[f.get()];
+//
+//         shaderAsset.passes[shaderPass->shaderTag] = shaderPass->sourcePath; //sourcePath作为唯一标识,类似与GUID
+//     }
+//     auto index = AddAsset(std::make_shared<ShaderAsset>(shaderAsset));
+//     {
+//         std::scoped_lock lock(shaderPathToIndexMutex);
+//         shaderPathToIndex[path] = index;
+//     }
+//
+//     //Shader Asset 缓存
+//     std::string jsonPath =  assetCachePath + "Shaders/" + shaderAsset.name + ".json";
+//     nlohmann::json shaderJson = shaderAsset;
+//     std::ofstream jsonFile(jsonPath);
+//     jsonFile << std::setw(4) << shaderJson;
+//     jsonFile.close();
+//     {
+//         std::scoped_lock lock(assetCacheTableMutex);
+//         assetCacheTable[path] = jsonPath;
+//     }
+//
+//     return index;
+// }
 
 //加载模型节点
 //对应处理多种模型

@@ -221,17 +221,19 @@ namespace FrameWork {
         };
     public:
 
+        //外部导入资源
         uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true, TextureImport* textureImport = nullptr);
         uint32_t LoadModelAssetFromSource(const std::string& path, bool overlap = true);
-        uint32_t LoadShaderAssetFromSource(const std::string& path, bool overlap = true);
+        // uint32_t LoadShaderAssetFromSource(const std::string& path, bool overlap = true);
         uint32_t LoadShaderPassFromSource(const std::string& path, bool overlap = true); // 直接加载caishader
-
-        uint32_t LoadMaterialAssetFromSource(const std::string& path, bool overlap = true);
 
         //结构化资源需要创建
         //会自动的生成虚拟的ShaderAsset和Material Asset 的path
         uint32_t CreateMaterialAsset(const std::string& name); //创建空的Material Asset
         uint32_t CreateShaderAsset(const std::string& name); //创建空的ShaderAsset存储ShaderPass
+        //...为结构化资源添加东西, 比如为shaderAsset挂载外部的shaderPass，为Material挂载ShaderAsset，添加参数和纹理
+        void AddShaderAssetToMaterial(const std::string& materialPath, const std::string& shaderPath);
+        void AddShaderPassToShaderAsset(const std::string& shaderPath, const std::string& shaderPassSourcePath);
 
 
 

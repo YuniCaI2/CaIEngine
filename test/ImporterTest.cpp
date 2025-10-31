@@ -12,30 +12,13 @@ void testLoadTexture(){
     }
 }
 
-void testLoadShader() {
-    std::string shaderTestPath = "../../resources/test/testShader.json";
-    try {
-        FrameWork::ResourceManager::GetInstance().LoadShaderAssetFromSource(shaderTestPath);
-    }catch (std::exception& e) {
-        LOG_ERROR("{}",e.what());
-    }
-}
-
-void testLoadMaterial() {
-    std::string materialTestPath = "../../resources/Materials/testMaterial.json";
-    try {
-        FrameWork::ResourceManager::GetInstance().LoadMaterialAssetFromSource(materialTestPath);
-    }catch (std::exception& e) {
-        LOG_ERROR("{}",e.what());
-    }
+void testCreateShader() {
+    FrameWork::ResourceManager::GetInstance().CreateShaderAsset("TestCreateShader");
 }
 
 
 int main(){
     LOG.Run();
-    // testLoadTexture();
-    testLoadShader();
-    // testLoadMaterial();
-
+    testCreateShader();
     LOG.Stop();
 }
