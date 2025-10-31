@@ -142,3 +142,5 @@ CLAUDE.md
 out
 .cache/clangd/index/
 ./resources/CaIShaders/caiShaderTimeCache.bin
+# macOS
+**/.DS_Store
