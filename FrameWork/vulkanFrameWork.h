@@ -116,9 +116,9 @@ protected:
     //同步信号量
     struct Semaphores {
         //SwapChain Image Presentation
-        std::vector<VkSemaphore> presentComplete;
+        std::vector<VkSemaphore> presentComplete{};
         //Command Buffer submission and execution
-        std::vector<VkSemaphore> renderComplete;
+        std::vector<VkSemaphore> renderComplete{};
 
         Semaphores(): presentComplete(MAX_FRAME), renderComplete(MAX_FRAME) {
         }

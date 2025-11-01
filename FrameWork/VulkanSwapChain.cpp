@@ -118,15 +118,16 @@ void VulkanSwapChain::create(uint32_t width, uint32_t height, bool vsync, bool f
 
     VkExtent2D swapChainExtent = {};
     //如果width和height 的值等于special值 0xFFFFFFFF,则surface 的大小将由 swapChain设置
-    if (surfaceCapabilities.currentExtent.width == (uint32_t)-1) {
-        //未定义则大小为请求大小
-        swapChainExtent.width = width;
-        swapChainExtent.height = height;
-    }else {
-        //定义了则为交换链的大小
+
+    if (surfaceCapabilities.currentExtent.width == UINT32_MAX) {
+        swapChainExtent.width  = std::clamp(width,
+            surfaceCapabilities.minImageExtent.width,
+            surfaceCapabilities.maxImageExtent.width);
+        swapChainExtent.height = std::clamp(height,
+            surfaceCapabilities.minImageExtent.height,
+            surfaceCapabilities.maxImageExtent.height);
+    } else {
         swapChainExtent = surfaceCapabilities.currentExtent;
-        width = surfaceCapabilities.currentExtent.width;
-        height = surfaceCapabilities.currentExtent.height;
     }
 
     //为交换链选择呈现模式
@@ -160,7 +161,7 @@ void VulkanSwapChain::create(uint32_t width, uint32_t height, bool vsync, bool f
     if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
         imageCount = surfaceCapabilities.maxImageCount;
     }
-    minImageCount = surfaceCapabilities.minImageCount;
+    minImageCount = imageCount; //实际请求的最小值
 
     //找到表面的变换
     VkSurfaceTransformFlagBitsKHR preTransform;

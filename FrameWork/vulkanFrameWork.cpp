@@ -380,14 +380,18 @@ bool vulkanFrameWork::initVulkan() {
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    //创建同步变量
-    for (int i = 0 ; i < MAX_FRAME; i ++) {
-        VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.presentComplete[i]));
-        VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.renderComplete[i]));
-    }
 
     setWindow();
     prepare();
+
+    //创建同步变量
+    for (int i = 0 ; i < MAX_FRAME; i ++) {
+        VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.presentComplete[i]));
+    }
+    semaphores.renderComplete.resize(swapChain.imageViews.size());
+    for (int i = 0 ; i < swapChain.imageViews.size(); i ++) {
+        VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.renderComplete[i]));
+    }
 
     frameCountTimeStamp = 0;
     return true;
@@ -515,6 +519,8 @@ void vulkanFrameWork::DestroyAll() {
 
     for (int i = 0 ; i < MAX_FRAME; i ++) {
         vkDestroySemaphore(device, semaphores.presentComplete[i], nullptr);
+    }
+    for (int i = 0; i < swapChain.images.size(); i++) {
         vkDestroySemaphore(device, semaphores.renderComplete[i], nullptr);
     }
 
