@@ -4,7 +4,7 @@
 
 #include "VulkanSwapChain.h"
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <ostream>
 #include <stdexcept>

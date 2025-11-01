@@ -31,6 +31,7 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
+    // io.ConfigFlags |= ImGuiConfigFlags_Docking;
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
                         ImGuiCond_FirstUseEver,
                         ImVec2(0.0f, 0.0f)); // pivot点设为(0.5, 0.5)表示中心点
