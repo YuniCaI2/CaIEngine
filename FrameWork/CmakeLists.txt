@@ -40,12 +40,20 @@ file(GLOB ECSPath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/ECS/resources/*.h"
 )
 
+file(GLOB EditorPath CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Editor/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Editor/*.cpp"
+
+)
+
 file(GLOB AssetPath
         "${CMAKE_CURRENT_SOURCE_DIR}/Asset/*.h"
 )
 
 
-add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath} ${AssetPath}
+
+
+add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath} ${AssetPath} ${EditorPath}
         CaIMaterial.cpp
         CaIMaterial.h
         CaIShader.cpp
@@ -60,6 +68,7 @@ add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${EC
         CompMaterial.h
         CompShader.cpp
         CompShader.h
+        Editor/Panel.h
 )
 
 # 基础库链接（所有平台共用）

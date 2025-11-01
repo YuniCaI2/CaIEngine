@@ -4,6 +4,8 @@
 
 #include "FrameWorkGUI.h"
 #include <vector>
+
+#include "imgui_internal.h"
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
 
@@ -31,7 +33,7 @@ void FrameWork::FrameWorkGUI::InitFrameWorkGUI() {
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
-    // io.ConfigFlags |= ImGuiConfigFlags_Docking;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
                         ImGuiCond_FirstUseEver,
                         ImVec2(0.0f, 0.0f)); // pivot点设为(0.5, 0.5)表示中心点
@@ -259,8 +261,31 @@ void FrameWork::FrameWorkGUI::RenderGUI(VkCommandBuffer commandBuffer) const {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    // ImGui::DockSpaceOverViewport(); //这样会覆盖场景画面
+    // ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode); //让Dock 栏透明
+    ImGuiID dockspace_id = ImGui::GetID("My Dockspace");
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    // Create settings
+    if (ImGui::DockBuilderGetNode(dockspace_id) == nullptr)
+    {
+        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+        ImGuiID dock_id_left = 0;
+        ImGuiID dock_id_main = dockspace_id;
+        ImGui::DockBuilderSplitNode(dock_id_main, ImGuiDir_Left, 0.20f, &dock_id_left, &dock_id_main);
+        ImGuiID dock_id_left_top = 0;
+        ImGuiID dock_id_left_bottom = 0;
+        ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Down, 0.50f, &dock_id_left_top, &dock_id_left_bottom);
+        ImGui::DockBuilderDockWindow("Game", dock_id_main);
+        ImGui::DockBuilderDockWindow("Properties", dock_id_left_top);
+        ImGui::DockBuilderDockWindow("Scene", dock_id_left_bottom);
+        ImGui::DockBuilderFinish(dockspace_id);
+    }
 
-    if (ImGui::Begin("Setting")) {
+    // Submit dockspace
+    ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
+
+    if (ImGui::Begin("Properties")) {
         ItemFunc();
     }
     ImGui::End();
