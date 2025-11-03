@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\exp.bin",
+    "contentHash": "21779e41ce3b3fc2338e77c1ae7c277caf615313bcd8c3f39e49e9cfdbba9dcd",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "exp",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/exp.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 1024
+}

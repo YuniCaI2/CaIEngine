@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\Skin.bin",
+    "contentHash": "41a15ad626ccd21083c78f2608dc35abde2c70b849588edeb1861529eaca00f5",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "Skin",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/Skin.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 1024
+}

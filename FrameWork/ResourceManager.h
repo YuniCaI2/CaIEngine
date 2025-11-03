@@ -157,8 +157,6 @@ namespace FrameWork {
         }
 
 
-
-
         //Table
         //Path To Index, 此处的Path指的是source Path
         std::unordered_map<std::string, uint32_t> texturePathToIndex;
@@ -203,10 +201,9 @@ namespace FrameWork {
         //加载模型节点和节点的Mesh
         //Assimp处理模型
         std::string LoadEmbeddingTexture(const aiTexture* texData, const std::string& modelPath, TextureImport* textureImport = nullptr); //支持自定义TextureImport
-        std::string LoadMaterialAssetFromModel(aiScene* scene, aiMesh* mesh, const std::string& modelPath);
+        std::string LoadMaterialAssetFromModel(const aiScene* scene, aiMesh* mesh, const std::string& modelPath);
         std::string LoadMeshAssetFromModel(aiMesh* mesh, const std::string& modelPath);
-        void LoadModelAssetNode(std::shared_ptr<ModelAsset> modelAsset,aiScene* scene, const aiNode* node, const std::string& modelPath);
-
+        uint32_t LoadModelAssetNode(std::shared_ptr<ModelAsset> modelAsset, const aiScene* scene, const aiNode* node, const std::string& modelPath, uint32_t parent = UINT32_MAX);
 
         //Table
         static constexpr std::pair<aiTextureType, const char*>  aiTextureTypeToString[] = {
@@ -223,19 +220,20 @@ namespace FrameWork {
 
         //外部导入资源
         uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true, TextureImport* textureImport = nullptr);
-        uint32_t LoadModelAssetFromSource(const std::string& path, bool overlap = true);
+        uint32_t LoadModelAssetFromSource(const std::string& path, bool overlap = true, ModelImport* modelImport = nullptr);
         // uint32_t LoadShaderAssetFromSource(const std::string& path, bool overlap = true);
         uint32_t LoadShaderPassFromSource(const std::string& path, bool overlap = true); // 直接加载caishader
 
         //结构化资源需要创建
         //会自动的生成虚拟的ShaderAsset和Material Asset 的path
-        uint32_t CreateMaterialAsset(const std::string& name); //创建空的Material Asset
-        uint32_t CreateShaderAsset(const std::string& name); //创建空的ShaderAsset存储ShaderPass
+        std::string CreateMaterialAsset(const std::string& name); //创建空的Material Asset
+        std::string CreateShaderAsset(const std::string& name); //创建空的ShaderAsset存储ShaderPass
         //...为结构化资源添加东西, 比如为shaderAsset挂载外部的shaderPass，为Material挂载ShaderAsset，添加参数和纹理
-        void AddShaderAssetToMaterial(const std::string& materialPath, const std::string& shaderPath);
-        void AddShaderPassToShaderAsset(const std::string& shaderPath, const std::string& shaderPassSourcePath);
+        // void AddShaderAssetToMaterial(const std::string& materialPath, const std::string& shaderPath);
+        void AddShaderPassToShaderAsset(const std::string& shaderPath, const std::string& shaderTag,const std::string& shaderPassSourcePath);
 
-
+        //存储内存内容至缓存
+        void SaveMaterialAssetToJSON(const MaterialAsset& materialAsset);
 
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
 
@@ -268,6 +266,7 @@ namespace FrameWork {
         std::string defaultMaterialPath = "../DefaultAsset/DefaultMaterial"; //加载模型时使用, 组织结构
         // std::string defaultShaderPath = "../DefaultAsset/DefaultShader.json";
         std::string defaultShaderPath = "../../DefaultAsset/DefaultShader.json";
+        std::string defaultShaderPassPath = "../../DefaultAsset/DefaultShader.caishader";
     };
 }
 

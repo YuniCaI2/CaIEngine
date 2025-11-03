@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\Shoes.bin",
+    "contentHash": "5b83fc24124baa3cb7d7c68d3e96e25df08aaf74d36f3e09e3332642f67da835",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "Shoes",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/Shoes.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 1024
+}

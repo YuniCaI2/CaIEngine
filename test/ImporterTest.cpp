@@ -16,9 +16,27 @@ void testCreateShader() {
     FrameWork::ResourceManager::GetInstance().CreateShaderAsset("TestCreateShader");
 }
 
+void TestLoadModelAsset() {
+    std::string modelPath = "../../resources/models/cocona/cocona.obj";
+    try {
+        FrameWork::ResourceManager::GetInstance().LoadModelAssetFromSource(modelPath);
+    } catch (std::exception& e) {
+        LOG_ERROR("{}",e.what());
+    }
+    nlohmann::json j;
+}
+
+
+struct Asset : BaseAsset {
+    uint32_t test{1};
+};
+SERIALIZE_ASSET(Asset, test)
 
 int main(){
     LOG.Run();
-    testCreateShader();
+    // Asset* asset = new Asset();
+    // nlohmann::json json = *asset;
+    // std::cout << std::setw(4) << json << std::endl;
+    TestLoadModelAsset();
     LOG.Stop();
 }

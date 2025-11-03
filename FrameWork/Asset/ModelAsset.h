@@ -7,16 +7,21 @@
 #include<iostream>
 #include<vector>
 #include"SaveTool.h"
-
 #include "../Logger.h"
+#include<nlohmann/json.hpp>
+
+//ModelAsset 也类似结构化资源
 
 struct ModelImport {
     bool genNormal{true};
     bool genTangent{true};
-    bool flipUV{false};
+    bool flipUV{true}; //Vulkan默认导致，相对于OpenGL
     float scale{1.0f};
     //...
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    ModelImport, genNormal, genTangent, flipUV, scale
+    )
 
 
 struct ModelNode {
@@ -29,31 +34,35 @@ struct ModelNode {
     std::vector<std::string> meshes;
     std::vector<std::string> materials;
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelNode, name, index, parentIndex,
+    childrenIndices, meshes, materials)
 
 
 
-struct ModelAsset {
+struct ModelAsset : BaseAsset {
     ModelImport import;
-    std::string name;
-    std::string contentHash;
-    std::filesystem::file_time_type fileTime; //shader加载时间
+    // std::string name;
+    // std::string sourcePath;
+    // std::string contentHash;
+    // std::filesystem::file_time_type fileTime; //shader加载时间
     uint32_t rootNode;
 
-    //bin
     std::vector<ModelNode> nodes;
 };
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset, import, name, sourcePath, contentHash, fileTime, dirt, rootNode, nodes)
+
 namespace Asset_Impl {
-    struct ModelAsset_Impl {
+    struct ModelAsset_Impl : BaseAsset {
         ModelImport import;
-        std::string name;
-        std::string contentHash;
-        std::filesystem::file_time_type fileTime; //shader加载时间
+        // std::string name;
+        // std::string contentHash;
+        // std::filesystem::file_time_type fileTime; //shader加载时间
         uint32_t rootNode;
         std::string binPath;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset_Impl, import, name, contentHash,
-        fileTime, rootNode, binPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset_Impl, import, name, sourcePath, contentHash,
+        fileTime, dirt, rootNode, binPath)
 
 
     inline void SaveModelNode(std::ofstream& file, const ModelNode& modelNode) {

@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\Hair.bin",
+    "contentHash": "c9eae5fb5c14d31e2221cecf8ac3f34218a985e03ea2911d4c0abd9282212465",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "Hair",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/Hair.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 1024
+}

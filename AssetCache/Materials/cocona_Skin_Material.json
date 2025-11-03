@@ -1,0 +1,18 @@
+{
+    "contentHash": "",
+    "dirt": false,
+    "fileTime": 6802270473709551616,
+    "floats": {},
+    "ints": {},
+    "mat4s": {},
+    "name": "cocona_Blue_Archive_Kokona_Material",
+    "shaderPath": "EngineAsset_Shader/cocona_Skin_Shader",
+    "sourcePath": "EngineAsset_Material/cocona_Skin_Material",
+    "textures": {
+        "albedo": "../../resources/models/cocona\\textures/Skin.png"
+    },
+    "uints": {},
+    "vec2s": {},
+    "vec3s": {},
+    "vec4s": {}
+}

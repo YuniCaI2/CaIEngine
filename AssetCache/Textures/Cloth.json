@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\Cloth.bin",
+    "contentHash": "1db59310a674bba58f19485c1c645c79a06a64fcc8840d7b9b0f49b0a752be85",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "Cloth",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/Cloth.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 1024
+}

@@ -1,0 +1,82 @@
+{
+    "contentHash": "086968be10fc5314b9bc1859fb665a6b10a32e1f8ee59a86368469a46349d7fa",
+    "dirt": false,
+    "fileTime": 1762156347443016000,
+    "fragBinPath": "../../AssetCache/ShaderPasses/DefaultShader.frag.bin",
+    "fragShaderSize": 1112,
+    "name": "DefaultShader",
+    "shaderInfo": {
+        "fragProperties": {
+            "baseProperties": [],
+            "textureProperties": [
+                {
+                    "align": 0,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 1,
+                    "name": "colorSampler",
+                    "offset": 0,
+                    "size": 0,
+                    "type": "SAMPLER_2D"
+                }
+            ]
+        },
+        "shaderFormatsInfo": {
+            "shaderFormats": [
+                "R8G8B8A8_SRGB"
+            ]
+        },
+        "shaderState": {
+            "blendOp": "ADD",
+            "depthCompareOp": "LESS_OR_EQUAL",
+            "depthWrite": true,
+            "dstBlendFactor": "ONE_MINUS_SRC_ALPHA",
+            "faceCullOp": "Back",
+            "inputVertex": true,
+            "msaa": false,
+            "outputNums": 1,
+            "polygonMode": "Fill",
+            "srcBlendFactor": "SRC_ALPHA"
+        },
+        "shaderTypeFlags": 12,
+        "vertProperties": {
+            "baseProperties": [
+                {
+                    "align": 16,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 0,
+                    "name": "viewMatrix",
+                    "offset": 0,
+                    "size": 64,
+                    "type": "MAT4"
+                },
+                {
+                    "align": 16,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 0,
+                    "name": "projectionMatrix",
+                    "offset": 64,
+                    "size": 64,
+                    "type": "MAT4"
+                },
+                {
+                    "align": 16,
+                    "arrayLength": 0,
+                    "arrayOffset": 0,
+                    "binding": 0,
+                    "name": "modelMatrix",
+                    "offset": 128,
+                    "size": 64,
+                    "type": "MAT4"
+                }
+            ],
+            "textureProperties": []
+        }
+    },
+    "shaderTag": "",
+    "sourcePath": "../../DefaultAsset/DefaultShader.caishader",
+    "vertBinPath": "../../AssetCache/ShaderPasses/DefaultShader.vert.bin",
+    "vertShaderSize": 3236
+}

@@ -11,12 +11,8 @@
 #include<nlohmann/json.hpp>
 
 //Graphics Shader
-struct ShaderPass {
-    std::string name;
+struct ShaderPass : BaseAsset {
     std::string shaderTag;
-    std::string sourcePath; //检测sourcePath是否修改，修改则重新编译
-    std::string contentHash;
-    std::filesystem::file_time_type fileTime{}; //shader加载时间
 
     FrameWork::ShaderInfo shaderInfo{}; //其中包括如何操作队列
     uint32_t vertShaderSize{};
@@ -25,15 +21,12 @@ struct ShaderPass {
     std::unique_ptr<uint32_t[]> fragShaderCode{};
 };
 
-struct ShaderAsset {
-    std::string sourcePath;
-    std::string name;
+struct ShaderAsset : BaseAsset {
     std::unordered_map<std::string, std::string> passes; //对应shaderTag To Shader Tag
     //Pass 需要能够共享
-    bool dirty {false};
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderAsset, sourcePath, name, passes)
+SERIALIZE_ASSET(ShaderAsset, passes)
 
 
 
@@ -47,12 +40,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderSource, name, passes)
 
 
 namespace Asset_Impl {
-    struct ShaderPass_Impl {
-        std::string name;
+    struct ShaderPass_Impl : BaseAsset {
         std::string shaderTag;
-        std::string sourcePath; //检测sourcePath是否修改，修改则重新编译
-        std::string contentHash;
-        std::filesystem::file_time_type fileTime; //shader加载时间
 
         FrameWork::ShaderInfo shaderInfo; //其中包括如何操作队列
         uint32_t vertShaderSize{};
@@ -60,7 +49,7 @@ namespace Asset_Impl {
         uint32_t fragShaderSize{};
         std::string fragBinPath{};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime, shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime, dirt, shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
 }
 
 inline static void SaveShaderCodeBin(const std::string& path, const uint32_t* shaderCode, uint32_t shaderSize){

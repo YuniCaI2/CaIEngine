@@ -1,0 +1,56 @@
+{
+    "contentHash": "ee548a5a4bccf10624ec5b0917a5e95ed14ef6ac68f71ec093f6329642e293d0",
+    "dirt": false,
+    "fileTime": 1727794837000000000,
+    "import": {
+        "flipUV": true,
+        "genNormal": true,
+        "genTangent": true,
+        "scale": 1.0
+    },
+    "name": "cocona",
+    "nodes": [
+        {
+            "childrenIndices": [
+                1
+            ],
+            "index": 0,
+            "materials": [],
+            "meshes": [],
+            "name": "",
+            "parentIndex": 4294967295
+        },
+        {
+            "childrenIndices": [],
+            "index": 1,
+            "materials": [
+                "EngineAsset_Material/cocona_Blue_Archive_Kokona_Material",
+                "EngineAsset_Material/cocona_Skin_Material",
+                "EngineAsset_Material/cocona_Shoes_Material",
+                "EngineAsset_Material/cocona_Panties_Material",
+                "EngineAsset_Material/cocona_Hoodie_Material",
+                "EngineAsset_Material/cocona_HALO_Material",
+                "EngineAsset_Material/cocona_Hair_Material",
+                "EngineAsset_Material/cocona_Cloth_Material",
+                "EngineAsset_Material/cocona_Head_Material",
+                "EngineAsset_Material/cocona_Eyes_Material"
+            ],
+            "meshes": [
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Blue_Archive_Kokona_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Skin_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Shoes_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Panties_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Hoodie_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_HALO_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Hair_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Cloth_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Head_Mesh",
+                "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Eyes_Mesh"
+            ],
+            "name": "Blue_Archive_KokonaSkinShoesPantiesHoodieHALOHairClothHeadEyes",
+            "parentIndex": 0
+        }
+    ],
+    "rootNode": 0,
+    "sourcePath": "../../resources/models/cocona/cocona.obj"
+}

@@ -10,14 +10,12 @@
 #include<filesystem>
 #include<nlohmann/json.hpp>
 
-//Material Asset是结构形资源，不存在二进制source 所以不需要meta
-struct MaterialAsset {
-    std::string name;
-    std::string sourcePath{};
-    std::string contentHash;
-    std::filesystem::file_time_type fileTime; //加载时间
-    std::string shaderPath;
+#include"BaseAsset.h"
 
+//Material Asset是结构形资源，不存在二进制source 所以不需要meta
+struct MaterialAsset : BaseAsset{
+
+    std::string shaderPath;
     template<class T>
     using ParamMap = std::map<std::string, T>;
     //Uniform
@@ -33,8 +31,8 @@ struct MaterialAsset {
     bool dirty {false}; //记录是否被运行时修改，决定是否写回
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
-    MaterialAsset, name, sourcePath,contentHash, fileTime, shaderPath, floats, uints, ints, vec2s,
+SERIALIZE_ASSET (
+    MaterialAsset, shaderPath, floats, uints, ints, vec2s,
     vec3s, vec4s, mat4s,textures
     )
 

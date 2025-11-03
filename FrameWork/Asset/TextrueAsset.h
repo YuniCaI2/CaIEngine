@@ -89,26 +89,18 @@ struct TextureImport {
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureImport, texDim, textureFormat, colorSpace, generateMipmap, textureSampler)
 
 
-struct TextureAsset {
-    std::string name;
-    std::string sourcePath;
-    std::string contentHash;
-    std::filesystem::file_time_type fileTime;
+struct TextureAsset : BaseAsset{
 
-    uint32_t width;
-    uint32_t height;
-    uint32_t numChannel;
-    TextureImport textureImport;
+    uint32_t width{};
+    uint32_t height{};
+    uint32_t numChannel{};
+    TextureImport textureImport{};
 
-    unsigned char* data;
+    unsigned char* data{};
 };
 
 namespace Asset_Impl {
-    struct TextureAsset_Impl {
-        std::string name;
-        std::string sourcePath;
-        std::string contentHash;
-        std::filesystem::file_time_type fileTime;
+    struct TextureAsset_Impl : BaseAsset {
         uint32_t width;
         uint32_t height;
         uint32_t numChannel;
@@ -118,7 +110,7 @@ namespace Asset_Impl {
     };
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureAsset_Impl, name, contentHash, fileTime,
-        sourcePath, width, height, numChannel, textureImport, binPath)
+        sourcePath, dirt, width, height, numChannel, textureImport, binPath)
 }
 
 

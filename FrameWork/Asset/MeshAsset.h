@@ -20,11 +20,12 @@ struct VertexData {
 
 //source Path 是虚拟地址，用来存入表中，来代替没有GUID的缺陷
 
-struct MeshAsset { //理应上Material和Mesh不耦合
-    std::string name;
-    std::string contentHash;
-    std::string sourcePath;
-    std::filesystem::file_time_type fileTime; //shader加载时间
+struct MeshAsset : BaseAsset { //理应上Material和Mesh不耦合
+    // std::string name;
+    // std::string contentHash;
+    // std::string sourcePath;
+    // std::filesystem::file_time_type fileTime; //shader加载时间
+
     //bin
     std::vector<VertexData> vertices;
     std::vector<uint32_t> indices;
@@ -32,15 +33,15 @@ struct MeshAsset { //理应上Material和Mesh不耦合
 };
 
 namespace Asset_Impl {
-    struct MeshAsset_Impl {
-        std::string name;
-        std::string contentHash;
-        std::string sourcePath;
-        std::filesystem::file_time_type fileTime; //shader加载时间
+    struct MeshAsset_Impl : BaseAsset {
+        // std::string name;
+        // std::string contentHash;
+        // std::string sourcePath;
+        // std::filesystem::file_time_type fileTime; //shader加载时间
         std::string binPath;//这里一并记录，内存布局尺寸+ vertexData + indices
     };
 
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshAsset_Impl, name, contentHash, sourcePath, fileTime, binPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshAsset_Impl, name, contentHash, sourcePath, fileTime, dirt, binPath)
 
 }
 

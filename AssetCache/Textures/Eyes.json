@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\Eyes.bin",
+    "contentHash": "23bd14fee0d871be5709beeb1a427ca22e9aaa6c7a7d0964e2afb37e8d05e8fa",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "Eyes",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/Eyes.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 1024
+}

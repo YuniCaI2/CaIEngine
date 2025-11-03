@@ -1,0 +1,23 @@
+{
+    "binPath": "../../AssetCache/Textures\\HALO.bin",
+    "contentHash": "26ac92e4a796dafac7d924428bc483acbcb82ab1452264b6e86a7b9394c43dc1",
+    "dirt": false,
+    "fileTime": 1694048763000000000,
+    "height": 512,
+    "name": "HALO",
+    "numChannel": 4,
+    "sourcePath": "../../resources/models/cocona\\textures/HALO.png",
+    "textureImport": {
+        "colorSpace": "SRGB",
+        "generateMipmap": true,
+        "texDim": "Tex2D",
+        "textureFormat": "R8G8B8A8",
+        "textureSampler": {
+            "anisotropy": 0,
+            "maxFilter": "linear",
+            "minFilter": "linear",
+            "wrap": "ClampToEdge"
+        }
+    },
+    "width": 512
+}
