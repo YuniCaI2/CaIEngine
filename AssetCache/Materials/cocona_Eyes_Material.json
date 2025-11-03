@@ -5,11 +5,11 @@
     "floats": {},
     "ints": {},
     "mat4s": {},
-    "name": "cocona_Blue_Archive_Kokona_Material",
+    "name": "cocona_Skin_Material",
     "shaderPath": "EngineAsset_Shader/cocona_Eyes_Shader",
     "sourcePath": "EngineAsset_Material/cocona_Eyes_Material",
     "textures": {
-        "albedo": "../../resources/models/cocona\\textures/Eyes.png"
+        "albedo": "../../resources/models/cocona\\textures/Cloth.png"
     },
     "uints": {},
     "vec2s": {},

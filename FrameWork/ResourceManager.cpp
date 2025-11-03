@@ -1,5 +1,3 @@
-#include "Asset/MaterialAsset.h"
-#include "Asset/ShaderAsset.h"
 #include"Serialize.h"
 #include "ResourceManager.h"
 #include "Logger.h"
@@ -13,15 +11,11 @@
 #include <exception>
 #include <fstream>
 #include <future>
-#include <iomanip>
-#include <memory>
 #include <mutex>
-#include <openssl/e_os2.h>
 #include<openssl/sha.h>
 #include <vulkan/vulkan_core.h>
 
 #include "ShaderParse.h"
-#include "FrameGraph/UniformPass/DownSamplingPass.h"
 #ifdef _WIN32
 #include <DirectXTex.h>
 #endif
@@ -664,7 +658,6 @@ void FrameWork::ResourceManager::CompileCaIShader(const std::string &path, std::
     std::stringstream ss;
     ss << caiShaderFile.rdbuf();
     std::string code = ss.str();
-    std::future<ShaderInfo> shaderInfoFuture = ThreadPool::GetInstance().Enqueue(ShaderParse::GetShaderInfo, code);
     std::string vert, frag;
     ShaderParse::ParseShaderCode(code, vert, frag);
     bool hasVertex = ! vert.empty();
@@ -682,7 +675,7 @@ void FrameWork::ResourceManager::CompileCaIShader(const std::string &path, std::
     std::string vulkanVertCode{} , vulkanFragCode{};
     std::filesystem::path vulkanShaderPath = std::filesystem::path(path).parent_path();
     vulkanShaderPath = vulkanShaderPath / std::filesystem::path(path).stem();
-    shaderPass->shaderInfo = shaderInfoFuture.get();
+    shaderPass->shaderInfo = ShaderParse::GetShaderInfo(code);
     if (hasVertex) {
         vulkanVertCode = ShaderParse::TranslateToVulkan(vert, shaderPass->shaderInfo.vertProperties);
         std::ofstream vulkanVertShaderFile(vulkanShaderPath.string() + ".vert");
@@ -906,8 +899,17 @@ void FrameWork::ResourceManager::AddShaderPassToShaderAsset(const std::string &s
         shaderIndex = shaderPathToIndex[shaderPath];
     }
     auto shaderAsset = GetAsset<ShaderAsset>(shaderIndex);
+    bool hasContain = true;
+    {
+        std::shared_lock lock(assetCacheTableMutex);
+        hasContain = assetCacheTable.contains(shaderPath) && hasContain;
+    }
+    {
+        std::shared_lock lock(shaderPassPathToIndexMutex);
+        hasContain = shaderPassPathToIndex.contains(shaderPath) && hasContain;
+    }
 
-    if (!assetCacheTable.contains(shaderPassSourcePath) || !shaderPathToIndex.contains(shaderPassSourcePath)) {
+    if (!hasContain) {
         LoadShaderPassFromSource(shaderPassSourcePath);
     }
     uint32_t shaderPassIndex = 0;
@@ -947,9 +949,13 @@ uint32_t FrameWork::ResourceManager::LoadShaderPassFromSource(const std::string 
         LOG_ERROR("Shader file not found: {}", shaderPath);
         throw std::runtime_error("Shader file not found: " + shaderPath);
     }
+    bool hasContain = false;
+    {
+        std::shared_lock readLock(assetCacheTableMutex);
+        hasContain = assetCacheTable.contains(shaderPath);
+    }
     if (!overlap) {
-        std::shared_lock lock(assetCacheTableMutex);
-        if (assetCacheTable.contains(shaderPath)) {
+        if (hasContain) {
             std::shared_lock shaderPassLock(shaderPassPathToIndexMutex);
             if (shaderPassPathToIndex.contains(shaderPath)) {
                 return shaderPassPathToIndex[shaderPath];
@@ -960,11 +966,7 @@ uint32_t FrameWork::ResourceManager::LoadShaderPassFromSource(const std::string 
     auto shaderHash = ComputeFileSHA256(shaderPath);
     auto fileTime = std::filesystem::last_write_time(shaderPath);
     auto shaderPass = std::make_shared<ShaderPass>();
-    bool hasContain = false;
-    {
-        std::shared_lock readLock(assetCacheTableMutex);
-        hasContain = assetCacheTable.contains(shaderPath);
-    }
+
     if(hasContain){
         if(std::filesystem::exists(assetCacheTable[shaderPath])){
             std::ifstream shaderPassJson(assetCacheTable[shaderPath]);
@@ -1346,11 +1348,26 @@ uint32_t FrameWork::ResourceManager::LoadModelAssetNode(std::shared_ptr<ModelAss
                                                     const std::string & modelPath, uint32_t parent) {
     ModelNode modelNode{};
     modelNode.parentIndex = parent;
+    std::vector<std::future<std::string>> meshFutures(node->mNumMeshes);
+    std::vector<std::future<std::string>> materialFutures(node->mNumMeshes);
+    auto& threadPool = ThreadPool::GetInstance();
     for (int i = 0; i < node->mNumMeshes; i++) {
         //加载Mesh
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        modelNode.meshes.push_back(LoadMeshAssetFromModel(mesh, modelPath));
-        modelNode.materials.push_back(LoadMaterialAssetFromModel(scene, mesh, modelPath)); //加载Material
+        meshFutures[i] = (
+            threadPool.Enqueue(
+                [this](aiMesh* mesh, const std::string& modelPath) {
+                    return LoadMeshAssetFromModel(mesh, modelPath);
+                }, mesh, modelPath));
+
+        materialFutures[i] = (
+            threadPool.Enqueue(
+                [this](const aiScene* scene, aiMesh* mesh,const std::string& modelPath) {
+                    return LoadMaterialAssetFromModel(scene, mesh, modelPath);
+                }, scene, mesh, modelPath));
+
+        // modelNode.meshes.push_back(LoadMeshAssetFromModel(mesh, modelPath));
+        // modelNode.materials.push_back(LoadMaterialAssetFromModel(scene, mesh, modelPath)); //加载Material
         modelNode.name += std::string(mesh->mName.C_Str()); //叠加起来
     }
     uint32_t index = modelAsset->nodes.size();
@@ -1360,6 +1377,10 @@ uint32_t FrameWork::ResourceManager::LoadModelAssetNode(std::shared_ptr<ModelAss
     for (int i = 0; i < node->mNumChildren; i++) {
         auto childIndex = LoadModelAssetNode(modelAsset, scene, node->mChildren[i], modelPath, index);
         modelAsset->nodes[index].childrenIndices.push_back(childIndex);
+    }
+    for (int i = 0; i < node->mNumMeshes; i++) {
+        modelAsset->nodes[index].meshes.push_back(meshFutures[i].get());
+        modelAsset->nodes[index].materials.push_back(materialFutures[i].get());
     }
 
     return index;

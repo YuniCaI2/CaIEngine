@@ -6,11 +6,9 @@
     "ints": {},
     "mat4s": {},
     "name": "cocona_Blue_Archive_Kokona_Material",
-    "shaderPath": "EngineAsset_Shader/cocona_Blue_Archive_Kokona_Shader",
+    "shaderPath": "",
     "sourcePath": "EngineAsset_Material/cocona_Blue_Archive_Kokona_Material",
-    "textures": {
-        "albedo": "../../resources/models/cocona\\textures/exp.png"
-    },
+    "textures": {},
     "uints": {},
     "vec2s": {},
     "vec3s": {},

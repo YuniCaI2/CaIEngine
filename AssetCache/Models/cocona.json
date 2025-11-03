@@ -24,15 +24,15 @@
             "childrenIndices": [],
             "index": 1,
             "materials": [
-                "EngineAsset_Material/cocona_Blue_Archive_Kokona_Material",
-                "EngineAsset_Material/cocona_Skin_Material",
-                "EngineAsset_Material/cocona_Shoes_Material",
-                "EngineAsset_Material/cocona_Panties_Material",
-                "EngineAsset_Material/cocona_Hoodie_Material",
-                "EngineAsset_Material/cocona_HALO_Material",
-                "EngineAsset_Material/cocona_Hair_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Cloth_Material",
-                "EngineAsset_Material/cocona_Head_Material",
+                "EngineAsset_Material/cocona_Cloth_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Eyes_Material"
             ],
             "meshes": [

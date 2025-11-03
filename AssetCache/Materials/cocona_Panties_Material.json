@@ -5,12 +5,10 @@
     "floats": {},
     "ints": {},
     "mat4s": {},
-    "name": "cocona_Blue_Archive_Kokona_Material",
-    "shaderPath": "EngineAsset_Shader/cocona_Panties_Shader",
+    "name": "cocona_Panties_Material",
+    "shaderPath": "",
     "sourcePath": "EngineAsset_Material/cocona_Panties_Material",
-    "textures": {
-        "albedo": "../../resources/models/cocona\\textures/Panties.png"
-    },
+    "textures": {},
     "uints": {},
     "vec2s": {},
     "vec3s": {},

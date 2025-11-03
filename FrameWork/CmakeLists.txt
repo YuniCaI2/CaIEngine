@@ -70,6 +70,9 @@ add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${EC
         CompShader.h
         Editor/Panel.h
 )
+if (MSVC)
+    target_compile_options(FrameWork PRIVATE /bigobj)
+endif()
 
 # 基础库链接（所有平台共用）
 target_link_libraries(FrameWork PUBLIC
