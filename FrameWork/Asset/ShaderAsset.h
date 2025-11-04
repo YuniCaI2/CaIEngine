@@ -49,7 +49,7 @@ namespace Asset_Impl {
         uint32_t fragShaderSize{};
         std::string fragBinPath{};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime, dirt, shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime,  shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
 }
 
 inline static void SaveShaderCodeBin(const std::string& path, const uint32_t* shaderCode, uint32_t shaderSize){

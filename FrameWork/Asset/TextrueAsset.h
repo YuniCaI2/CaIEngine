@@ -110,7 +110,7 @@ namespace Asset_Impl {
     };
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureAsset_Impl, name, contentHash, fileTime,
-        sourcePath, dirt, width, height, numChannel, textureImport, binPath)
+        sourcePath, width, height, numChannel, textureImport, binPath)
 }
 
 

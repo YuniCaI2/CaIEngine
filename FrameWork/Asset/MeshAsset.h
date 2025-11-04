@@ -41,7 +41,7 @@ namespace Asset_Impl {
         std::string binPath;//这里一并记录，内存布局尺寸+ vertexData + indices
     };
 
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshAsset_Impl, name, contentHash, sourcePath, fileTime, dirt, binPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshAsset_Impl, name, contentHash, sourcePath, fileTime, binPath)
 
 }
 

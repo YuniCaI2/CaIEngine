@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/doro.bin",
-    "contentHash": "da2ea732ac1cdb9c5d3afafaec8abec67a90eac90ead3c28a8cac40778a0abcc",
-    "fileTime": 1756475825451285377,
-    "height": 844,
-    "name": "doro",
+    "binPath": "../../AssetCache/Textures/coconaEyes_Texture.bin",
+    "contentHash": "23bd14fee0d871be5709beeb1a427ca22e9aaa6c7a7d0964e2afb37e8d05e8fa",
+    "fileTime": 1756475825473713521,
+    "height": 1024,
+    "name": "coconaEyes_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/Pic/doro.png",
+    "sourcePath": "../../resources/models/cocona/textures/Eyes.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,
@@ -18,5 +18,5 @@
             "wrap": "ClampToEdge"
         }
     },
-    "width": 850
+    "width": 1024
 }

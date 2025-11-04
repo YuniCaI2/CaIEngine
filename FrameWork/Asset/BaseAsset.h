@@ -20,7 +20,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
 
 
 #define SERIALIZE_ASSET(AssetType, ...) \
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AssetType, name, sourcePath, contentHash, fileTime, dirt, ##__VA_ARGS__)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AssetType, name, sourcePath, contentHash, fileTime, ##__VA_ARGS__)
 
 
 #endif //CAIENGINE_BASEASSET_H

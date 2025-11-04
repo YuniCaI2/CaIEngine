@@ -1,7 +1,6 @@
 {
     "contentHash": "",
-    "dirt": false,
-    "fileTime": 6802270473709551616,
+    "fileTime": 0,
     "floats": {},
     "ints": {},
     "mat4s": {},
@@ -9,7 +8,7 @@
     "shaderPath": "EngineAsset_Shader/cocona_Cloth_Shader",
     "sourcePath": "EngineAsset_Material/cocona_Cloth_Material",
     "textures": {
-        "albedo": "../../resources/models/cocona\\textures/Shoes.png"
+        "albedo": "../../resources/models/cocona/textures/Shoes.png"
     },
     "uints": {},
     "vec2s": {},

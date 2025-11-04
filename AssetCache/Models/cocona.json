@@ -1,7 +1,6 @@
 {
     "contentHash": "ee548a5a4bccf10624ec5b0917a5e95ed14ef6ac68f71ec093f6329642e293d0",
-    "dirt": false,
-    "fileTime": 1727794837000000000,
+    "fileTime": 1756475825468037091,
     "import": {
         "flipUV": true,
         "genNormal": true,
@@ -25,14 +24,14 @@
             "index": 1,
             "materials": [
                 "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Cloth_Material",
-                "EngineAsset_Material/cocona_Cloth_Material",
                 "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Eyes_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Head_Material",
                 "EngineAsset_Material/cocona_Eyes_Material"
             ],
             "meshes": [

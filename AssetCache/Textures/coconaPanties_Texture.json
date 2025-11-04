@@ -1,12 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures\\Panties.bin",
+    "binPath": "../../AssetCache/Textures/coconaPanties_Texture.bin",
     "contentHash": "68917e79f03aac7c95f71c11650321a4030936ab5bff980d4c24b51626eec7b6",
-    "dirt": false,
-    "fileTime": 1694048763000000000,
+    "fileTime": 1756475825488185779,
     "height": 1024,
-    "name": "Panties",
+    "name": "coconaPanties_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona\\textures/Panties.png",
+    "sourcePath": "../../resources/models/cocona/textures/Panties.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

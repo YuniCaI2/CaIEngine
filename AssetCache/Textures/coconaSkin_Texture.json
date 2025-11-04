@@ -1,12 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures\\Eyes.bin",
-    "contentHash": "23bd14fee0d871be5709beeb1a427ca22e9aaa6c7a7d0964e2afb37e8d05e8fa",
-    "dirt": false,
-    "fileTime": 1694048763000000000,
+    "binPath": "../../AssetCache/Textures/coconaSkin_Texture.bin",
+    "contentHash": "41a15ad626ccd21083c78f2608dc35abde2c70b849588edeb1861529eaca00f5",
+    "fileTime": 1756475825489905829,
     "height": 1024,
-    "name": "Eyes",
+    "name": "coconaSkin_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona\\textures/Eyes.png",
+    "sourcePath": "../../resources/models/cocona/textures/Skin.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

@@ -193,17 +193,25 @@ namespace FrameWork {
         uint32_t LoadMaterialAssetFromJSON(const std::string& path);
         uint32_t LoadShaderAssetFromJSON(const std::string& path);
         uint32_t LoadShaderPassFromJSON(const std::string& path);
-
-
         uint32_t LoadModelAssetFromJSON(const std::string& path);
         uint32_t LoadMeshAssetFromJSON(const std::string& path);
+        //存储内存内容至缓存
+        void SaveMaterialAssetToJSON(std::shared_ptr<MaterialAsset> materialAsset);
+        void SaveTextureAssetToJSON(std::shared_ptr<TextureAsset> textureAsset);
+        void SaveShaderAssetToJSON(std::shared_ptr<ShaderAsset> shaderAsset);
+        void SaveShaderPassToJSON(std::shared_ptr<ShaderPass> shaderPass);
+        void SaveModelAssetToJSON(std::shared_ptr<ModelAsset> modelAsset);
+        void SaveMeshAssetToJSON(std::shared_ptr<MeshAsset> meshAsset);
 
         //加载模型节点和节点的Mesh
         //Assimp处理模型
         std::string LoadEmbeddingTexture(const aiTexture* texData, const std::string& modelPath, TextureImport* textureImport = nullptr); //支持自定义TextureImport
+        uint32_t LoadTextureAssetFromModel(const std::string& modelPath, const std::string& path, bool overlap = true, TextureImport* textureImport = nullptr);
         std::string LoadMaterialAssetFromModel(const aiScene* scene, aiMesh* mesh, const std::string& modelPath);
         std::string LoadMeshAssetFromModel(aiMesh* mesh, const std::string& modelPath);
         uint32_t LoadModelAssetNode(std::shared_ptr<ModelAsset> modelAsset, const aiScene* scene, const aiNode* node, const std::string& modelPath, uint32_t parent = UINT32_MAX);
+
+
 
         //Table
         static constexpr std::pair<aiTextureType, const char*>  aiTextureTypeToString[] = {
@@ -216,6 +224,8 @@ namespace FrameWork {
             { aiTextureType_EMISSIVE,          "emissive" },
             { aiTextureType_OPACITY,           "opacity" }
         };
+
+
     public:
 
         //外部导入资源
@@ -232,8 +242,6 @@ namespace FrameWork {
         // void AddShaderAssetToMaterial(const std::string& materialPath, const std::string& shaderPath);
         void AddShaderPassToShaderAsset(const std::string& shaderPath, const std::string& shaderTag,const std::string& shaderPassSourcePath);
 
-        //存储内存内容至缓存
-        void SaveMaterialAssetToJSON(const MaterialAsset& materialAsset);
 
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
 

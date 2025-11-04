@@ -1,12 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures\\Cloth.bin",
-    "contentHash": "1db59310a674bba58f19485c1c645c79a06a64fcc8840d7b9b0f49b0a752be85",
-    "dirt": false,
-    "fileTime": 1694048763000000000,
+    "binPath": "../../AssetCache/Textures/coconaexp_Texture.bin",
+    "contentHash": "21779e41ce3b3fc2338e77c1ae7c277caf615313bcd8c3f39e49e9cfdbba9dcd",
+    "fileTime": 1756475825491379550,
     "height": 1024,
-    "name": "Cloth",
+    "name": "coconaexp_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona\\textures/Cloth.png",
+    "sourcePath": "../../resources/models/cocona/textures/exp.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

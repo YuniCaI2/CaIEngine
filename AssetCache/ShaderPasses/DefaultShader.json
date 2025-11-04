@@ -1,7 +1,6 @@
 {
-    "contentHash": "086968be10fc5314b9bc1859fb665a6b10a32e1f8ee59a86368469a46349d7fa",
-    "dirt": false,
-    "fileTime": 1762156347443016000,
+    "contentHash": "55c1918f7d39729de2cbf227fecf031b3f5db5f8cd30543bcf7c25d08d787ce4",
+    "fileTime": 1762235403493031047,
     "fragBinPath": "../../AssetCache/ShaderPasses/DefaultShader.frag.bin",
     "fragShaderSize": 1112,
     "name": "DefaultShader",

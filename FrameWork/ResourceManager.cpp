@@ -241,6 +241,16 @@ FrameWork::ResourceManager::~ResourceManager() {
     std::ofstream oassetCacheTable(assetCacheTablePath);
     nlohmann::json assetCache = assetCacheTable;
     oassetCacheTable << std::setw(4) << assetCache;
+
+    //这里将有脏标记的内容写回
+    //为了线程安全先得到sourcePath
+    // std::vector<std::string_view> textureSourcePaths;
+    // for (auto& tex : textureAssetPool) {
+    //     if (tex != nullptr && tex->dirt) {
+    //         SaveTextureAssetToJSON(tex);
+    //     }
+    // }
+
 }
 
 
@@ -923,9 +933,9 @@ void FrameWork::ResourceManager::AddShaderPassToShaderAsset(const std::string &s
     shaderAsset->passes[shaderPass->shaderTag] = shaderPassSourcePath;
 }
 
-void FrameWork::ResourceManager::SaveMaterialAssetToJSON(const MaterialAsset &materialAsset) {
-    nlohmann::json json = materialAsset;
-    std::string sourcePath = materialAsset.sourcePath;
+void FrameWork::ResourceManager::SaveMaterialAssetToJSON(std::shared_ptr<MaterialAsset> materialAsset) {
+    nlohmann::json json = *materialAsset;
+    std::string sourcePath = materialAsset->sourcePath;
     std::string jsonPath;
     {
         std::shared_lock lock(assetCacheTableMutex);
@@ -940,6 +950,56 @@ void FrameWork::ResourceManager::SaveMaterialAssetToJSON(const MaterialAsset &ma
     std::ofstream jsonFile(jsonPath);
     jsonFile << std::setw(4) << json;
     jsonFile.close();
+}
+
+void FrameWork::ResourceManager::SaveTextureAssetToJSON(std::shared_ptr<TextureAsset> textureAsset) {
+    Asset_Impl::TextureAsset_Impl textureAssetImpl{};
+    textureAssetImpl.name = textureAsset->name;
+    textureAssetImpl.sourcePath = textureAsset->sourcePath;
+    textureAssetImpl.contentHash = textureAsset->contentHash;
+    textureAssetImpl.fileTime = textureAsset->fileTime;
+
+    textureAssetImpl.width = textureAsset->width;
+    textureAssetImpl.height = textureAsset->height;
+    textureAssetImpl.numChannel = textureAsset->numChannel;
+    textureAssetImpl.textureImport = textureAsset->textureImport;
+
+    uint32_t totalSize = textureAsset->width * textureAsset->height * textureAsset->numChannel;
+    if (textureAsset->textureImport.textureFormat == TextureFormat::R16G16B16)
+        totalSize *= 2;
+
+
+    //得到JSON PATH
+    std::string jsonPath;
+    {
+        std::scoped_lock lock(assetCacheTableMutex);
+        if (assetCacheTable.contains(textureAsset->sourcePath)) {
+            jsonPath = assetCacheTable[textureAsset->sourcePath];
+        }else {
+            LOG_ERROR("Can't find json path : {}", textureAsset->sourcePath);
+            throw std::runtime_error("Can't find json path from sourcePath");
+        }
+    }
+    textureAssetImpl.binPath = jsonPath.substr(0, jsonPath.find_last_of('.')) + ".bin";
+    SaveTextureBin(textureAssetImpl.binPath, textureAsset->data, totalSize); //保存二进制
+    //Save Json
+    std::ofstream jsonFile(jsonPath);
+    nlohmann::json json = textureAssetImpl;
+    jsonFile << std::setw(4) << json;
+    jsonFile.close();
+}
+
+
+void FrameWork::ResourceManager::SaveShaderAssetToJSON(std::shared_ptr<ShaderAsset> shaderAsset) {
+}
+
+void FrameWork::ResourceManager::SaveShaderPassToJSON(std::shared_ptr<ShaderPass> shaderPass) {
+}
+
+void FrameWork::ResourceManager::SaveModelAssetToJSON(std::shared_ptr<ModelAsset> modelAsset) {
+}
+
+void FrameWork::ResourceManager::SaveMeshAssetToJSON(std::shared_ptr<MeshAsset> meshAsset) {
 }
 
 
@@ -1142,7 +1202,7 @@ uint32_t FrameWork::ResourceManager::LoadMeshAssetFromJSON(const std::string &pa
 std::string FrameWork::ResourceManager::LoadEmbeddingTexture(const aiTexture* texData, const std::string& modelPath, TextureImport* textureImport){
     std::string sourcePath = modelPath + "-Embedding/Texture" + texData->mFilename.C_Str();
     TextureAsset textureAsset = {};
-    textureAsset.name = texData->mFilename.C_Str();
+    textureAsset.name = std::filesystem::path(modelPath).stem().string() + "_Texture_" +  texData->mFilename.C_Str();
     textureAsset.sourcePath = sourcePath;
     textureAsset.contentHash = "Embedding";
 
@@ -1192,6 +1252,92 @@ std::string FrameWork::ResourceManager::LoadEmbeddingTexture(const aiTexture* te
     }
 
     return textureAsset.sourcePath;
+}
+
+uint32_t FrameWork::ResourceManager::LoadTextureAssetFromModel(const std::string &modelPath, const std::string &path,
+    bool overlap, TextureImport *textureImport) {
+    TextureAsset textureAsset;
+    std::string modelName = std::filesystem::path(modelPath).stem().string();
+    textureAsset.name = modelName  + std::filesystem::path(path).stem().string()  + "_Texture";
+    textureAsset.fileTime = std::filesystem::last_write_time(path);
+    textureAsset.contentHash = ComputeFileSHA256(path);
+
+    if (!overlap) {
+        std::shared_lock lock(textureAssetPoolMutex);
+        if (texturePathToIndex.contains(path)) {
+            return texturePathToIndex[path];
+        }
+    }
+    bool hasContain = false;
+    {
+        std::shared_lock lock(assetCacheTableMutex);
+        hasContain = assetCacheTable.contains(path);
+    }
+    if (hasContain) {
+        if (std::filesystem::exists(assetCacheTable[path])) {
+            std::ifstream textureAssetJson(assetCacheTable[path]);
+            auto textureAsset_Impl = nlohmann::json::parse(textureAssetJson).get<Asset_Impl::TextureAsset_Impl>();
+            if (textureAsset_Impl.fileTime == textureAsset.fileTime && textureAsset_Impl.contentHash == textureAsset.contentHash) {
+                try {
+                    return LoadTextureAssetFromJSON(assetCacheTable[path]);
+                } catch (std::exception& e) {
+                    LOG_ERROR("Error : {}", std::string(e.what()));
+                    throw std::runtime_error("Error : " + std::string(e.what()));
+                }
+            }
+        }
+    }
+
+
+
+    uint32_t totalSize{};
+    if (std::filesystem::path(path).extension() == ".dds") {
+        textureAsset.textureImport.colorSpace = ColorSpace::LINEAR;
+        textureAsset.textureImport.textureFormat = TextureFormat::R16G16B16;
+    }
+    if (textureAsset.textureImport.textureFormat == TextureFormat::R16G16B16) {
+        LoadDDSTextureAsset(path, textureAsset);
+        totalSize = textureAsset.width * textureAsset.height * textureAsset.numChannel * 2;
+    }else {
+        LoadSTBTextureAsset(path, textureAsset);
+        totalSize = textureAsset.width * textureAsset.height * textureAsset.numChannel;
+    }
+    if (textureImport != nullptr) {
+        textureAsset.textureImport = *textureImport; // 支持自定义textureImport
+    }
+
+    std::string jsonPath = (std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
+        std::filesystem::path(textureAsset.name + std::string(".json"))).string();
+    std::string binPath = (std::filesystem::path(assetCachePath) / std::filesystem::path("Textures") /
+        std::filesystem::path(textureAsset.name + std::string(".bin"))).string();
+
+    SaveTextureBin(binPath, textureAsset.data, totalSize);
+
+    Asset_Impl::TextureAsset_Impl textureAsset_Impl = {};
+    textureAsset_Impl.name = textureAsset.name;
+    textureAsset_Impl.sourcePath = (std::filesystem::path(textureAsset.sourcePath)).string();
+    textureAsset_Impl.contentHash = textureAsset.contentHash;
+    textureAsset_Impl.fileTime = textureAsset.fileTime;
+    textureAsset_Impl.width = textureAsset.width;
+    textureAsset_Impl.height = textureAsset.height;
+    textureAsset_Impl.numChannel = textureAsset.numChannel;
+    textureAsset_Impl.textureImport = textureAsset.textureImport;
+    textureAsset_Impl.binPath = binPath;
+
+    std::ofstream jsonFile(jsonPath);
+    nlohmann::json json = textureAsset_Impl;
+    jsonFile << std::setw(4) << json;
+    {
+        std::shared_lock lock(assetCacheTableMutex);
+        assetCacheTable[path] = jsonPath;
+    }
+    auto index = AddAsset(std::make_shared<TextureAsset>(textureAsset));
+    {
+        std::scoped_lock lock(texturePathToIndexMutex);
+        texturePathToIndex[path] = index;
+    }
+
+    return index;
 }
 
 std::string FrameWork::ResourceManager::LoadMaterialAssetFromModel(const aiScene* scene,aiMesh* mesh, const std::string& modelPath){
@@ -1250,14 +1396,15 @@ std::string FrameWork::ResourceManager::LoadMaterialAssetFromModel(const aiScene
                 //嵌入式纹理
                 materialAsset->textures[p.second] = LoadEmbeddingTexture(texData, modelPath, &textureImport);
             }else{
-                LoadTextureAssetFromSource(texturePath, false, &textureImport);
+                uint32_t texIndex = LoadTextureAssetFromModel(modelPath, texturePath, false, &textureImport);
+                auto textureAsset = GetAsset<TextureAsset>(texIndex);
                 materialAsset->textures[p.second] = texturePath;
             }
         }
     }
 
     //存储到磁盘，直写,后续再思考是否修改为写回
-    SaveMaterialAssetToJSON(*materialAsset);
+    SaveMaterialAssetToJSON(materialAsset);
 
     return materialAsset->sourcePath;
 }

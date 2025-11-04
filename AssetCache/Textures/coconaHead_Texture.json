@@ -1,12 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures\\Head.bin",
+    "binPath": "../../AssetCache/Textures/coconaHead_Texture.bin",
     "contentHash": "8d3ac7fbead13974b07a37152529b2640a4978e75167fd68a0acfe6bdccfbd4a",
-    "dirt": false,
-    "fileTime": 1694048763000000000,
+    "fileTime": 1756475825483722700,
     "height": 1024,
-    "name": "Head",
+    "name": "coconaHead_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona\\textures/Head.png",
+    "sourcePath": "../../resources/models/cocona/textures/Head.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

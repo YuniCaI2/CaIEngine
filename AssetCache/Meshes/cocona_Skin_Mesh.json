@@ -1,8 +1,7 @@
 {
     "binPath": "../../AssetCache/Meshes/cocona_Skin_Mesh.bin",
     "contentHash": "",
-    "dirt": false,
-    "fileTime": 6802270473709551616,
+    "fileTime": 0,
     "name": "cocona_Skin_Mesh",
     "sourcePath": "../../resources/models/cocona/cocona.obj-Embedding/Meshes/cocona_Skin_Mesh"
 }

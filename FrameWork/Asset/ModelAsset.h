@@ -50,7 +50,7 @@ struct ModelAsset : BaseAsset {
     std::vector<ModelNode> nodes;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset, import, name, sourcePath, contentHash, fileTime, dirt, rootNode, nodes)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset, import, name, sourcePath, contentHash, fileTime,  rootNode, nodes)
 
 namespace Asset_Impl {
     struct ModelAsset_Impl : BaseAsset {
@@ -62,7 +62,7 @@ namespace Asset_Impl {
         std::string binPath;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset_Impl, import, name, sourcePath, contentHash,
-        fileTime, dirt, rootNode, binPath)
+        fileTime, rootNode, binPath)
 
 
     inline void SaveModelNode(std::ofstream& file, const ModelNode& modelNode) {
