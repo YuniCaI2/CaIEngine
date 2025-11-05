@@ -912,11 +912,11 @@ void FrameWork::ResourceManager::AddShaderPassToShaderAsset(const std::string &s
     bool hasContain = true;
     {
         std::shared_lock lock(assetCacheTableMutex);
-        hasContain = assetCacheTable.contains(shaderPath) && hasContain;
+        hasContain = assetCacheTable.contains(shaderPassSourcePath) && hasContain;
     }
     {
         std::shared_lock lock(shaderPassPathToIndexMutex);
-        hasContain = shaderPassPathToIndex.contains(shaderPath) && hasContain;
+        hasContain = shaderPassPathToIndex.contains(shaderPassSourcePath) && hasContain;
     }
 
     if (!hasContain) {
@@ -934,6 +934,7 @@ void FrameWork::ResourceManager::AddShaderPassToShaderAsset(const std::string &s
 }
 
 void FrameWork::ResourceManager::SaveMaterialAssetToJSON(std::shared_ptr<MaterialAsset> materialAsset) {
+    // LOG_ERROR("Material Asset source Path: {}", materialAsset->sourcePath);
     nlohmann::json json = *materialAsset;
     std::string sourcePath = materialAsset->sourcePath;
     std::string jsonPath;
@@ -943,7 +944,7 @@ void FrameWork::ResourceManager::SaveMaterialAssetToJSON(std::shared_ptr<Materia
             jsonPath = assetCacheTable[sourcePath];
         }
         else {
-            LOG_ERROR("Can't find json path from sourcePath : {}", sourcePath);
+            // LOG_ERROR("Can't find json path from sourcePath : {}", sourcePath);
             throw std::runtime_error("Can't find json path from sourcePath");
         }
     }
@@ -1220,8 +1221,8 @@ std::string FrameWork::ResourceManager::LoadEmbeddingTexture(const aiTexture* te
     textureAsset.textureImport = *textureImport;
 
     std::string modelName = std::filesystem::path(modelPath).stem().string();
-    std::string jsonPath  = assetCachePath + "Textures/" + modelName + "_Texture_" + textureAsset.name + ".json";
-    std::string binPath  = assetCachePath + "Textures/" + modelName + "_Texture_" + textureAsset.name + ".bin";
+    std::string jsonPath  = assetCachePath + "Textures/" + modelName + "_" + textureAsset.name + "_Texture" + ".json";
+    std::string binPath  = assetCachePath + "Textures/" + modelName + "_" + textureAsset.name + "_Texture" + ".bin";
     Asset_Impl::TextureAsset_Impl textureAsset_Impl = {};
     textureAsset_Impl.name = textureAsset.name;
     textureAsset_Impl.sourcePath = textureAsset.sourcePath;
@@ -1258,7 +1259,7 @@ uint32_t FrameWork::ResourceManager::LoadTextureAssetFromModel(const std::string
     bool overlap, TextureImport *textureImport) {
     TextureAsset textureAsset;
     std::string modelName = std::filesystem::path(modelPath).stem().string();
-    textureAsset.name = modelName  + std::filesystem::path(path).stem().string()  + "_Texture";
+    textureAsset.name = modelName  + "_" + std::filesystem::path(path).stem().string()  + "_Texture";
     textureAsset.fileTime = std::filesystem::last_write_time(path);
     textureAsset.contentHash = ComputeFileSHA256(path);
 
@@ -1348,7 +1349,7 @@ std::string FrameWork::ResourceManager::LoadMaterialAssetFromModel(const aiScene
     uint32_t index{};
     {
         std::shared_lock lock(materialPathToIndexMutex);
-        index = materialPathToIndex[modelPath];
+        index = materialPathToIndex[materialPath];
     }
     auto materialAsset = GetAsset<MaterialAsset>(index);
     auto modelName = std::filesystem::path(modelPath).stem().string();

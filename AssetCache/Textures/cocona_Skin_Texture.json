@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/coconaexp_Texture.bin",
-    "contentHash": "21779e41ce3b3fc2338e77c1ae7c277caf615313bcd8c3f39e49e9cfdbba9dcd",
-    "fileTime": 1756475825491379550,
+    "binPath": "../../AssetCache/Textures\\cocona_Skin_Texture.bin",
+    "contentHash": "41a15ad626ccd21083c78f2608dc35abde2c70b849588edeb1861529eaca00f5",
+    "fileTime": 1694048763000000000,
     "height": 1024,
-    "name": "coconaexp_Texture",
+    "name": "cocona_Skin_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona/textures/exp.png",
+    "sourcePath": "../../resources/models/cocona\\textures/Skin.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

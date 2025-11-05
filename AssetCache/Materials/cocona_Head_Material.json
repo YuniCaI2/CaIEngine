@@ -1,14 +1,14 @@
 {
     "contentHash": "",
-    "fileTime": 0,
+    "fileTime": 6802270473709551616,
     "floats": {},
     "ints": {},
     "mat4s": {},
-    "name": "cocona_Skin_Material",
+    "name": "cocona_Head_Material",
     "shaderPath": "EngineAsset_Shader/cocona_Head_Shader",
     "sourcePath": "EngineAsset_Material/cocona_Head_Material",
     "textures": {
-        "albedo": "../../resources/models/cocona/textures/Head.png"
+        "albedo": "../../resources/models/cocona\\textures/Head.png"
     },
     "uints": {},
     "vec2s": {},

@@ -1,6 +1,6 @@
 {
     "contentHash": "ee548a5a4bccf10624ec5b0917a5e95ed14ef6ac68f71ec093f6329642e293d0",
-    "fileTime": 1756475825468037091,
+    "fileTime": 1727794837000000000,
     "import": {
         "flipUV": true,
         "genNormal": true,
@@ -23,14 +23,14 @@
             "childrenIndices": [],
             "index": 1,
             "materials": [
-                "EngineAsset_Material/cocona_Eyes_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
+                "EngineAsset_Material/cocona_Blue_Archive_Kokona_Material",
+                "EngineAsset_Material/cocona_Skin_Material",
+                "EngineAsset_Material/cocona_Shoes_Material",
+                "EngineAsset_Material/cocona_Panties_Material",
+                "EngineAsset_Material/cocona_Hoodie_Material",
+                "EngineAsset_Material/cocona_HALO_Material",
+                "EngineAsset_Material/cocona_Hair_Material",
                 "EngineAsset_Material/cocona_Cloth_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
-                "EngineAsset_Material/cocona_Eyes_Material",
                 "EngineAsset_Material/cocona_Head_Material",
                 "EngineAsset_Material/cocona_Eyes_Material"
             ],

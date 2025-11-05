@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/coconaCloth_Texture.bin",
-    "contentHash": "1db59310a674bba58f19485c1c645c79a06a64fcc8840d7b9b0f49b0a752be85",
-    "fileTime": 1756475825471961680,
+    "binPath": "../../AssetCache/Textures\\cocona_Hoodie_Texture.bin",
+    "contentHash": "11d305ffb1ea3cd972b70689ff70ca255c6e5f5c1153e6330973c37c85d9e072",
+    "fileTime": 1694048763000000000,
     "height": 1024,
-    "name": "coconaCloth_Texture",
+    "name": "cocona_Hoodie_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona/textures/Cloth.png",
+    "sourcePath": "../../resources/models/cocona\\textures/Hoodie.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

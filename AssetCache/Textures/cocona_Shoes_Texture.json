@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/coconaHALO_Texture.bin",
-    "contentHash": "26ac92e4a796dafac7d924428bc483acbcb82ab1452264b6e86a7b9394c43dc1",
-    "fileTime": 1756475825476217764,
-    "height": 512,
-    "name": "coconaHALO_Texture",
+    "binPath": "../../AssetCache/Textures\\cocona_Shoes_Texture.bin",
+    "contentHash": "5b83fc24124baa3cb7d7c68d3e96e25df08aaf74d36f3e09e3332642f67da835",
+    "fileTime": 1694048763000000000,
+    "height": 1024,
+    "name": "cocona_Shoes_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona/textures/HALO.png",
+    "sourcePath": "../../resources/models/cocona\\textures/Shoes.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,
@@ -18,5 +18,5 @@
             "wrap": "ClampToEdge"
         }
     },
-    "width": 512
+    "width": 1024
 }

@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/coconaPanties_Texture.bin",
-    "contentHash": "68917e79f03aac7c95f71c11650321a4030936ab5bff980d4c24b51626eec7b6",
-    "fileTime": 1756475825488185779,
+    "binPath": "../../AssetCache/Textures\\cocona_Head_Texture.bin",
+    "contentHash": "8d3ac7fbead13974b07a37152529b2640a4978e75167fd68a0acfe6bdccfbd4a",
+    "fileTime": 1694048763000000000,
     "height": 1024,
-    "name": "coconaPanties_Texture",
+    "name": "cocona_Head_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona/textures/Panties.png",
+    "sourcePath": "../../resources/models/cocona\\textures/Head.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

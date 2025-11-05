@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/coconaShoes_Texture.bin",
-    "contentHash": "5b83fc24124baa3cb7d7c68d3e96e25df08aaf74d36f3e09e3332642f67da835",
-    "fileTime": 1756475825489338173,
+    "binPath": "../../AssetCache/Textures\\cocona_exp_Texture.bin",
+    "contentHash": "21779e41ce3b3fc2338e77c1ae7c277caf615313bcd8c3f39e49e9cfdbba9dcd",
+    "fileTime": 1694048763000000000,
     "height": 1024,
-    "name": "coconaShoes_Texture",
+    "name": "cocona_exp_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona/textures/Shoes.png",
+    "sourcePath": "../../resources/models/cocona\\textures/exp.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

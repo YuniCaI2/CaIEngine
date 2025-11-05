@@ -1,13 +1,15 @@
 {
     "contentHash": "",
-    "fileTime": 0,
+    "fileTime": 6802270473709551616,
     "floats": {},
     "ints": {},
     "mat4s": {},
     "name": "cocona_Panties_Material",
-    "shaderPath": "",
+    "shaderPath": "EngineAsset_Shader/cocona_Panties_Shader",
     "sourcePath": "EngineAsset_Material/cocona_Panties_Material",
-    "textures": {},
+    "textures": {
+        "albedo": "../../resources/models/cocona\\textures/Panties.png"
+    },
     "uints": {},
     "vec2s": {},
     "vec3s": {},

@@ -1,11 +1,11 @@
 {
-    "binPath": "../../AssetCache/Textures/coconaHead_Texture.bin",
-    "contentHash": "8d3ac7fbead13974b07a37152529b2640a4978e75167fd68a0acfe6bdccfbd4a",
-    "fileTime": 1756475825483722700,
+    "binPath": "../../AssetCache/Textures\\cocona_Hair_Texture.bin",
+    "contentHash": "c9eae5fb5c14d31e2221cecf8ac3f34218a985e03ea2911d4c0abd9282212465",
+    "fileTime": 1694048763000000000,
     "height": 1024,
-    "name": "coconaHead_Texture",
+    "name": "cocona_Hair_Texture",
     "numChannel": 4,
-    "sourcePath": "../../resources/models/cocona/textures/Head.png",
+    "sourcePath": "../../resources/models/cocona\\textures/Hair.png",
     "textureImport": {
         "colorSpace": "SRGB",
         "generateMipmap": true,

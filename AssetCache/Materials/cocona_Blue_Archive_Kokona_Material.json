@@ -1,13 +1,15 @@
 {
     "contentHash": "",
-    "fileTime": 0,
+    "fileTime": 6802270473709551616,
     "floats": {},
     "ints": {},
     "mat4s": {},
     "name": "cocona_Blue_Archive_Kokona_Material",
-    "shaderPath": "",
+    "shaderPath": "EngineAsset_Shader/cocona_Blue_Archive_Kokona_Shader",
     "sourcePath": "EngineAsset_Material/cocona_Blue_Archive_Kokona_Material",
-    "textures": {},
+    "textures": {
+        "albedo": "../../resources/models/cocona\\textures/exp.png"
+    },
     "uints": {},
     "vec2s": {},
     "vec3s": {},
