@@ -7,6 +7,7 @@
 #include<atomic>
 #include<mutex>
 #include<future>
+#include <iostream>
 #include "../Logger.h"
 
 class ThreadPool {

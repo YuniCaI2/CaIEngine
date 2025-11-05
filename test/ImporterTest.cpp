@@ -6,23 +6,26 @@
 void testLoadTexture(){
     std::string texturePath = "../../resources/Pic/doro.png";
     try {
-        FrameWork::ResourceManager::GetInstance().LoadTextureAssetFromSource(texturePath);
+        FrameWork::ResourceManager::GetInstance().LoadTextureAssetFromSourceAsync(texturePath);
     }catch (std::exception& e) {
         LOG_ERROR("{}",e.what());
     }
 }
 
 void testCreateShader() {
-    FrameWork::ResourceManager::GetInstance().CreateShaderAsset("TestCreateShader");
+    FrameWork::ResourceManager::GetInstance().CreateShaderAssetAsync("TestCreateShader");
 }
 
 void TestLoadModelAsset() {
     std::string modelPath = "../../resources/models/cocona/cocona.obj";
     try {
-        FrameWork::ResourceManager::GetInstance().LoadModelAssetFromSource(modelPath);
+        auto& resourceManager = FrameWork::ResourceManager::GetInstance();
+        auto n = resourceManager.LoadModelAssetFromSourceAsync(modelPath);
+        n.wait();
     } catch (std::exception& e) {
         LOG_ERROR("{}",e.what());
     }
+
     nlohmann::json j;
 }
 
@@ -33,6 +36,7 @@ struct Asset : BaseAsset {
 SERIALIZE_ASSET(Asset, test)
 
 int main(){
+    ThreadPool::GetInstance();
     LOG.Run();
     // Asset* asset = new Asset();
     // nlohmann::json json = *asset;

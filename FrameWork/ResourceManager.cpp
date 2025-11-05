@@ -224,7 +224,7 @@ void FrameWork::ResourceManager::CompileShader(const std::string &filepath) cons
     }
 }
 
-FrameWork::ResourceManager::ResourceManager() {
+FrameWork::ResourceManager::ResourceManager(): taskQueue() {
     std::ifstream iassetCacheTable(assetCacheTablePath);
     if (!iassetCacheTable.is_open()) {
         //意味着没创建
@@ -241,6 +241,7 @@ FrameWork::ResourceManager::~ResourceManager() {
     std::ofstream oassetCacheTable(assetCacheTablePath);
     nlohmann::json assetCache = assetCacheTable;
     oassetCacheTable << std::setw(4) << assetCache;
+    taskQueue.Stop();
 
     //这里将有脏标记的内容写回
     //为了线程安全先得到sourcePath
@@ -933,6 +934,58 @@ void FrameWork::ResourceManager::AddShaderPassToShaderAsset(const std::string &s
     shaderAsset->passes[shaderPass->shaderTag] = shaderPassSourcePath;
 }
 
+
+std::future<uint32_t> FrameWork::ResourceManager::LoadTextureAssetFromSourceAsync(const std::string &path, bool overlap,
+    TextureImport *textureImport) {
+    return taskQueue.Enqueue([this](const std::string& path, bool overlap, TextureImport* textureImport) {
+            return LoadTextureAssetFromSource(path, overlap, textureImport);
+        }, path, overlap, textureImport);
+}
+
+std::future<uint32_t> FrameWork::ResourceManager::LoadModelAssetFromSourceAsync(
+        const std::string &path, bool overlap, ModelImport *modelImport) {
+    return taskQueue.Enqueue(
+        [this, path = std::string(path), overlap, modelImport]() {
+            return LoadModelAssetFromSource(path, overlap, modelImport);
+        }
+    );
+}
+
+std::future<uint32_t> FrameWork::ResourceManager::LoadShaderPassFromSourceAsync(
+        const std::string &path, bool overlap) {
+    return taskQueue.Enqueue(
+        [this, path = std::string(path), overlap]() {
+            return LoadShaderPassFromSource(path, overlap);
+        }
+    );
+}
+
+std::future<std::string> FrameWork::ResourceManager::CreateMaterialAssetAsync(
+        const std::string &name) {
+    return taskQueue.Enqueue(
+        [this, name = std::string(name)]() {
+            return CreateMaterialAsset(name);
+        }
+    );
+}
+
+std::future<std::string> FrameWork::ResourceManager::CreateShaderAssetAsync(
+        const std::string &name) {
+    return taskQueue.Enqueue(
+        [this, name = std::string(name)]() {
+            return CreateShaderAsset(name);
+        }
+    );
+}
+
+std::future<void> FrameWork::ResourceManager::AddShaderPassToShaderAssetAsync(const std::string &shaderPath,
+    const std::string &shaderTag, const std::string &shaderPassSourcePath) {
+    return taskQueue.Enqueue(
+        [this, shaderPath = std::string(shaderPath), shaderTag, shaderPassSourcePath]() {
+            return AddShaderPassToShaderAsset(shaderPath, shaderTag, shaderPassSourcePath);
+        });
+}
+
 void FrameWork::ResourceManager::SaveMaterialAssetToJSON(std::shared_ptr<MaterialAsset> materialAsset) {
     // LOG_ERROR("Material Asset source Path: {}", materialAsset->sourcePath);
     nlohmann::json json = *materialAsset;
@@ -1498,7 +1551,7 @@ uint32_t FrameWork::ResourceManager::LoadModelAssetNode(std::shared_ptr<ModelAss
     modelNode.parentIndex = parent;
     std::vector<std::future<std::string>> meshFutures(node->mNumMeshes);
     std::vector<std::future<std::string>> materialFutures(node->mNumMeshes);
-    auto& threadPool = ThreadPool::GetInstance();
+    ThreadPool& threadPool = ThreadPool::GetInstance();
     for (int i = 0; i < node->mNumMeshes; i++) {
         //加载Mesh
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];

@@ -18,14 +18,73 @@
 #include <expected>
 
 #include "Logger.h"
+#include "FrameGraph/ThreadPool.h"
 
 namespace FrameWork {
     //这个类的作用是将外部的资源加载或者转为程序可用的资源
     using ShaderModulePackages = std::vector<std::pair<VkShaderStageFlagBits, VkShaderModule>>;
     class ResourceManager {
     private:
+        //Task Queue
+        class TaskQueue {
+        public:
+            TaskQueue() {
+                taskThread = std::thread([this]() {
+                    while (true) {
+                        std::function<void()> task;
+                        {
+                            std::unique_lock<std::mutex> lock(this->taskQueueMutex);
+
+                            this->cv.wait(lock, [this]{ return this->stop.load() || !this->taskQueue.empty(); });
+
+                            if(this->stop.load() && this->taskQueue.empty()){
+                                return;
+                            }
+                            task = std::move(this->taskQueue.front());
+                            this->taskQueue.pop();
+                        }
+                        task();
+                    }
+                });
+            };
+
+            void Stop() {
+                stop.store(true);
+                cv.notify_all();
+                if (taskThread.joinable()) {
+                    taskThread.join();
+                }
+            }
+
+            template<typename F, typename... Args>
+            auto Enqueue(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>> {
+                using ResultType = std::invoke_result_t<F, Args...>;
+                auto task = std::make_shared<std::packaged_task<ResultType()>>(
+                    std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+                );
+                std::future<ResultType> res = task->get_future();
+                {
+                    std::unique_lock<std::mutex> lock(taskQueueMutex);
+                    if(stop.load()){
+                        throw std::runtime_error("enqueue on stopped ThreadPool");
+                    }
+                    taskQueue.emplace([task](){ (*task)(); });
+                }
+                cv.notify_one();
+                return res;
+            }
+        private:
+            std::mutex taskQueueMutex;
+            std::atomic<bool> stop{false};
+            std::queue<std::function<void()>> taskQueue;
+            std::condition_variable cv;
+            std::thread taskThread;
+        };
+        TaskQueue taskQueue;
+
         ResourceManager();
         ~ResourceManager();
+
         std::unordered_map<std::string, TextureFullData> textureMap;
         using ShaderTimeCache =  std::map<std::string, std::filesystem::file_time_type>;
         mutable ShaderTimeCache shaderTimeCache;
@@ -225,9 +284,7 @@ namespace FrameWork {
             { aiTextureType_OPACITY,           "opacity" }
         };
 
-
     public:
-
         //外部导入资源
         uint32_t LoadTextureAssetFromSource(const std::string& path, bool overlap = true, TextureImport* textureImport = nullptr);
         uint32_t LoadModelAssetFromSource(const std::string& path, bool overlap = true, ModelImport* modelImport = nullptr);
@@ -241,10 +298,25 @@ namespace FrameWork {
         //...为结构化资源添加东西, 比如为shaderAsset挂载外部的shaderPass，为Material挂载ShaderAsset，添加参数和纹理
         // void AddShaderAssetToMaterial(const std::string& materialPath, const std::string& shaderPath);
         void AddShaderPassToShaderAsset(const std::string& shaderPath, const std::string& shaderTag,const std::string& shaderPassSourcePath);
+    public:
+
+
+        //Async LoadAsset
+        std::future<uint32_t> LoadTextureAssetFromSourceAsync(const std::string& path, bool overlap = true, TextureImport* textureImport = nullptr);
+        std::future<uint32_t> LoadModelAssetFromSourceAsync(const std::string& path, bool overlap = true, ModelImport* modelImport = nullptr);
+        // uint32_t LoadShaderAssetFromSource(const std::string& path, bool overlap = true);
+        std::future<uint32_t> LoadShaderPassFromSourceAsync(const std::string& path, bool overlap = true); // 直接加载caishader
+
+        //结构化资源需要创建
+        //会自动的生成虚拟的ShaderAsset和Material Asset 的path
+        std::future<std::string> CreateMaterialAssetAsync(const std::string& name); //创建空的Material Asset
+        std::future<std::string> CreateShaderAssetAsync(const std::string& name); //创建空的ShaderAsset存储ShaderPass
+        //...为结构化资源添加东西, 比如为shaderAsset挂载外部的shaderPass，为Material挂载ShaderAsset，添加参数和纹理
+        // void AddShaderAssetToMaterial(const std::string& materialPath, const std::string& shaderPath);
+        std::future<void> AddShaderPassToShaderAssetAsync(const std::string& shaderPath, const std::string& shaderTag,const std::string& shaderPassSourcePath);
 
 
         //导入caiShader，输入为：caishader的路径，输出一个VkShaderModule，并且记录的修改时间caishader，实现懒加载
-
         ShaderModulePackages GetShaderCaIShaderModule(VkDevice device, const std::string& filePath,ShaderInfo& shaderInfo) const;
         ShaderInfo GetShaderInfo(const std::string& filePath) const;
         ShaderModulePackages GetCompShaderModule(VkDevice device, const std::string& filePath, CompShaderInfo& compShaderInfo) const;
