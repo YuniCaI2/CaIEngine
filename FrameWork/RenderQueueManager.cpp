@@ -35,6 +35,4 @@ FrameWork::RenderQueueManager& FrameWork::RenderQueueManager::GetInstance() {
 }
 
 FrameWork::RenderQueueManager::RenderQueueManager() {
-    renderQueues.push_back(std::make_unique<RenderQueue>(static_cast<RenderQueueType>(0))); // Opaque
-    renderQueues.push_back(std::make_unique<RenderQueue>(static_cast<RenderQueueType>(1))); //Transparent
 }

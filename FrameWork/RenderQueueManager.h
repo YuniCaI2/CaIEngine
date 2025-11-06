@@ -11,6 +11,7 @@
 namespace FrameWork {
     class RenderQueueManager {
     public:
+        RenderQueueManager();
         ~RenderQueueManager();
         void AddDrawItem(std::unique_ptr<DrawItem>&& drawItem, RenderQueueType renderQueueType);
         RenderQueue* GetRenderQueue(RenderQueueType renderQueueType);
@@ -19,7 +20,6 @@ namespace FrameWork {
 
         static RenderQueueManager& GetInstance();
     private:
-        RenderQueueManager();
         std::vector<std::unique_ptr<RenderQueue>> renderQueues;
     };
 }

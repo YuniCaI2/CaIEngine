@@ -400,6 +400,7 @@ namespace FrameWork {
         bool inUse = false;
     };
 
+    //这里的DrawItem是Vulkan直接消费的对象
     struct DrawItem {
         std::string passName{};
         uint32_t meshID = 0;
