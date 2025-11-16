@@ -1,0 +1,26 @@
+{
+  "name": "myproject",
+  "version-string": "0.1.0",
+  "dependencies": [
+    {
+      "name": "assimp",
+      "version>=": "5.4.3"
+    },
+    {
+      "name": "glfw3"
+    },
+    {
+      "name": "entt"
+    },
+    {
+      "name": "openssl"
+    },
+    {
+      "name": "nlohmann-json"
+    },
+    {
+      "name": "directxtex"
+    }
+  ],
+  "builtin-baseline": "e93bf5796351d422408a2e3ebf88dce98151ae45"
+}

@@ -106,7 +106,6 @@ protected:
     VkSubmitInfo submitInfo{};
     std::vector<VkCommandBuffer> drawCmdBuffers;
     uint32_t imageIndex{0};
-    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
     std::vector<VkShaderModule> shaderModules;
     VkPipelineCache pipelineCache{VK_NULL_HANDLE};
     VulkanSwapChain swapChain;
@@ -128,18 +127,101 @@ protected:
     bool requiresStencil{false};
 
     //各种池
+
+    template<FrameWork::VulkanResourceType T>
+    struct ResourceWrapper {
+        T* ptr;
+        uint32_t generation{};
+        bool inUse{false};
+    };
+
+    template<typename T>
+    struct Handle {
+        std::shared_ptr<uint32_t> index; //利用shared_ptr的引用计数
+        uint32_t generation{};
+
+        Handle() = default;
+        Handle(const Handle& handle) = default;
+
+        bool operator==(const Handle & h) const {
+            return *index == *h.index &&
+                generation == h.generation;
+        }
+        explicit operator bool() const{
+            return index != nullptr;
+        }
+    };
+
+    template<FrameWork::VulkanResourceType T>
+    using ResourceCapacity = std::vector<ResourceWrapper<T>>;
+
+
+    template<FrameWork::VulkanResourceType T>
+    struct ResourceCapacity_ { //这里不使用异常处理来保证性能
+        std::vector<ResourceWrapper<T>> datas;
+        std::shared_mutex mutex;
+
+        T* GetResource(const Handle<T>& handle) {
+            if (handle.index == nullptr) {
+                LOG_ERROR("Handle.index is null");
+                return nullptr;
+            }
+            std::shared_lock lock(mutex);
+            if (handle != datas[handle.index]) {
+                LOG_ERROR("The handle was hanging");
+                return nullptr;
+            }
+            return datas[handle.index].ptr;
+        }
+
+        //同时释放Handle
+        uint32_t Delete(Handle<T>& handle) {
+            std::scoped_lock lock(mutex);
+            uint32_t refCount = handle.index.use_count() - 1;
+            if (handle.index >= datas.size()) {
+                LOG_ERROR("index is out of range !");
+                return {UINT32_MAX};
+            }
+            if (refCount) {
+                handle.index = nullptr;
+            }else {
+                //调用这个类本身
+                GetInstance().DeleteResource(datas[handle.index]);
+                handle.index = nullptr;
+            }
+            return refCount;
+        }
+    };
+
+
     std::vector<FrameWork::Texture *> textures;
     std::vector<FrameWork::Mesh *> meshes;
     std::vector<FrameWork::VulkanAttachment *> attachmentBuffers;
     std::vector<FrameWork::VulkanFBO *> vulkanFBOs;
     std::vector<FrameWork::VulkanPipeline *> vulkanPipelines;
     std::vector<FrameWork::VulkanPipelineInfo *> vulkanPipelineInfos;
-    std::vector<FrameWork::Material *> materials;
+    std::vector<FrameWork::Material*> materials;
     std::vector<FrameWork::Model *> models;
     std::vector<FrameWork::StorageBuffer *> storageBuffers;
     std::vector<FrameWork::MaterialData*> materialDatas_;
     std::vector<FrameWork::VulkanModelData*> modelDatas_; //更浅
     std::vector<FrameWork::CompMaterialData*> compMaterialDatas_;
+
+
+    //资源类型包
+    using ResourceLists = std::tuple<
+        ResourceCapacity<FrameWork::Texture>,
+        ResourceCapacity<FrameWork::Mesh>,
+        ResourceCapacity<FrameWork::VulkanPipeline>,
+        ResourceCapacity<FrameWork::StorageBuffer>,
+        ResourceCapacity<FrameWork::MaterialData>,
+        ResourceCapacity<FrameWork::CompMaterialData>
+        >;
+
+    ResourceLists resourceLists;
+
+
+
 
     // 对象池的锁声明
     std::mutex texturesMutex;
@@ -158,6 +240,7 @@ protected:
     std::unordered_map<std::string, VkRenderPass> renderPasses; //记录renderpass
     std::unordered_map<RenderPassType, VkRenderPass> renderPassTable;
 
+
     using ReleaseContainer = std::pair<uint32_t, uint32_t>; //后者是释放计数器
     std::deque<ReleaseContainer> textureReleaseQueue;
     std::deque<ReleaseContainer> meshReleaseQueue;
@@ -167,6 +250,45 @@ protected:
     std::deque<ReleaseContainer> materialDataReleaseQueue;
     std::deque<ReleaseContainer> modelDataReleaseQueue;
     std::deque<ReleaseContainer> compMaterialDataReleaseQueue;
+
+    template<FrameWork::VulkanResourceType T>
+    struct ReleaseContainer_ {
+        ResourceWrapper<T> data;
+        uint32_t counts {};
+    };
+
+    //ResourceWrap版本的Release
+    using ReleaseQueueList = std::tuple<
+        std::deque<ReleaseContainer_<FrameWork::Texture>>,
+        std::deque<ReleaseContainer_<FrameWork::Mesh>>,
+        std::deque<ReleaseContainer_<FrameWork::VulkanPipeline>>,
+        std::deque<ReleaseContainer_<FrameWork::MaterialData>>,
+        std::deque<ReleaseContainer_<FrameWork::VulkanModelData>>,
+        std::deque<ReleaseContainer_<FrameWork::CompMaterialData>>
+        >;
+
+    ReleaseQueueList releaseQueueList;
+
+    template<FrameWork::VulkanResourceType T>
+    void DeleteResource(const ResourceWrapper<T>& resourceWrapper) {
+        ResourceCapacity_<T> capacity;
+        capacity.count = MAX_FRAME;
+        capacity.data = resourceWrapper;
+        std::get<std::deque<ReleaseContainer_<T>>>(releaseQueueList).push_back(capacity);
+    }
+
+    template<typename T>
+    void ProcessReleaseQueue(std::deque<ReleaseContainer_<T>>& queue) {
+        for (int i = queue.size() - 1; i >= 0; i--) {
+            --queue[i].counts;
+        }
+        while (! queue.empty() && queue.front().counts == 0) {
+            //Destroy
+            queue.front().data.ptr->Destroy(device);
+            delete queue.front().data.ptr;
+            queue.pop_front();
+        }
+    }
 
     //多线程安全，上锁
     std::mutex texDeleteMutex;
@@ -178,6 +300,7 @@ protected:
     std::mutex modelDataDeleteMutex;
     std::mutex compMaterialDeleteMutex;
 
+    //TODO：需要实现ResourceCapacity的释放函数
 
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
@@ -420,13 +543,6 @@ public:
 
     VkSampleCountFlagBits GetSampleCount() const;
 
-    //DeleteQueue实现
-    // std::deque<ReleaseContainer> textureReleaseQueue;
-    // std::deque<ReleaseContainer> meshReleaseQueue;
-    // std::deque<ReleaseContainer> attachmentReleaseQueue;
-    // std::deque<ReleaseContainer> fboReleaseQueue;
-    // std::deque<ReleaseContainer> pipelineReleaseQueue;
-
     template<typename T>
     void processReleaseQueue(std::deque<std::pair<uint32_t, uint32_t> > &queue) {
         for (int i = queue.size() - 1; i >= 0; i--) {
@@ -543,7 +659,7 @@ public:
     }
 
     template<class T>
-    auto inline getByIndex(uint32_t index) -> T * {
+    decltype(auto) getByIndex(uint32_t index) {
         std::lock_guard<std::mutex> lock(getMutex<T>());
         return getVectorRef<T>()[index];
     }
@@ -681,9 +797,13 @@ public:
             }
         }
     }
-};
+    //ResourceWrapper 版本的模板函数
 
+};
 //代替繁琐调用
+
+
+
 
 #define vulkanRenderAPI vulkanFrameWork::GetInstance()
 

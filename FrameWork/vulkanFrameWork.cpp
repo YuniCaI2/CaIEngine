@@ -411,80 +411,58 @@ void vulkanFrameWork::DestroyAll() {
     //释放CompMaterial
     for (int i = 0; i < compMaterialDatas_.size(); i++) {
         destroyByIndex<FrameWork::CompMaterialData>(i);
-        delete compMaterialDatas_[i];
-        compMaterialDatas_[i] = nullptr;
     }
 
     for (int i = 0; i < materialDatas_.size(); i++) {
         destroyByIndex<FrameWork::MaterialData>(i);
-        delete materialDatas_[i];
-        materialDatas_[i] = nullptr;
     }
 
     for (int i = 0; i < modelDatas_.size(); i++) {
-        if (modelDatas_[i] != nullptr) {
+        if (getByIndex<FrameWork::VulkanModelData>(i) != nullptr) {
             destroyByIndex<FrameWork::VulkanModelData>(i);
-            delete modelDatas_[i];
-            modelDatas_[i] = nullptr;
         }
     }
 
     for (int i = 0; i < vulkanPipelineInfos.size(); i++) {
-        if (vulkanPipelineInfos[i] != nullptr) {
+        if (getByIndex<FrameWork::VulkanPipeline>(i) != nullptr) {
             destroyByIndex<FrameWork::VulkanPipelineInfo>(i);
-            delete vulkanPipelineInfos[i];
-            vulkanPipelineInfos[i] = nullptr;
         }
     }
 
     for (int i = 0; i < materials.size(); i++) {
-        if (materials[i] != nullptr) {
+        if (getByIndex<FrameWork::Material>(i) != nullptr) {
             destroyByIndex<FrameWork::Material>(i);
-            delete materials[i];
-            materials[i] = nullptr;
         }
     }
     for (int i = 0; i < vulkanFBOs.size(); i++) {
-        if (vulkanFBOs[i] != nullptr) {
+        if (getByIndex<FrameWork::VulkanFBO>(i) != nullptr) {
             destroyByIndex<FrameWork::VulkanFBO>(i);
-            delete vulkanFBOs[i];
-            vulkanFBOs[i] = nullptr;
         }
     }
     for (int i = 0; i < attachmentBuffers.size(); i++) {
-        if (attachmentBuffers[i] != nullptr) {
+        if (getByIndex<FrameWork::VulkanAttachment>(i) != nullptr) {
             destroyByIndex<FrameWork::VulkanAttachment>(i);
-            delete attachmentBuffers[i];
-            attachmentBuffers[i] = nullptr;
         }
     }
     for (int i = 0; i < textures.size(); i++) {
-        if (textures[i] != nullptr) {
+        if (getByIndex<FrameWork::Texture>(i) != nullptr) {
             destroyByIndex<FrameWork::Texture>(i);
-            delete textures[i];
-            textures[i] = nullptr;
         }
     }
     for (int i = 0; i < meshes.size(); i++) {
-        if (meshes[i] != nullptr) {
+        if (getByIndex<FrameWork::Mesh>(i) != nullptr) {
             destroyByIndex<FrameWork::Mesh>(i);
-            delete meshes[i];
-            meshes[i] = nullptr;
         }
     }
     for (int i = 0; i < models.size(); i++) {
-        if (models[i] != nullptr) {
+        if (getByIndex<FrameWork::Model>(i) != nullptr) {
             destroyByIndex<FrameWork::Model>(i);
-            delete models[i];
-            models[i] = nullptr;
         }
     }
 
     for (int i = 0; i < vulkanPipelines.size(); i++) {
-        if (vulkanPipelines[i] != nullptr) {
+        if (getByIndex<FrameWork::VulkanPipeline>(i) != nullptr) {
             destroyByIndex<FrameWork::VulkanPipeline>(i);
-            delete vulkanPipelines[i];
-            vulkanPipelines[i] = nullptr;
         }
     }
     for (auto& [_, r] : renderPasses) {
@@ -492,19 +470,11 @@ void vulkanFrameWork::DestroyAll() {
            vkDestroyRenderPass(device, r, nullptr);
        }
     }
-
-
-
     //----------------
 
     // Clean up Vulkan resources
     swapChain.cleanup();
     vulkanDescriptorPool.DestroyDescriptorPool();
-    if (descriptorPool != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    }
-
 
     for (auto& shaderModule : shaderModules)
     {
@@ -2202,6 +2172,13 @@ void vulkanFrameWork::DeleteCompMaterialData(uint32_t id) {
 }
 
 void vulkanFrameWork::CheckDelete() {
+
+
+    std::apply(
+        [this](auto&&... elems) {
+            (..., ProcessReleaseQueue(elems));
+        }, releaseQueueList);
+
     processReleaseQueue<FrameWork::Texture>(textureReleaseQueue);
     processReleaseQueue<FrameWork::Mesh>(meshReleaseQueue);
     processReleaseQueue<FrameWork::VulkanAttachment>(attachmentReleaseQueue);

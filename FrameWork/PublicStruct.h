@@ -12,12 +12,18 @@
 #include <vector>
 #include "Light.h"
 #include <unordered_map>
-#include <entt/entity/entity.hpp>
 #include<nlohmann/json.hpp>
 #include "Serialize.h"
 
 namespace FrameWork {
     //Vulkan Resource
+    struct BaseVulkanResource {
+        virtual ~BaseVulkanResource() = default;
+        virtual void Destroy(VkDevice device) = 0;
+    };
+    template<typename T>
+    concept VulkanResourceType = std::derived_from<T, FrameWork::BaseVulkanResource>;
+
     struct VulkanFBO {
         std::vector<VkFramebuffer> framebuffers;
         std::vector<uint32_t> AttachmentsIdx; //这里只是使用一个数组存储东西，因为我不确定其中的内容有哪些，所以这里和其对应的renderpass所对应，当然需要检查
@@ -57,10 +63,17 @@ namespace FrameWork {
         bool inUse = false;
     };
 
-    struct VulkanPipeline{
+    struct VulkanPipeline : BaseVulkanResource{
         VkPipeline pipeline {VK_NULL_HANDLE};
         VkPipelineLayout pipelineLayout {VK_NULL_HANDLE};
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        virtual void Destroy(VkDevice device) override {
+            vkDestroyPipeline(device, pipeline, nullptr);
+            vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+            for (auto& layout : descriptorSetLayouts) {
+                vkDestroyDescriptorSetLayout(device, layout, nullptr);
+            }
+        }
 
         bool inUse = false;
     };
@@ -73,23 +86,14 @@ namespace FrameWork {
     };
 
     //套壳保证和texture对于slot的接口一致性
-    struct StorageBuffer {
+    struct StorageBuffer : BaseVulkanResource {
         Buffer buffer{};
         uint32_t itemNum{};
-
+        void Destroy(VkDevice device) override {
+            buffer.destroy();
+        }
         bool inUse = false;
     };
-
-    struct VulkanShader {
-        uint32_t pipelineID = -1;
-        uint32_t MaterialID = -1;
-        std::vector<uint32_t> uniformBufferIDs;
-        std::vector<StorageBuffer> storageBufferIDs;
-        VkRenderPass renderPass {VK_NULL_HANDLE};
-
-        bool inUse = false;
-    };
-
 
     struct TextureFullData {
         std::optional<uint32_t> textureID; //兼容纹理创建
@@ -177,12 +181,16 @@ namespace FrameWork {
 
     };
 
-    struct Mesh {
+    struct Mesh : BaseVulkanResource {
         FrameWork::Buffer VertexBuffer;
         FrameWork::Buffer IndexBuffer;
         uint32_t vertexCount{0};
         uint32_t indexCount{0};
 
+        void Destroy(VkDevice device) override {
+            VertexBuffer.destroy();
+            IndexBuffer.destroy();
+        }
 
         bool inUse = false;
     };
@@ -202,12 +210,16 @@ namespace FrameWork {
 
 
 
-    struct Texture {
+    struct Texture : BaseVulkanResource {
         VulkanImage image{};
         VkImageView imageView{VK_NULL_HANDLE};
         std::vector<VkImageView> mipMapViews; //这里的mipmap视图是为了保证StorageImage可以访问对应的Mipmap
         VkSampler sampler{VK_NULL_HANDLE}; //optional
         bool isSwapChainRef{false}; //这里用来适配FrameGraph的资源导入
+        virtual void Destroy(VkDevice device) override { //传参进去释放
+            image.destroy();
+            vkDestroyImageView(device, imageView, nullptr);
+        }
         bool inUse = false;
     };
 
@@ -282,7 +294,7 @@ namespace FrameWork {
     //这个ModelData的Vulkan资源话，
     //尽可能的浅封装,不将我的Material封装进去
     //现在的model还是static
-    struct VulkanModelData {
+    struct VulkanModelData : BaseVulkanResource { //这里的Destory复杂
         using TextureMap = std::unordered_map<TextureTypeFlagBits, uint32_t>;
         std::vector<TextureMap> textures;
         std::vector<uint32_t> meshIDs{}; //网格ID
@@ -290,6 +302,8 @@ namespace FrameWork {
         using TriangleBoundingBoxPtr = std::unique_ptr<std::vector<AABB>>;
         AABB aabb;
         TriangleBoundingBoxPtr triangleBoundingBoxs;
+
+        void Destroy(VkDevice device) override;
         bool inUse = false;
     };
 
@@ -382,20 +396,33 @@ namespace FrameWork {
 
     //Vulkan Resource
 
-    struct MaterialData { //用来存储Vulkan中的资源
+    struct MaterialData : BaseVulkanResource { //用来存储Vulkan中的资源
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts; //此处仅仅只是一个引用不管理其生命周期
         std::vector<VkDescriptorSet> descriptorSets;
         std::vector<Buffer> vertexUniformBuffers; //和descriptorSet对应
         std::vector<Buffer> fragmentUniformBuffers;
         //等到需要使用几何着色器的时候进行添加
-
+        void Destroy(VkDevice device) override {
+            for (auto& buffer : vertexUniformBuffers) {
+                buffer.destroy();
+            }
+            for (auto& buffer : fragmentUniformBuffers) {
+                buffer.destroy();
+            }
+        }
         bool inUse = false;
     };
 
-    struct CompMaterialData {
+    struct CompMaterialData : BaseVulkanResource {
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
         std::vector<VkDescriptorSet> descriptorSets;
         std::vector<Buffer> uniformBuffers;
+
+        void Destroy(VkDevice device) override {
+            for (auto& uniformBuffer : uniformBuffers) {
+                uniformBuffer.destroy();
+            }
+        }
 
         bool inUse = false;
     };
