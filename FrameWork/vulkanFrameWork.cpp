@@ -2173,7 +2173,6 @@ void vulkanFrameWork::DeleteCompMaterialData(uint32_t id) {
 
 void vulkanFrameWork::CheckDelete() {
 
-
     std::apply(
         [this](auto&&... elems) {
             (..., ProcessReleaseQueue(elems));

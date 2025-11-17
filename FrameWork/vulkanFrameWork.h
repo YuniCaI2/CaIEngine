@@ -128,68 +128,57 @@ protected:
 
     //各种池
 
-    template<FrameWork::VulkanResourceType T>
-    struct ResourceWrapper {
-        T* ptr;
-        uint32_t generation{};
-        bool inUse{false};
-    };
-
-    template<typename T>
-    struct Handle {
-        std::shared_ptr<uint32_t> index; //利用shared_ptr的引用计数
-        uint32_t generation{};
-
-        Handle() = default;
-        Handle(const Handle& handle) = default;
-
-        bool operator==(const Handle & h) const {
-            return *index == *h.index &&
-                generation == h.generation;
-        }
-        explicit operator bool() const{
-            return index != nullptr;
-        }
-    };
-
-    template<FrameWork::VulkanResourceType T>
-    using ResourceCapacity = std::vector<ResourceWrapper<T>>;
 
 
     template<FrameWork::VulkanResourceType T>
-    struct ResourceCapacity_ { //这里不使用异常处理来保证性能
-        std::vector<ResourceWrapper<T>> datas;
+    struct ResourceCapacity { //这里不使用异常处理来保证性能
+        std::vector<FrameWork::ResourceWrapper<T>> datas;
         std::shared_mutex mutex;
 
-        T* GetResource(const Handle<T>& handle) {
+        T* GetResource(const FrameWork::Handle<T>& handle) {
             if (handle.index == nullptr) {
                 LOG_ERROR("Handle.index is null");
                 return nullptr;
             }
             std::shared_lock lock(mutex);
-            if (handle != datas[handle.index]) {
+            if (handle.generation != datas[*handle.index].generation) {
                 LOG_ERROR("The handle was hanging");
                 return nullptr;
             }
-            return datas[handle.index].ptr;
+            return datas[*handle.index].ptr;
         }
 
-        //同时释放Handle
-        uint32_t Delete(Handle<T>& handle) {
+        //同时释放Handle ,提交给释放队列
+        uint32_t Delete(FrameWork::Handle<T>& handle) {
             std::scoped_lock lock(mutex);
             uint32_t refCount = handle.index.use_count() - 1;
-            if (handle.index >= datas.size()) {
+            if (*handle.index >= datas.size()) {
                 LOG_ERROR("index is out of range !");
-                return {UINT32_MAX};
+                return UINT32_MAX;
             }
             if (refCount) {
                 handle.index = nullptr;
             }else {
                 //调用这个类本身
-                GetInstance().DeleteResource(datas[handle.index]);
+                GetInstance().DeleteResourceToQueue(datas[*handle.index]);
                 handle.index = nullptr;
             }
             return refCount;
+        }
+
+        FrameWork::Handle<T> CreateResource() {
+            std::scoped_lock lock(mutex);
+            auto ptr = new T;
+            FrameWork::Handle<T> handle;
+            handle.generation = 0;
+            handle.index = std::make_shared<uint32_t>(datas.size());
+            FrameWork::ResourceWrapper<T> resourceWrapper;
+            resourceWrapper.ptr = ptr;
+            resourceWrapper.index = handle.index;
+            resourceWrapper.generation = handle.generation;
+            datas.push_back(std::move(resourceWrapper));
+
+            return handle;
         }
     };
 
@@ -253,7 +242,7 @@ protected:
 
     template<FrameWork::VulkanResourceType T>
     struct ReleaseContainer_ {
-        ResourceWrapper<T> data;
+        FrameWork::ResourceWrapper<T> data;
         uint32_t counts {};
     };
 
@@ -270,16 +259,16 @@ protected:
     ReleaseQueueList releaseQueueList;
 
     template<FrameWork::VulkanResourceType T>
-    void DeleteResource(const ResourceWrapper<T>& resourceWrapper) {
-        ResourceCapacity_<T> capacity;
-        capacity.count = MAX_FRAME;
+    void DeleteResourceToQueue(const FrameWork::ResourceWrapper<T>& resourceWrapper) {
+        ReleaseContainer_<T> capacity;
+        capacity.counts = MAX_FRAME;
         capacity.data = resourceWrapper;
         std::get<std::deque<ReleaseContainer_<T>>>(releaseQueueList).push_back(capacity);
     }
 
     template<typename T>
     void ProcessReleaseQueue(std::deque<ReleaseContainer_<T>>& queue) {
-        for (int i = queue.size() - 1; i >= 0; i--) {
+        for (int i = queue.size() - 1; i >= 0; --i) {
             --queue[i].counts;
         }
         while (! queue.empty() && queue.front().counts == 0) {
@@ -299,8 +288,6 @@ protected:
     std::mutex materialDeleteMutex;
     std::mutex modelDataDeleteMutex;
     std::mutex compMaterialDeleteMutex;
-
-    //TODO：需要实现ResourceCapacity的释放函数
 
     std::string title = "Vulkan FrameWork";
     std::string name = "VulkanFrameWork";
@@ -798,6 +785,19 @@ public:
         }
     }
     //ResourceWrapper 版本的模板函数
+    template <FrameWork::VulkanResourceType T>
+    void DeleteResource(FrameWork::Handle<T> handle) {
+        std::get<ResourceCapacity<T>>(resourceLists).Delete(handle);
+    }
+    template <FrameWork::VulkanResourceType T>
+    FrameWork::Handle<T> CreateResource() {
+        return std::get<ResourceCapacity<T>>(resourceLists).CreateResource();
+    }
+
+    template<FrameWork::VulkanResourceType T>
+    T* GetResource(FrameWork::Handle<T> handle) {
+        return std::get<ResourceCapacity<T>>(resourceLists).GetResource(handle);
+    }
 
 };
 //代替繁琐调用

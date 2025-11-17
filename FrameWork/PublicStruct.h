@@ -24,6 +24,31 @@ namespace FrameWork {
     template<typename T>
     concept VulkanResourceType = std::derived_from<T, FrameWork::BaseVulkanResource>;
 
+    template<FrameWork::VulkanResourceType T>
+    struct ResourceWrapper {
+        T* ptr;
+        uint32_t generation{};
+        bool inUse{false};
+    };
+
+    template<typename T>
+    struct Handle {
+        std::shared_ptr<uint32_t> index; //利用shared_ptr的引用计数
+        uint32_t generation{};
+
+        Handle() = default;
+        Handle(const Handle& handle) = default;
+
+        bool operator==(const Handle<T> & h) const {
+            return *index == *h.index &&
+                generation == h.generation;
+        }
+
+        explicit operator bool() const{
+            return index != nullptr;
+        }
+    };
+
     struct VulkanFBO {
         std::vector<VkFramebuffer> framebuffers;
         std::vector<uint32_t> AttachmentsIdx; //这里只是使用一个数组存储东西，因为我不确定其中的内容有哪些，所以这里和其对应的renderpass所对应，当然需要检查
@@ -294,7 +319,7 @@ namespace FrameWork {
     //这个ModelData的Vulkan资源话，
     //尽可能的浅封装,不将我的Material封装进去
     //现在的model还是static
-    struct VulkanModelData : BaseVulkanResource { //这里的Destory复杂
+    struct VulkanModelData : BaseVulkanResource { //这里的Destory复杂 //这里的资源是GPU资源
         using TextureMap = std::unordered_map<TextureTypeFlagBits, uint32_t>;
         std::vector<TextureMap> textures;
         std::vector<uint32_t> meshIDs{}; //网格ID
@@ -303,7 +328,12 @@ namespace FrameWork {
         AABB aabb;
         TriangleBoundingBoxPtr triangleBoundingBoxs;
 
+        //Handle版本
+        using TextureMap_ = std::unordered_map<TextureTypeFlagBits, Handle<Texture>>;
+        std::vector<TextureMap_> textures_;
+
         void Destroy(VkDevice device) override;
+
         bool inUse = false;
     };
 
