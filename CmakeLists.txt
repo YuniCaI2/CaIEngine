@@ -13,7 +13,6 @@ if (APPLE)
 endif ()
 
 
-# Demo 场景信息
 file(GLOB scenePath CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.cpp"

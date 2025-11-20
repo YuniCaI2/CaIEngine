@@ -4,8 +4,8 @@ set(CMAKE_CXX_STANDARD 23)
 project(FrameWork)
 
 find_package(Vulkan REQUIRED)
-find_package(assimp REQUIRED)
-find_package(glfw3 REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -50,9 +50,6 @@ file(GLOB AssetPath
         "${CMAKE_CURRENT_SOURCE_DIR}/Asset/*.h"
 )
 
-
-
-
 add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath} ${AssetPath} ${EditorPath}
         CaIMaterial.cpp
         CaIMaterial.h
@@ -85,14 +82,12 @@ target_link_libraries(FrameWork PUBLIC
         OpenSSL::Crypto
 )
 
-
 # 平台特定的库和配置
 if(WIN32)
     target_link_libraries(FrameWork PRIVATE Microsoft::DirectXTex)
 elseif(APPLE)
 endif()
 target_link_libraries(FrameWork PUBLIC imgui)
-
 
 # 第三方库头文件路径
 target_include_directories(FrameWork PUBLIC

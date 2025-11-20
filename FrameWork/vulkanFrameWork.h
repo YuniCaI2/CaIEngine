@@ -129,6 +129,12 @@ protected:
     //各种池
 
 
+    template<typename T>
+    static uint32_t GenGeneration() {
+        static uint32_t id = 0;
+        return id++;
+    }
+
 
     template<FrameWork::VulkanResourceType T>
     struct ResourceCapacity { //这里不使用异常处理来保证性能
@@ -168,14 +174,25 @@ protected:
 
         FrameWork::Handle<T> CreateResource() {
             std::scoped_lock lock(mutex);
+            for (int i = 0; i < datas.size(); i++) {
+                if (datas[i].inUse == false) {
+                    FrameWork::Handle<T> handle;
+                    handle.index = std::make_shared<uint32_t>(i);
+                    handle.generation = GenGeneration<T>();
+                    datas[i].inUse = true;
+                    datas[i].generation = handle.generation;
+                    return handle;
+                }
+            }
             auto ptr = new T;
             FrameWork::Handle<T> handle;
-            handle.generation = 0;
+            handle.generation = GenGeneration<T>();
             handle.index = std::make_shared<uint32_t>(datas.size());
             FrameWork::ResourceWrapper<T> resourceWrapper;
             resourceWrapper.ptr = ptr;
-            resourceWrapper.index = handle.index;
             resourceWrapper.generation = handle.generation;
+            resourceWrapper.inUse = true;
+            resourceWrapper.index = *handle.index;
             datas.push_back(std::move(resourceWrapper));
 
             return handle;
@@ -204,6 +221,7 @@ protected:
         ResourceCapacity<FrameWork::VulkanPipeline>,
         ResourceCapacity<FrameWork::StorageBuffer>,
         ResourceCapacity<FrameWork::MaterialData>,
+        ResourceCapacity<FrameWork::VulkanModelData>,
         ResourceCapacity<FrameWork::CompMaterialData>
         >;
 
@@ -257,6 +275,7 @@ protected:
         >;
 
     ReleaseQueueList releaseQueueList;
+    
 
     template<FrameWork::VulkanResourceType T>
     void DeleteResourceToQueue(const FrameWork::ResourceWrapper<T>& resourceWrapper) {
@@ -275,6 +294,7 @@ protected:
             //Destroy
             queue.front().data.ptr->Destroy(device);
             delete queue.front().data.ptr;
+            std::get<ResourceCapacity<T>>(resourceLists).datas[queue.front().data.index].inUse = false;
             queue.pop_front();
         }
     }

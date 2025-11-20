@@ -147,3 +147,6 @@ out
 
 AssetCache
 vcpkg_installed
+x64-Debug
+.idea
+CMakeSettings.json

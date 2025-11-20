@@ -26,7 +26,8 @@ namespace FrameWork {
 
     template<FrameWork::VulkanResourceType T>
     struct ResourceWrapper {
-        T* ptr;
+        T *ptr{nullptr};
+        uint32_t index{}; //需要记住索引位置
         uint32_t generation{};
         bool inUse{false};
     };

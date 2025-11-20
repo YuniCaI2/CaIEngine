@@ -1,0 +1,51 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# CLion 默认 ColumnLimit = 120（LLVM 默认是 80）
+ColumnLimit: 120
+
+# 函数/类/命名空间都是 Left Brace on new line
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: false
+  BeforeElse: false
+
+# Switch-case 缩进与 CLion 一致
+IndentCaseLabels: false
+
+# 空白行处理
+MaxEmptyLinesToKeep: 1
+
+# 命名空间缩进
+NamespaceIndentation: None
+
+# 作用于 include 排序（CLion 默认启用）
+SortIncludes: true
+
+# 对齐规则（CLion 默认）
+AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: false
+AlignTrailingComments: true
+AlignEscapedNewlines: Right
+
+# C++ 特性
+DerivePointerAlignment: false
+PointerAlignment: Right
+
+# If if-else 连写格式
+AllowShortIfStatementsOnASingleLine: false
+
+# Lambda 格式
+SpaceBeforeParens: ControlStatements
+
+# 模板参数换行
+BinPackParameters: true
+BinPackArguments: true
