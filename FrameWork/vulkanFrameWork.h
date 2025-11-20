@@ -806,7 +806,7 @@ public:
     }
     //ResourceWrapper 版本的模板函数
     template <FrameWork::VulkanResourceType T>
-    void DeleteResource(FrameWork::Handle<T> handle) {
+    void DeleteResource(FrameWork::Handle<T>& handle) {
         std::get<ResourceCapacity<T>>(resourceLists).Delete(handle);
     }
     template <FrameWork::VulkanResourceType T>
@@ -815,7 +815,7 @@ public:
     }
 
     template<FrameWork::VulkanResourceType T>
-    T* GetResource(FrameWork::Handle<T> handle) {
+    T* GetResource(const FrameWork::Handle<T>& handle) {
         return std::get<ResourceCapacity<T>>(resourceLists).GetResource(handle);
     }
 

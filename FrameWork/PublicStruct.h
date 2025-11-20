@@ -94,8 +94,12 @@ namespace FrameWork {
         VkPipelineLayout pipelineLayout {VK_NULL_HANDLE};
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
         virtual void Destroy(VkDevice device) override {
-            vkDestroyPipeline(device, pipeline, nullptr);
-            vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+            if (pipeline) {
+                vkDestroyPipeline(device, pipeline, nullptr);
+            }
+            if (pipelineLayout) {
+                vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+            }
             for (auto& layout : descriptorSetLayouts) {
                 vkDestroyDescriptorSetLayout(device, layout, nullptr);
             }
@@ -244,7 +248,9 @@ namespace FrameWork {
         bool isSwapChainRef{false}; //这里用来适配FrameGraph的资源导入
         virtual void Destroy(VkDevice device) override { //传参进去释放
             image.destroy();
-            vkDestroyImageView(device, imageView, nullptr);
+            if (imageView) {
+                vkDestroyImageView(device, imageView, nullptr);
+            }
         }
         bool inUse = false;
     };
