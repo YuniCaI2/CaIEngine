@@ -702,14 +702,14 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, const FrameWork::Textur
         std::cerr << "Texture Channels are 3 that GPU is Not Supported" << std::endl;
     }
     if (data.numChannels == 4) {
-        if (data.type == DiffuseColor || data.type == BaseColor) {
+        if (data.type & DiffuseColor || data.type & BaseColor) {
             format = VK_FORMAT_R8G8B8A8_SRGB;
         }
-        else if (data.type == SFLOAT32) {
+        else if (data.type & SFLOAT32) {
             format = VK_FORMAT_R32G32B32A32_SFLOAT;
             pixelSize = 4; //每一个像素的大小
         }
-        else if (data.type == SFLOAT16) {
+        else if (data.type & SFLOAT16) {
             format = VK_FORMAT_R16G16B16A16_SFLOAT;
             pixelSize = 2;//每一个像素的大小
         }
@@ -766,7 +766,7 @@ void vulkanFrameWork::CreateTexture(uint32_t &textureId, FG::BaseDescription *de
         LOG_ERROR("Can't create resource which description is not texture type by create texture");
     }
     auto texDesc = static_cast<FG::TextureDescription*> (description);
-    auto textureMipmap = texDesc->samples == VK_SAMPLE_COUNT_1_BIT ? texDesc->mipLevels : 1;
+    auto textureMipmap = (texDesc->samples & VK_SAMPLE_COUNT_1_BIT) ? texDesc->mipLevels : 1;
     textureId = getNextIndex<FrameWork::Texture>();
     auto texture = getByIndex<FrameWork::Texture>(textureId);
     vulkanDevice->createImage(&texture->image, VkExtent2D(texDesc->width, texDesc->height),
@@ -879,7 +879,6 @@ void vulkanFrameWork::CreateAttachment(uint32_t &attachmentId, uint32_t width, u
             tex->inUse = true;
             vulkanDevice->createImage(&tex->image, VkExtent2D(width, height), 1, 1, numSample, swapChain.colorFormat, VK_IMAGE_TILING_OPTIMAL,
                isSampled ? (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT) : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            CreateImageView(tex->image, tex->imageView, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
             tex->sampler = CreateSampler(1);
         }
     }

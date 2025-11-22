@@ -1,0 +1,4 @@
+CompileFlags:
+  Add: 
+    - '--driver-mode=cl'   # 告诉 Clangd 模拟 MSVC
+    - '/std:c++latest'     # 现在可以使用 MSVC 风格的参数了 (注意这里通常用斜杠 /)

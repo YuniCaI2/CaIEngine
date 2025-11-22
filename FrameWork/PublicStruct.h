@@ -4,16 +4,13 @@
 
 #ifndef PUBLICSTRUCT_H
 #define PUBLICSTRUCT_H
-#include "pubh.h"
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "PublicEnum.h"
 #include<optional>
 #include <vector>
-#include "Light.h"
 #include <unordered_map>
 #include<nlohmann/json.hpp>
-#include "Serialize.h"
 
 namespace FrameWork {
     //Vulkan Resource
@@ -28,26 +25,18 @@ namespace FrameWork {
     struct ResourceWrapper {
         T *ptr{nullptr};
         uint32_t index{}; //需要记住索引位置
-        uint32_t generation{};
-        bool inUse{false};
+        uint32_t useCount{0}; 
     };
 
     template<typename T>
     struct Handle {
-        std::shared_ptr<uint32_t> index; //利用shared_ptr的引用计数
-        uint32_t generation{};
+        uint32_t index{UINT32_MAX};
 
         Handle() = default;
-        Handle(const Handle& handle) = default;
-
-        bool operator==(const Handle<T> & h) const {
-            return *index == *h.index &&
-                generation == h.generation;
-        }
-
-        explicit operator bool() const{
-            return index != nullptr;
-        }
+        Handle(const Handle& handle) = delete;
+        Handle &operator=(const Handle &handle) = delete;
+        Handle(Handle &&handle) noexcept = default;
+        Handle &operator=(Handle &&handle) noexcept = default; //Handle拷贝不在这
     };
 
     struct VulkanFBO {

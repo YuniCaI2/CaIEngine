@@ -9,17 +9,40 @@ int main() {
 	LOG.Run();
 	auto textureHandle = vulkanRenderAPI.CreateResource<FrameWork::Texture>();
 	auto *ptr = vulkanRenderAPI.GetResource(textureHandle);
+    auto meshHandle = vulkanRenderAPI.CreateResource<FrameWork::Mesh>();
+    auto *meshPtr = vulkanRenderAPI.GetResource(meshHandle);
+    meshPtr->indexCount = 100;
+    meshPtr->vertexCount = 200;
+    LOG_TRACE("Index Count : {}, Vertex Count : {}", meshPtr->indexCount, meshPtr->vertexCount);
+    auto meshHandleRef = vulkanRenderAPI.CopyResource(meshHandle);
+    auto meshRefPtr = vulkanRenderAPI.GetResource(meshHandleRef);
+    if(meshRefPtr == meshPtr) {
+        LOG_TRACE("Copy Resource Success !");
+    } else {
+        LOG_ERROR("Copy Resource Failed !");
+    }
+    LOG_TRACE("Index Count : {}, Vertex Count : {}", meshRefPtr->indexCount, meshRefPtr->vertexCount);
+
+    
+
+    ptr->inUse = true;
     vulkanRenderAPI.DeleteResource(textureHandle);
-	auto textureHandleRef = textureHandle;
+    vulkanRenderAPI.DeleteResource(meshHandle);
+    vulkanRenderAPI.DeleteResource(meshHandleRef);
+
 
     //保证资源释放
     vulkanRenderAPI.CheckDelete();
     vulkanRenderAPI.CheckDelete();
     vulkanRenderAPI.CheckDelete();
+
     auto newTextureHandle = vulkanRenderAPI.CreateResource<FrameWork::Texture>();
-	auto firstText = vulkanRenderAPI.GetResource(textureHandleRef);
-	LOG_TRACE("Show the generation: {}", textureHandle.generation);
-    LOG_TRACE("Show the next index: {}", *newTextureHandle.index);
+    auto textureHandleRef = vulkanRenderAPI.CopyResource(textureHandle);
+
+    LOG_TRACE("Index Count : {}, Vertex Count : {}", meshPtr->indexCount, meshPtr->vertexCount);
+    //delete meshPtr;
+    LOG_TRACE("Index Count : {}, Vertex Count : {}", meshPtr->indexCount, meshPtr->vertexCount);
+	// auto firstMeshRef = vulkanRenderAPI.GetResource(newTextureHandle);
 	LOG.Stop();
 
 }

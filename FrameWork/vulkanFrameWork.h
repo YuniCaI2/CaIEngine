@@ -9,14 +9,12 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include <chrono>
 #include<expected>
 
 #include "CaIMaterial.h"
-#include "pubh.h"
 
 #include "VulkanSwapChain.h"    // 确保这些头文件也不会以冲突的方式包含 vulkan.h。
-#include "Camera.h"
+#include "InputManager.h"
 #include "DescriptorPool.h"
 #include "PublicStruct.h"
 #include "ResourceManager.h"
@@ -129,73 +127,69 @@ protected:
     //各种池
 
 
-    template<typename T>
-    static uint32_t GenGeneration() {
-        static uint32_t id = 0;
-        return id++;
-    }
-
-
     template<FrameWork::VulkanResourceType T>
     struct ResourceCapacity { //这里不使用异常处理来保证性能
         std::vector<FrameWork::ResourceWrapper<T>> datas;
         std::shared_mutex mutex;
 
         T* GetResource(const FrameWork::Handle<T>& handle) {
-            if (handle.index == nullptr) {
-                LOG_ERROR("Handle.index is null");
+            if (handle.index == UINT32_MAX) {
+                LOG_ERROR("Handle is Invalid");
                 return nullptr;
             }
             std::shared_lock lock(mutex);
-            if (handle.generation != datas[*handle.index].generation) {
-                LOG_ERROR("The handle was hanging");
-                return nullptr;
-            }
-            return datas[*handle.index].ptr;
+
+            return datas[handle.index].ptr;
         }
 
         //同时释放Handle ,提交给释放队列
-        uint32_t Delete(FrameWork::Handle<T>& handle) {
+        void Delete(FrameWork::Handle<T>& handle) {
             std::scoped_lock lock(mutex);
-            uint32_t refCount = handle.index.use_count() - 1;
-            if (*handle.index >= datas.size()) {
+            if (handle.index >= datas.size()) {
                 LOG_ERROR("index is out of range !");
-                return UINT32_MAX;
+                return;
             }
-            if (refCount) {
-                handle.index = nullptr;
+            datas[handle.index].useCount--;
+            if (datas[handle.index].useCount > 0) {
+                handle.index = UINT32_MAX;
             }else {
                 //调用这个类本身
-                GetInstance().DeleteResourceToQueue(datas[*handle.index]);
-                handle.index = nullptr;
+                GetInstance().DeleteResourceToQueue(datas[handle.index].ptr);
+                handle.index = UINT32_MAX;
             }
-            return refCount;
         }
 
         FrameWork::Handle<T> CreateResource() {
             std::scoped_lock lock(mutex);
             for (int i = 0; i < datas.size(); i++) {
-                if (datas[i].inUse == false) {
+                if (datas[i].useCount == 0) {
+                    datas[i].useCount++;
                     FrameWork::Handle<T> handle;
-                    handle.index = std::make_shared<uint32_t>(i);
-                    handle.generation = GenGeneration<T>();
-                    datas[i].inUse = true;
-                    datas[i].generation = handle.generation;
+                    handle.index = i;
                     return handle;
                 }
             }
             auto ptr = new T;
             FrameWork::Handle<T> handle;
-            handle.generation = GenGeneration<T>();
-            handle.index = std::make_shared<uint32_t>(datas.size());
+            handle.index = datas.size();
             FrameWork::ResourceWrapper<T> resourceWrapper;
             resourceWrapper.ptr = ptr;
-            resourceWrapper.generation = handle.generation;
-            resourceWrapper.inUse = true;
-            resourceWrapper.index = *handle.index;
+            resourceWrapper.useCount = 1;
             datas.push_back(std::move(resourceWrapper));
 
             return handle;
+        }
+
+        FrameWork::Handle<T> Copy(const FrameWork::Handle<T>& handle) {
+            std::scoped_lock lock(mutex);
+            FrameWork::Handle<T> newHandle;
+            if(handle.index == UINT32_MAX) {
+                LOG_ERROR("Handle is Invalid");
+                return newHandle;
+            }
+            newHandle.index = handle.index;
+            datas[newHandle.index].useCount++;
+            return newHandle;
         }
     };
 
@@ -260,7 +254,7 @@ protected:
 
     template<FrameWork::VulkanResourceType T>
     struct ReleaseContainer_ {
-        FrameWork::ResourceWrapper<T> data;
+        T* ptr{nullptr};
         uint32_t counts {};
     };
 
@@ -278,10 +272,10 @@ protected:
     
 
     template<FrameWork::VulkanResourceType T>
-    void DeleteResourceToQueue(const FrameWork::ResourceWrapper<T>& resourceWrapper) {
+    void DeleteResourceToQueue(T* ptr) { //这个指针待删除
         ReleaseContainer_<T> capacity;
         capacity.counts = MAX_FRAME;
-        capacity.data = resourceWrapper;
+        capacity.ptr = ptr;
         std::get<std::deque<ReleaseContainer_<T>>>(releaseQueueList).push_back(capacity);
     }
 
@@ -292,9 +286,8 @@ protected:
         }
         while (! queue.empty() && queue.front().counts == 0) {
             //Destroy
-            queue.front().data.ptr->Destroy(device);
-            delete queue.front().data.ptr;
-            std::get<ResourceCapacity<T>>(resourceLists).datas[queue.front().data.index].inUse = false;
+            queue.front().ptr->Destroy(device);
+            delete queue.front().ptr;
             queue.pop_front();
         }
     }
@@ -651,6 +644,7 @@ public:
 
 
     template<class T>
+    // auto textureHandleRef = vulkanRenderAPI.CopyResource(textureHandle);
     uint32_t inline getNextIndex() {
         std::lock_guard<std::mutex> lock(getMutex<T>());
         auto &vec = getVectorRef<T>();
@@ -819,6 +813,11 @@ public:
         return std::get<ResourceCapacity<T>>(resourceLists).GetResource(handle);
     }
 
+    template<FrameWork::VulkanResourceType T>
+    FrameWork::Handle<T> CopyResource(const FrameWork::Handle<T>& handle) {
+        auto newHandle = std::get<ResourceCapacity<T>>(resourceLists).Copy(handle);
+        return newHandle;
+    }
 };
 //代替繁琐调用
 

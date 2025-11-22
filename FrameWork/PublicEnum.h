@@ -13,7 +13,7 @@ using ExpectWithStr = std::expected<T, std::string>;
 
 
 template<class T = int>
-struct ErrorInfo {
+struct ErrorInfo { 
     std::string msg{};
     T code{};
     ErrorInfo(const std::string& msg, T code) : msg(msg), code(code) {}
