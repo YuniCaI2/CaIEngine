@@ -13,13 +13,6 @@ FG::FrameGraph::FrameGraph() {
 
 FG::FrameGraph::~FrameGraph() {
     // 清理command pools
-    for (auto &[passIndex, pool]: renderPassCommandPools) {
-        if (pool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                                 pool, nullptr);
-        pool = VK_NULL_HANDLE;
-    }
-    renderPassCommandPools.clear();
 }
 
 FG::FrameGraph &FG::FrameGraph::AddResourceNode(uint32_t resourceNode) {
@@ -43,13 +36,6 @@ FG::FrameGraph &FG::FrameGraph::AddRenderPassNode(uint32_t renderPassNode) {
 FG::FrameGraph &FG::FrameGraph::Compile() {
     usingResourceNodes.clear();
     usingPassNodes.clear();
-    //清理池
-    for (auto &[passIndex, pool]: renderPassCommandPools) {
-        if (pool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                                 pool, nullptr);
-        pool = VK_NULL_HANDLE;
-    }
     timeline.clear();
     //清理别名系统
     resourceManager.ClearAliasGroups();
@@ -122,21 +108,26 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
     futures.reserve(usingPassNodes.size());
     resourceManager.ResetVulkanResources();
     resourceManager.CreateVulkanResources();
+    uint32_t currentFrame = vulkanRenderAPI.GetCurrentFrame();
 
     // 为每个 pass 创建 secondary command buffer
+
+    commandPoolsCache.ResetNum();
     for (auto &t: timeline) {
         for (auto &passIndex: t) {
             auto renderPass = renderPassManager.FindRenderPass(passIndex);
             auto type = renderPass->GetPassType();
+            auto commandBuffer = commandPoolsCache.GetNextCommandBuffer(currentFrame);
+            vkResetCommandBuffer(commandBuffer , 0); //直接覆盖到上面
             if (type == PassType::Graphics) {
-                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex, currentFrame, commandBuffer]() -> RenderPassData {
                     RenderPassData data;
                     data.passIndex = passIndex;
                     data.hasDepth = false;
                     data.width = vulkanRenderAPI.windowWidth;
                     data.height = vulkanRenderAPI.windowHeight;
                     data.passType = PassType::Graphics;
-                    data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+                    data.secondaryCmd = commandBuffer;
                     // 收集附件格式信息
                     VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
@@ -238,14 +229,14 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
                     return data;
                 }));
             }else if (type == PassType::Compute) {
-                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex, currentFrame, commandBuffer]() -> RenderPassData {
                     RenderPassData data;
                     data.passIndex = passIndex;
                     data.hasDepth = false;
                     data.width = vulkanRenderAPI.windowWidth;
                     data.height = vulkanRenderAPI.windowHeight;
                     data.passType = PassType::Compute;
-                    data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+                    data.secondaryCmd = commandBuffer;
                     // 收集附件格式信息
                     // 不设置继承信息
 
@@ -269,14 +260,14 @@ FG::FrameGraph &FG::FrameGraph::Execute(const VkCommandBuffer &commandBuffer) {
                     return data;
                 }));
             }else if (type == PassType::Resolve) {
-                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex]() -> RenderPassData {
+                futures.push_back(ThreadPool::GetInstance().Enqueue([this, renderPass, passIndex, currentFrame, commandBuffer]() -> RenderPassData {
                     RenderPassData data;
                     data.passIndex = passIndex;
                     data.hasDepth = false;
                     data.width = vulkanRenderAPI.windowWidth;
                     data.height = vulkanRenderAPI.windowHeight;
                     data.passType = PassType::Resolve;
-                    data.secondaryCmd = this->commandBuffers[passIndex][vulkanRenderAPI.GetCurrentFrame()];
+                    data.secondaryCmd = commandBuffer;
                     // 收集附件格式信息
                     // 不设置继承信息
 
@@ -725,10 +716,10 @@ void FG::FrameGraph::CreateTimeline() {
             }
         }
     }
-    // // DeBug
+    // DeBug
     //  for (auto &renderPassNode: renderPassNodes) {
     //      auto renderPass = renderPassManager.FindRenderPass(renderPassNode);
-    //
+    
     //      std::vector<std::string> dep;
     //      for (auto& dependency : renderPass->GetRenderPassDependencies()) {
     //          dep.push_back(renderPassManager.FindRenderPass(dependency)->GetName());
@@ -744,13 +735,13 @@ void FG::FrameGraph::CreateTimeline() {
             }
             auto renderPass = renderPassManager.FindRenderPass(renderPassIndex);
             if (renderPass != nullptr) {
-                auto dependencies = renderPass->GetRenderPassDependencies();
-                for (auto &r: hasAddedPass) {
+                auto& dependencies = renderPass->GetRenderPassDependencies(); 
+                for (auto &r: timeline.back()) {
                     if (dependencies.contains(r)) {
                         dependencies.erase(r);
                     }
                 }
-                if (dependencies.empty()) {
+                if (dependencies.empty() && ! hasAddedPass.contains(renderPassIndex)) {
                     tempQ.push_back(renderPassIndex);
                     hasAddedPass.insert(renderPassIndex);
                 }
@@ -898,28 +889,7 @@ void FG::FrameGraph::CreateAliasGroups() {
 
 void FG::FrameGraph::CreateCommandPools() {
     //这里先不考虑compute，计算着色器需要不同queue
-    renderPassCommandPools.clear();
-    for (auto &renderPassIndex: usingPassNodes) {
-        VkCommandPoolCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
-        info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        VK_CHECK_RESULT(
-            vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
-                &renderPassCommandPools[renderPassIndex])
-        );
-        commandBuffers[renderPassIndex].resize(MAX_FRAME);
-        for (int i = 0; i < MAX_FRAME; i++) {
-            VkCommandBufferAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.commandPool = renderPassCommandPools[renderPassIndex];
-            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-            allocInfo.commandBufferCount = 1;
-
-            vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
-                                     &allocInfo, &commandBuffers[renderPassIndex][i]);
-        }
-    }
+    commandPoolsCache.ResetPools(usingPassNodes.size());
 }
 
 
@@ -1235,5 +1205,57 @@ void FG::FrameGraph::InsertBarriers2() {
                 }
             }
         }
+    }
+}
+
+namespace FG {
+    void FrameGraph::CommandPoolsCache::ResetPools(size_t num) {
+        //每帧置零
+        currentBufferIndex = 0; 
+        int n = num > usingCount ? usingCount : num;
+        caches.resize(num);
+        for(int i = 0; i < n; i++) {
+            vkResetCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, caches[i], 0);
+        }
+        for(int i = n; i < num; i++){
+            VkCommandPoolCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            info.queueFamilyIndex = vulkanRenderAPI.GetVulkanDevice()->queueFamilyIndices.graphics;
+            info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            VK_CHECK_RESULT(
+                vkCreateCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, &info, nullptr,
+                    &caches[i])
+            );
+        }
+        for(int i = 0; i < caches.size(); i++){
+            if(i >= commandBuffers.size()){
+                VkCommandBufferAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+                allocInfo.commandPool = caches[i];
+                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+                allocInfo.commandBufferCount = 1;
+
+                std::vector<VkCommandBuffer> cmdBuffers(MAX_FRAME);
+                for(auto& cmdBuffer : cmdBuffers){
+                    vkAllocateCommandBuffers(vulkanRenderAPI.GetVulkanDevice()->logicalDevice,
+                                             &allocInfo, &cmdBuffer);
+                }
+                commandBuffers.push_back(cmdBuffers);
+            }
+        }
+    }
+    
+    VkCommandBuffer FrameGraph::CommandPoolsCache::GetNextCommandBuffer(uint32_t currentFrame) {
+        if(currentBufferIndex >= caches.size()){
+            LOG_ERROR("Command Pool Cache exceeded the preallocated size !");
+            return VK_NULL_HANDLE;
+        }
+        return commandBuffers[currentBufferIndex++][currentFrame];
+    }
+    
+    FrameGraph::CommandPoolsCache::~CommandPoolsCache() {
+        for(auto& pool : caches){
+            vkDestroyCommandPool(vulkanRenderAPI.GetVulkanDevice()->logicalDevice, pool, nullptr);
+        } 
     }
 }

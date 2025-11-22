@@ -2535,7 +2535,7 @@ void vulkanFrameWork::submitFrame() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &drawCmdBuffers[currentFrame];
     VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFences[currentFrame]));
-    auto result = swapChain.queuePresent(graphicsQueue, imageIndex, semaphores.renderComplete[currentFrame]);//渲染完成在呈现
+    auto result = swapChain.queuePresent(graphicsQueue, imageIndex, semaphores.renderComplete[currentFrame]);//渲染完成在呈现 如果使用currentFrameQueueSubmit不管是否呈现可能还没呈现完就去绘制
     // Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or \
     // no longer optimal for presentation (SUBOPTIMAL)
     if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {

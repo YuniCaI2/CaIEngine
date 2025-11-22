@@ -4,6 +4,7 @@
 
 #ifndef CAIENGINE_FRAMEGRAPH_H
 #define CAIENGINE_FRAMEGRAPH_H
+#include <atomic>
 #include<vector>
 
 #include "ThreadPool.h"
@@ -53,9 +54,34 @@ namespace FG {
         std::function<void()> updateBeforeRendering{};
 
         //单FrameGraph资源
-        std::unordered_map<uint32_t, VkCommandPool> renderPassCommandPools; //每个Pass对应一个commandPool来创建子command，多线程录制
-        std::unordered_map<uint32_t, std::vector<VkCommandBuffer>> commandBuffers; //这里是每个飞行帧一个commandBuffer
+
+
+        //优化CommandPool
+        //这个是CommandPool的缓存池，只增不减不销毁（规模大时可能需要销毁）
+        struct CommandPoolsCache {
+            std::vector<VkCommandPool> caches;
+            std::vector<std::vector<VkCommandBuffer>> commandBuffers;
+            size_t size() const {
+                return caches.size();
+            }
+            size_t usedSize() const {
+                return usingCount;
+            }
+            void ResetPools(size_t num);
+            void ResetNum(){
+                currentBufferIndex = 0;
+            };
+            VkCommandBuffer GetNextCommandBuffer(uint32_t currentFrame);
+
+            ~CommandPoolsCache(); //免得手动Destroy
+            private:
+                size_t usingCount{0}; //正在使用的池的大小
+                std::atomic<size_t> currentBufferIndex{0};
+        };
+
+        CommandPoolsCache commandPoolsCache;
     };
+    
 }
 
 
