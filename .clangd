@@ -1,8 +1,2 @@
 CompileFlags:
-<<<<<<< HEAD
-  Add: 
-    - '--driver-mode=cl'   # 告诉 Clangd 模拟 MSVC
-    - '/std:c++latest'     # 现在可以使用 MSVC 风格的参数了 (注意这里通常用斜杠 /)
-=======
     Add: ["/clang:-std=c++23"]
->>>>>>> f7b2a7f (1. 优化了CommandPools在FrameGraph中，再次创建使用Reset等操作，使用vector代替哈希表。2.修复了timeline生成的逻辑混乱，之前的错误原因是没有使用引用来操作pass的依赖数组导致出现异常。3.确认了renderComplete这个信号量的数量，其应是飞行帧数量。因为从交换链获取下一张图片时，会阻塞如果呈现器没准备好图像)
