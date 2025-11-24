@@ -9,10 +9,13 @@
 #include<string>
 #include"../PublicStruct.h"
 #include<nlohmann/json.hpp>
+#include"BaseAsset.h"
+#include "../RenderQueue.h"
 
 //Graphics Shader
 struct ShaderPass : BaseAsset {
     std::string shaderTag;
+    FrameWork::RenderQueueType renderQueueType{FrameWork::RenderQueueType::Opaque}; 
 
     FrameWork::ShaderInfo shaderInfo{}; //其中包括如何操作队列
     uint32_t vertShaderSize{};
@@ -31,17 +34,12 @@ SERIALIZE_ASSET(ShaderAsset, passes)
 
 
 //用户操作的资源
-struct ShaderSource {
-    std::string name;
-    //ShaderTag To CaIShaderSource
-    std::unordered_map<std::string, std::string> passes; //后一个str为ShaderPass sourcePath, 也就是caishader Path，不是jsonPath
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderSource, name, passes)
 
 
 namespace Asset_Impl {
     struct ShaderPass_Impl : BaseAsset {
         std::string shaderTag;
+        FrameWork::RenderQueueType renderQueueType{FrameWork::RenderQueueType::Opaque}; 
 
         FrameWork::ShaderInfo shaderInfo; //其中包括如何操作队列
         uint32_t vertShaderSize{};
@@ -49,7 +47,8 @@ namespace Asset_Impl {
         uint32_t fragShaderSize{};
         std::string fragBinPath{};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, sourcePath, contentHash, fileTime,  shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ShaderPass_Impl, name, shaderTag, renderQueueType,
+         sourcePath, contentHash, fileTime,  shaderInfo, vertShaderSize, vertBinPath, fragShaderSize, fragBinPath)
 }
 
 inline static void SaveShaderCodeBin(const std::string& path, const uint32_t* shaderCode, uint32_t shaderSize){

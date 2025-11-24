@@ -124,6 +124,7 @@ protected:
     std::vector<VkFence> waitFences;
     bool requiresStencil{false};
 
+
     //各种池
 
 
@@ -821,10 +822,38 @@ public:
 };
 //代替繁琐调用
 
-
-
-
 #define vulkanRenderAPI vulkanFrameWork::GetInstance()
+
+//对Handle进行偏特化
+template<FrameWork::VulkanResourceType T>
+struct Handle {
+    uint32_t index{UINT32_MAX};
+
+    Handle() = default;
+    Handle(const Handle& handle) {
+        index = handle.index;
+        vulkanRenderAPI.CopyResource<T>(handle);
+    }
+    Handle &operator=(const Handle &handle){
+        vulkanRenderAPI.CopyResource<T>(handle);
+        index = handle.index;
+        return *this;
+    }
+    Handle(Handle &&handle) noexcept {
+        index = handle.index;
+        vulkanRenderAPI.CopyResource<T>(handle);
+        vulkanRenderAPI.DeleteResource<T>(handle);
+    }
+    Handle &operator=(Handle &&handle) noexcept {
+        index = handle.index;
+        vulkanRenderAPI.CopyResource<T>(handle);
+        vulkanRenderAPI.DeleteResource<T>(handle);
+        return *this;
+    } //Handle拷贝不在这
+};
+
+
+
 
 #define WINDOW_LOOP(f)          \
 {                   \

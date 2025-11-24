@@ -103,15 +103,6 @@ enum class DescriptorType {
     Storage
 };
 
-enum class RenderQueueType {
-    Opaque = 0,
-    Transparent = 1,
-};
-
-NLOHMANN_JSON_SERIALIZE_ENUM(RenderQueueType,
-    {{RenderQueueType::Opaque, "Opaque"},
-    {RenderQueueType::Transparent, "Transparent"}}
-    )
 
 enum class AttachmentType {
     Present,

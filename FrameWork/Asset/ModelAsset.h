@@ -9,6 +9,7 @@
 #include"SaveTool.h"
 #include "../Logger.h"
 #include<nlohmann/json.hpp>
+#include "BaseAsset.h"
 
 //ModelAsset 也类似结构化资源
 

@@ -4,9 +4,9 @@
 
 #ifndef CAIENGINE_RENDERQUEUEMANAGER_H
 #define CAIENGINE_RENDERQUEUEMANAGER_H
-#include<vector>
+#include <memory>
 #include "RenderQueue.h"
-#include "PublicEnum.h"
+#include <unordered_map>
 
 namespace FrameWork {
     class RenderQueueManager {
@@ -14,13 +14,16 @@ namespace FrameWork {
         RenderQueueManager();
         ~RenderQueueManager();
         void AddDrawItem(std::unique_ptr<DrawItem>&& drawItem, RenderQueueType renderQueueType);
+        void AddDrawIntem(std::unique_ptr<DrawItem>&& drawItem, RenderQueue::RenderQueueLevel renderQueueLevel);
         RenderQueue* GetRenderQueue(RenderQueueType renderQueueType);
+        RenderQueue* GetRenderQueue(RenderQueue::RenderQueueLevel renderQueueLevel);
         void SortAll(const Camera& camera);
         void ClearAll();
 
         static RenderQueueManager& GetInstance();
+        
     private:
-        std::vector<std::unique_ptr<RenderQueue>> renderQueues;
+        std::unordered_map<RenderQueue::RenderQueueLevel , std::unique_ptr<RenderQueue>> renderQueueMap;
     };
 }
 

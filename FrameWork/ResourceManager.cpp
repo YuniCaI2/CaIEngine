@@ -930,7 +930,7 @@ void FrameWork::ResourceManager::AddShaderPassToShaderAsset(const std::string &s
     }
     //绑定
     auto shaderPass = GetAsset<ShaderPass>(shaderPassIndex);
-    shaderPass->shaderTag = shaderTag;
+    shaderPass->shaderTag = shaderTag; //这里对shaderTag进行了赋值
     shaderAsset->passes[shaderPass->shaderTag] = shaderPassSourcePath;
 }
 
@@ -1102,7 +1102,10 @@ uint32_t FrameWork::ResourceManager::LoadShaderPassFromSource(const std::string 
     //存储
     Asset_Impl::ShaderPass_Impl shaderPass_Impl = {};
     shaderPass_Impl.name = shaderPass->name;
+    shaderPass_Impl.renderQueueType = shaderPass->renderQueueType;
     shaderPass_Impl.shaderTag = shaderPass->shaderTag;
+    //ShaderTag 和 RenderQueueType 都是默认值,资源不包含这些信息
+
     shaderPass_Impl.contentHash = shaderPass->contentHash;
     shaderPass_Impl.fileTime = shaderPass->fileTime;
     shaderPass_Impl.sourcePath = shaderPass->sourcePath;
@@ -1110,6 +1113,7 @@ uint32_t FrameWork::ResourceManager::LoadShaderPassFromSource(const std::string 
 
     shaderPass_Impl.vertShaderSize = shaderPass->vertShaderSize;
     shaderPass_Impl.fragShaderSize = shaderPass->fragShaderSize;
+    
 
     //存储Bin
     std::string jsonPath = assetCachePath + "ShaderPasses/" + shaderPass_Impl.name + ".json";
@@ -1156,6 +1160,7 @@ uint32_t FrameWork::ResourceManager::LoadShaderPassFromJSON(const std::string &p
     shaderPass.shaderInfo = shaderPass_Impl.shaderInfo;
     shaderPass.vertShaderSize = shaderPass_Impl.vertShaderSize;
     shaderPass.fragShaderSize = shaderPass_Impl.fragShaderSize;
+    shaderPass.renderQueueType = shaderPass_Impl.renderQueueType;
     try {
         shaderPass.vertShaderCode =  LoadShaderCodeBin(shaderPass_Impl.vertBinPath, shaderPass_Impl.vertShaderSize);
         shaderPass.fragShaderCode = LoadShaderCodeBin(shaderPass_Impl.fragBinPath, shaderPass_Impl.fragShaderSize);
@@ -1417,7 +1422,7 @@ std::string FrameWork::ResourceManager::LoadMaterialAssetFromModel(const aiScene
     materialAsset->shaderPath = shaderPath;
     materialAsset->sourcePath = materialPath;
     try {
-        AddShaderPassToShaderAsset(shaderPath, "default",defaultShaderPassPath);
+        AddShaderPassToShaderAsset(shaderPath, "default",defaultShaderPassPath); //渲染队列默认是不透
     } catch (const std::exception& e) {
         LOG_ERROR("{}", e.what());
         throw e;

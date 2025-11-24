@@ -10,6 +10,10 @@ FrameWork::RenderQueue::RenderQueue(RenderQueueLevel renderQueueLevel) {
     this->renderQueueLevel = renderQueueLevel;
 }
 
+FrameWork::RenderQueue::RenderQueue(FrameWork::RenderQueueType renderQueueType){
+    this->renderQueueLevel = static_cast<RenderQueueLevel>(renderQueueType);
+}
+
 FrameWork::RenderQueue::~RenderQueue() {
     Clear();
 }
@@ -50,8 +54,8 @@ void FrameWork::RenderQueue::SortRenderLists(const Camera& camera, SortType sort
 }
 
 void FrameWork::RenderQueue::MakeSortKey(std::shared_ptr<DrawItem>& drawItem, const Camera& camera) {
-    const uint64_t p = uint64_t(drawItem->pipelineID & 0xFFFF);   // 明确限定 16 位
-    const uint64_t m = uint64_t(drawItem->materialID & 0xFFFF);   // 明确限定 16 位
+    const uint64_t p = uint64_t(drawItem->pipelineHandle.index & 0xFFFF);   // 明确限定 16 位
+    const uint64_t m = uint64_t(drawItem->materialHandle.index & 0xFFFF);   // 明确限定 16 位
 
     if (renderQueueLevel < 2450) {
         // 不透明：管线 -> 材质 -> 深度（低 32 位）

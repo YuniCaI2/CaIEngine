@@ -7,7 +7,6 @@
 #include<map>
 #include<string>
 #include<glm/glm.hpp>
-#include<filesystem>
 #include<nlohmann/json.hpp>
 
 #include"BaseAsset.h"

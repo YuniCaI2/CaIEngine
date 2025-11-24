@@ -14,7 +14,7 @@ int main() {
     meshPtr->indexCount = 100;
     meshPtr->vertexCount = 200;
     LOG_TRACE("Index Count : {}, Vertex Count : {}", meshPtr->indexCount, meshPtr->vertexCount);
-    auto meshHandleRef = vulkanRenderAPI.CopyResource(meshHandle);
+    auto meshHandleRef = meshHandle;
     auto meshRefPtr = vulkanRenderAPI.GetResource(meshHandleRef);
     if(meshRefPtr == meshPtr) {
         LOG_TRACE("Copy Resource Success !");
@@ -37,7 +37,7 @@ int main() {
     vulkanRenderAPI.CheckDelete();
 
     auto newTextureHandle = vulkanRenderAPI.CreateResource<FrameWork::Texture>();
-    auto textureHandleRef = vulkanRenderAPI.CopyResource(textureHandle);
+    auto textureHandleRef = textureHandle;
 
     LOG_TRACE("Index Count : {}, Vertex Count : {}", meshPtr->indexCount, meshPtr->vertexCount);
     //delete meshPtr;

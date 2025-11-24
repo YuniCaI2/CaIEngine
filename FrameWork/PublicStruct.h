@@ -33,11 +33,12 @@ namespace FrameWork {
         uint32_t index{UINT32_MAX};
 
         Handle() = default;
-        Handle(const Handle& handle) = delete;
-        Handle &operator=(const Handle &handle) = delete;
+        Handle(const Handle& handle) = default;
+        Handle &operator=(const Handle &handle) = default;
         Handle(Handle &&handle) noexcept = default;
         Handle &operator=(Handle &&handle) noexcept = default; //Handle拷贝不在这
     };
+
 
     struct VulkanFBO {
         std::vector<VkFramebuffer> framebuffers;
@@ -459,6 +460,10 @@ namespace FrameWork {
         uint32_t meshID = 0;
         uint32_t pipelineID = 0;
         uint32_t materialID = 0;
+        //Mesh还不确定
+        Handle<VulkanPipeline> pipelineHandle;
+        Handle<MaterialData> materialHandle;
+        Handle<Mesh> meshHandle;
         glm::vec3 position{};
         glm::mat4 modelMatrix{glm::mat4(1)};
 

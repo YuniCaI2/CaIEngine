@@ -6,7 +6,9 @@
 #define CAIENGINE_RENDERABLE_H
 #include<iostream>
 #include "../../PublicEnum.h"
+#include "../../RenderQueue.h"
 
+using namespace FrameWork;
 namespace ECS {
     struct Renderable {
         std::string passName{};
@@ -14,6 +16,5 @@ namespace ECS {
         uint32_t materialID = 0;
         RenderQueueType queueType{RenderQueueType::Opaque};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Renderable, passName, meshID, materialID, queueType)
 }
 #endif //CAIENGINE_RENDERABLE_H

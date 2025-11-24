@@ -9,22 +9,28 @@ FrameWork::RenderQueueManager::~RenderQueueManager() {
 }
 
 void FrameWork::RenderQueueManager::AddDrawItem(std::unique_ptr<DrawItem> &&drawItem, RenderQueueType renderQueueType) {
-    renderQueues[static_cast<int>(renderQueueType)]->AddDrawItem(std::move(drawItem));
+    //因为RenderQueue没有默认构造，这里避免使用[]访问
+    if(renderQueueMap.contains(static_cast<size_t>(renderQueueType)) == false) {
+        renderQueueMap.emplace(static_cast<RenderQueue::RenderQueueLevel>(renderQueueType), std::make_unique<RenderQueue>(renderQueueType));
+    }
 }
 
 
 FrameWork::RenderQueue * FrameWork::RenderQueueManager::GetRenderQueue(RenderQueueType renderQueueType) {
-    return renderQueues[static_cast<size_t>(renderQueueType)].get();
+    return renderQueueMap.at(static_cast<RenderQueue::RenderQueueLevel>(renderQueueType)).get();
 }
 
 void FrameWork::RenderQueueManager::SortAll(const Camera &camera) {
-    renderQueues[static_cast<int>(RenderQueueType::Transparent)]->SortRenderLists(camera, SortType::BackToFront);
-    renderQueues[static_cast<int>(RenderQueueType::Opaque)]->SortRenderLists(camera, SortType::BackToFront);
+    for (auto& [renderQueueLevel, queue] : renderQueueMap) {
+        if(renderQueueLevel < 2500){
+            queue->SortRenderLists(camera, SortType::FrontToBack);
+        }
+    }
 }
 
 
 void FrameWork::RenderQueueManager::ClearAll() {
-    for (auto& queue : renderQueues) {
+    for (auto& [_, queue] : renderQueueMap) {
         queue->Clear();
     }
 }

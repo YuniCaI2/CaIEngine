@@ -3,10 +3,8 @@
 //
 
 
-#include "Logger.h"
 #include "ECS/Components/Renderable.h"
 #include "ECS/Components/Translate.h"
-#include "PublicStruct.h"
 #include <Serialize.h>
 
 
@@ -26,8 +24,6 @@ int main() {
     translate.rotation[0][2] = 1;
     translate.rotation[0][3] = 1;
     ECS::Renderable renderable;
-    nlohmann::json render = renderable;
     nlohmann::json trans = translate;
     nlohmann::json vec3 = glm::vec3(1,1,1);
-    std::cout << render << std::endl;
 }
