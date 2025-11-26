@@ -825,31 +825,73 @@ public:
 #define vulkanRenderAPI vulkanFrameWork::GetInstance()
 
 //对Handle进行偏特化
+//这玩意有个风险就是其生命周期要在static之前释放，不然释放可能会报错
+//这玩意有个风险就是其生命周期要在static之前释放，不然释放可能会报错
 template<FrameWork::VulkanResourceType T>
 struct Handle {
     uint32_t index{UINT32_MAX};
 
-    Handle() = default;
+    // 析构函数
+    ~Handle(){
+        //这里UINT32_MAX表示无效句柄，不进行释放
+        if (index != UINT32_MAX) {
+            vulkanRenderAPI.DeleteResource<T>(*this); // 修正：传入 *this
+        }
+    }
+
+    Handle() {
+        
+    };
+
+    // 拷贝构造：必须接管 CopyResource 返回的临时对象的所有权
     Handle(const Handle& handle) {
-        index = handle.index;
-        vulkanRenderAPI.CopyResource<T>(handle);
+        if (handle.index != UINT32_MAX) {
+            // CopyResource 内部增加了引用计数并返回一个 Handle
+            // 我们必须接管这个返回值的 index，并防止它析构时减少计数
+            auto temp = vulkanRenderAPI.CopyResource<T>(handle);
+            this->index = temp.index;
+            temp.index = UINT32_MAX; // 关键：剥夺临时对象的所有权，防止其析构时 DeleteResource
+        }
     }
+
+    // 拷贝赋值
     Handle &operator=(const Handle &handle){
-        vulkanRenderAPI.CopyResource<T>(handle);
-        index = handle.index;
+        if (this != &handle) {
+            // 1. 释放当前持有的资源
+            if (index != UINT32_MAX) {
+                vulkanRenderAPI.DeleteResource<T>(*this);
+            }
+            // 2. 拷贝新资源
+            if (handle.index != UINT32_MAX) {
+                auto temp = vulkanRenderAPI.CopyResource<T>(handle);
+                this->index = temp.index;
+                temp.index = UINT32_MAX; // 接管所有权
+            } else {
+                this->index = UINT32_MAX;
+            }
+        }
         return *this;
     }
+
+    // 移动构造：直接接管 index，不涉及引用计数操作
     Handle(Handle &&handle) noexcept {
-        index = handle.index;
-        vulkanRenderAPI.CopyResource<T>(handle);
-        vulkanRenderAPI.DeleteResource<T>(handle);
+        this->index = handle.index;
+        handle.index = UINT32_MAX; // 置空源对象，使其析构无效化
     }
+
+    // 移动赋值
     Handle &operator=(Handle &&handle) noexcept {
-        index = handle.index;
-        vulkanRenderAPI.CopyResource<T>(handle);
-        vulkanRenderAPI.DeleteResource<T>(handle);
+        if (this != &handle) {
+            // 1. 释放当前资源
+            if (index != UINT32_MAX) {
+                vulkanRenderAPI.DeleteResource<T>(*this);
+            }
+            // 2. 接管源资源
+            this->index = handle.index;
+            handle.index = UINT32_MAX; // 置空源对象
+        }
         return *this;
-    } //Handle拷贝不在这
+    } 
 };
 
 

@@ -21,7 +21,7 @@ namespace FrameWork {
     template<typename T>
     concept VulkanResourceType = std::derived_from<T, FrameWork::BaseVulkanResource>;
 
-    template<FrameWork::VulkanResourceType T>
+    template<typename T>
     struct ResourceWrapper {
         T *ptr{nullptr};
         uint32_t index{}; //需要记住索引位置

@@ -4,17 +4,25 @@
 
 #ifndef CAIENGINE_CAISHADER_H
 #define CAIENGINE_CAISHADER_H
-#include<iostream>
 #include "PublicStruct.h"
+#include <mutex>
 
 namespace FrameWork {
     class CaIShader {
     public:
-        static ExpectedWithInfo<CaIShader*> Create(uint32_t& id, const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
+        //类似Vulkan中的资源
+        static CaIShader* Create(uint32_t& id, const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
         static void Destroy(uint32_t& id);
         static CaIShader* Get(uint32_t id);
         static void DestroyAll();
         static bool exist(uint32_t id);
+
+        static Handle<CaIShader> Create(const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
+        static void Destroy(Handle<CaIShader>& handle);
+        static CaIShader* Get(Handle<CaIShader>& handle);
+        static bool exist(Handle<CaIShader>& handle);
+        static Handle<CaIShader> Copy(const Handle<CaIShader>& handle);
+
 
 
         ~CaIShader();
@@ -38,8 +46,22 @@ namespace FrameWork {
         uint32_t pipelineID{UINT32_MAX};
 
         inline static std::vector<CaIShader*> caiShaderPool{};
+        inline static std::mutex caiShaderWrappedPoolMutex{};
+        inline static std::vector<ResourceWrapper<CaIShader>> caiShaderWrappedPool{};
+    };
+    template <>
+    struct Handle<CaIShader> {
+        uint32_t index{UINT32_MAX};
+
+        Handle() = default;
+        Handle(const Handle& handle) {
+        }
+        Handle &operator=(const Handle &handle) = default;
+        Handle(Handle &&handle) noexcept = default;
+        Handle &operator=(Handle &&handle) noexcept = default; //Handle拷贝不在这
     };
 }
+
 
 
 #endif //CAIENGINE_CAISHADER_H

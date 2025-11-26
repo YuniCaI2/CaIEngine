@@ -3,10 +3,16 @@
 //
 
 #include "CaIShader.h"
+#include "Logger.h"
+#include "PublicStruct.h"
 #include"vulkanFrameWork.h"
+#include <cstdint>
+#include <exception>
+#include <mutex>
+#include <stdexcept>
 
 //TODO: 添加错误处理保证后续热加载CaIShader时不影响原本的程序运行，比如使用默认的Shader etc.
-ExpectedWithInfo<FrameWork::CaIShader *> FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
+FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
     for (int i = 0; i < caiShaderPool.size(); i++) {
         if (caiShaderPool[i] == nullptr) {
             id = i;
@@ -14,22 +20,18 @@ ExpectedWithInfo<FrameWork::CaIShader *> FrameWork::CaIShader::Create(uint32_t &
             if (caiShaderPool[i]->shaderPath != shaderPath) {
                 delete caiShaderPool[i];
                 caiShaderPool[i] = nullptr;
-
-                return std::unexpected(
-                    ErrorInfo("Can't Create Shader By :" + shaderPath)
-                    );
+                throw std::runtime_error("Can't Create Shader By :" + shaderPath);
             }else {
                 return caiShaderPool[i];
             }
         }
     }
+
     caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath, colorFormat));
     if (caiShaderPool.back()->shaderPath != shaderPath) {
         delete caiShaderPool.back();
         caiShaderPool.back() = nullptr;
-        return std::unexpected(
-            ErrorInfo("Can't Create Shader By :" + shaderPath)
-            );
+        throw std::runtime_error("Can't Create Shader By :" + shaderPath);
     }else {
         id = caiShaderPool.size() - 1;
         return caiShaderPool.back();
@@ -46,6 +48,7 @@ void FrameWork::CaIShader::Destroy(uint32_t &id) {
     LOG_WARNING("Destroy {} is not existed shader", id);
 }
 
+//这个函数不保证线程安全
 FrameWork::CaIShader * FrameWork::CaIShader::Get(uint32_t id) {
     if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
         return caiShaderPool[id];
@@ -74,7 +77,7 @@ FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkFormat colorFor
         shaderInfo = std::move(opShaderInfo.value());
         this->shaderPath = shaderPath;
     }else {
-        LOG_ERROR("CreateVulkanPipeline error {}", opShaderInfo.error());
+        throw std::runtime_error("CreateVulkanPipeline error " + opShaderInfo.error());
     }
 }
 
@@ -116,4 +119,76 @@ FrameWork::ShaderInfo FrameWork::CaIShader::GetShaderInfo() const {
 
 uint32_t FrameWork::CaIShader::GetPipelineID() const {
     return pipelineID;
+}
+
+namespace FrameWork
+{
+    Handle<CaIShader> CaIShader::Create(const std::string& shaderPath, VkFormat colorFormat) {
+        std::scoped_lock lock(caiShaderWrappedPoolMutex);
+        Handle<CaIShader> handle{};
+        CaIShader* newShader{};
+        try{
+            newShader = new FrameWork::CaIShader(shaderPath, colorFormat);             
+        }catch (std::exception& e){
+            throw e;
+        }
+        for (int i = 0; i < caiShaderWrappedPool.size(); i++) {
+            auto& ptr = caiShaderWrappedPool[i].ptr;
+            if (ptr == nullptr || ! caiShaderWrappedPool[i].useCount) {
+                handle.index = i;
+                ptr = newShader;
+                caiShaderWrappedPool[i].useCount = 1;
+                }else {
+                return handle;
+            }
+        }
+        ResourceWrapper<CaIShader> wrapper{};
+        handle.index = caiShaderWrappedPool.size();
+        wrapper.index = caiShaderWrappedPool.size();
+        wrapper.ptr = newShader;
+        wrapper.useCount = 1;
+        caiShaderWrappedPool.push_back(wrapper);
+        return handle;
+    }
+    
+    void CaIShader::Destroy(Handle<CaIShader>& handle) {
+        std::scoped_lock lock(caiShaderWrappedPoolMutex);
+        if(handle.index >= caiShaderWrappedPool.size()){
+            LOG_ERROR("Handle Index {} is larger than caishader wrapped pool {}", handle.index, caiShaderWrappedPool.size());
+            throw std::runtime_error("Handle Index is larger than caishader wrappeed pool");
+        } 
+        if(caiShaderWrappedPool[handle.index].ptr != nullptr){
+            caiShaderWrappedPool[handle.index].useCount = 0;
+            delete caiShaderWrappedPool[handle.index].ptr;
+            caiShaderWrappedPool[handle.index].ptr = nullptr;
+        }
+    }
+    
+    //这个函数不保证线程安全
+    CaIShader* CaIShader::Get(Handle<CaIShader>& handle) {
+        std::scoped_lock lock(caiShaderWrappedPoolMutex);
+        if(handle.index != UINT32_MAX && handle.index < caiShaderWrappedPool.size())
+            return caiShaderWrappedPool[handle.index].ptr;
+        return nullptr;
+    }
+    
+    bool CaIShader::exist(Handle<CaIShader>& handle) {
+        std::scoped_lock lock(caiShaderWrappedPoolMutex);
+        if(handle.index < caiShaderWrappedPool.size())
+            return false;
+        return caiShaderWrappedPool[handle.index].ptr != nullptr
+         && caiShaderWrappedPool[handle.index].useCount > 0;
+    }
+    
+    Handle<CaIShader> CaIShader::Copy(const Handle<CaIShader>& handle) {
+        std::scoped_lock lock(caiShaderWrappedPoolMutex);
+        if(handle.index >= caiShaderWrappedPool.size()){
+            LOG_ERROR("Handle Index {} is larger than caishader wrapped pool {}", handle.index, caiShaderWrappedPool.size());
+            throw std::runtime_error("Handle Index is larger than caishader wrappeed pool");
+        }
+        Handle<CaIShader> rt{};
+        rt.index = handle.index;
+        caiShaderWrappedPool[handle.index].useCount++;
+        return rt; 
+    }
 }
