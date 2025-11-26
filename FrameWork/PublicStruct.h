@@ -7,10 +7,15 @@
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "PublicEnum.h"
+#include "Logger.h"
+#include <cstdint>
+#include <mutex>
+#include <shared_mutex>
 #include<optional>
 #include <vector>
 #include <unordered_map>
 #include<nlohmann/json.hpp>
+#include<functional>
 
 namespace FrameWork {
     //Vulkan Resource
@@ -28,9 +33,73 @@ namespace FrameWork {
         uint32_t useCount{0}; 
     };
 
+    //这里这个池不直接操作
+    template<typename T>
+    struct ResourcePool {
+    private:
+        std::shared_mutex poolMutex; //池锁
+        std::vector<ResourceWrapper<T>> datas;
+        std::deque<uint32_t> freeIndices; //空闲索引
+    public: 
+        ResourcePool() = default;
+        T* GetResource(uint32_t index) {
+            std::shared_lock lock(poolMutex);
+            if (index >= datas.size()) {
+                LOG_ERROR("index is out of range !");
+                return nullptr;
+            }
+            return datas[index].ptr;
+        }
+
+        //这个函数只是创建一个内存区域
+        uint32_t CreateResource() {
+            std::scoped_lock lock(poolMutex);
+            if(! freeIndices.empty()) {
+                uint32_t index = freeIndices.front();
+                freeIndices.pop_front();
+                datas[index].useCount = 1;
+                return index;
+            }
+            auto ptr = new T;
+            ResourceWrapper<T> resourceWrapper;
+            resourceWrapper.ptr = ptr;
+            resourceWrapper.useCount = 1;
+            resourceWrapper.index = datas.size();
+            datas.push_back(std::move(resourceWrapper));
+
+            return datas.size() - 1;
+        }
+
+        //传入一个析构器，例如GPU资源需要延迟释放，以及GPU资源析构需要调用对应函数
+        void Delete(uint32_t index, std::function<void(T*)> deleter) {
+            std::scoped_lock lock(poolMutex);
+            if (index >= datas.size()) {
+                LOG_ERROR("index is out of range !");
+                return;
+            }
+            datas[index].useCount--;
+            if (datas[index].useCount == 0) {
+                deleter(datas[index].ptr);
+                freeIndices.push_back(index);
+            }
+        }
+
+        //其实就是增加引用计数
+        uint32_t Copy(uint32_t index) {
+            std::scoped_lock lock(poolMutex);
+            if (index >= datas.size()) {
+                LOG_ERROR("index is out of range !");
+                return UINT32_MAX;
+            }
+            datas[index].useCount++;
+            return index;
+        }
+
+    };
+
     template<typename T>
     struct Handle {
-        uint32_t index{UINT32_MAX};
+        uint32_t index{UINT32_MAX}; //这里UINT32_MAX表示无效句柄,类似nullptr
 
         Handle() = default;
         Handle(const Handle& handle) = default;

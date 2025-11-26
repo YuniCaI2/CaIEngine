@@ -128,72 +128,6 @@ protected:
     //各种池
 
 
-    template<FrameWork::VulkanResourceType T>
-    struct ResourceCapacity { //这里不使用异常处理来保证性能
-        std::vector<FrameWork::ResourceWrapper<T>> datas;
-        std::shared_mutex mutex;
-
-        T* GetResource(const FrameWork::Handle<T>& handle) {
-            if (handle.index == UINT32_MAX) {
-                LOG_ERROR("Handle is Invalid");
-                return nullptr;
-            }
-            std::shared_lock lock(mutex);
-
-            return datas[handle.index].ptr;
-        }
-
-        //同时释放Handle ,提交给释放队列
-        void Delete(FrameWork::Handle<T>& handle) {
-            std::scoped_lock lock(mutex);
-            if (handle.index >= datas.size()) {
-                LOG_ERROR("index is out of range !");
-                return;
-            }
-            datas[handle.index].useCount--;
-            if (datas[handle.index].useCount > 0) {
-                handle.index = UINT32_MAX;
-            }else {
-                //调用这个类本身
-                GetInstance().DeleteResourceToQueue(datas[handle.index].ptr);
-                handle.index = UINT32_MAX;
-            }
-        }
-
-        FrameWork::Handle<T> CreateResource() {
-            std::scoped_lock lock(mutex);
-            for (int i = 0; i < datas.size(); i++) {
-                if (datas[i].useCount == 0) {
-                    datas[i].useCount++;
-                    FrameWork::Handle<T> handle;
-                    handle.index = i;
-                    return handle;
-                }
-            }
-            auto ptr = new T;
-            FrameWork::Handle<T> handle;
-            handle.index = datas.size();
-            FrameWork::ResourceWrapper<T> resourceWrapper;
-            resourceWrapper.ptr = ptr;
-            resourceWrapper.useCount = 1;
-            datas.push_back(std::move(resourceWrapper));
-
-            return handle;
-        }
-
-        FrameWork::Handle<T> Copy(const FrameWork::Handle<T>& handle) {
-            std::scoped_lock lock(mutex);
-            FrameWork::Handle<T> newHandle;
-            if(handle.index == UINT32_MAX) {
-                LOG_ERROR("Handle is Invalid");
-                return newHandle;
-            }
-            newHandle.index = handle.index;
-            datas[newHandle.index].useCount++;
-            return newHandle;
-        }
-    };
-
 
     std::vector<FrameWork::Texture *> textures;
     std::vector<FrameWork::Mesh *> meshes;
@@ -211,13 +145,13 @@ protected:
 
     //资源类型包
     using ResourceLists = std::tuple<
-        ResourceCapacity<FrameWork::Texture>,
-        ResourceCapacity<FrameWork::Mesh>,
-        ResourceCapacity<FrameWork::VulkanPipeline>,
-        ResourceCapacity<FrameWork::StorageBuffer>,
-        ResourceCapacity<FrameWork::MaterialData>,
-        ResourceCapacity<FrameWork::VulkanModelData>,
-        ResourceCapacity<FrameWork::CompMaterialData>
+        FrameWork::ResourcePool<FrameWork::Texture>,
+        FrameWork::ResourcePool<FrameWork::Mesh>,
+        FrameWork::ResourcePool<FrameWork::VulkanPipeline>,
+        FrameWork::ResourcePool<FrameWork::StorageBuffer>,
+        FrameWork::ResourcePool<FrameWork::MaterialData>,
+        FrameWork::ResourcePool<FrameWork::VulkanModelData>,
+        FrameWork::ResourcePool<FrameWork::CompMaterialData>
         >;
 
     ResourceLists resourceLists;
@@ -802,21 +736,21 @@ public:
     //ResourceWrapper 版本的模板函数
     template <FrameWork::VulkanResourceType T>
     void DeleteResource(FrameWork::Handle<T>& handle) {
-        std::get<ResourceCapacity<T>>(resourceLists).Delete(handle);
+        std::get<FrameWork::ResourcePool<T>>(resourceLists).Delete(handle);
     }
     template <FrameWork::VulkanResourceType T>
     FrameWork::Handle<T> CreateResource() {
-        return std::get<ResourceCapacity<T>>(resourceLists).CreateResource();
+        return std::get<FrameWork::ResourcePool<T>>(resourceLists).CreateResource();
     }
 
     template<FrameWork::VulkanResourceType T>
     T* GetResource(const FrameWork::Handle<T>& handle) {
-        return std::get<ResourceCapacity<T>>(resourceLists).GetResource(handle);
+        return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetResource(handle);
     }
 
     template<FrameWork::VulkanResourceType T>
     FrameWork::Handle<T> CopyResource(const FrameWork::Handle<T>& handle) {
-        auto newHandle = std::get<ResourceCapacity<T>>(resourceLists).Copy(handle);
+        auto newHandle = std::get<FrameWork::ResourcePool<T>>(resourceLists).Copy(handle);
         return newHandle;
     }
 };
