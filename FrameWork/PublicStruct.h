@@ -106,15 +106,66 @@ namespace FrameWork {
 
     };
 
+
+    //这个模板用来解除 ResourcePool拥有这和Handle创建拷贝等等
+    template<typename T, typename Enable = void> //后面这个槽位用来实现SFINAE
+    struct ResourceHandleTraits {
+        static void Destroy(uint32_t index) {
+            // Default behavior: do nothing
+        }
+        static uint32_t Copy(uint32_t index) {
+            // Default behavior: just copy the index
+            return index;
+        }
+    };
+
     template<typename T>
     struct Handle {
         uint32_t index{UINT32_MAX}; //这里UINT32_MAX表示无效句柄,类似nullptr
 
         Handle() = default;
-        Handle(const Handle& handle) = default;
-        Handle &operator=(const Handle &handle) = default;
-        Handle(Handle &&handle) noexcept = default;
-        Handle &operator=(Handle &&handle) noexcept = default; //Handle拷贝不在这
+
+        ~Handle() {
+            if (index != UINT32_MAX) {
+                ResourceHandleTraits<T>::Destroy(index);
+            }
+        }
+
+        Handle(const Handle& handle) {
+            if (handle.index != UINT32_MAX) {
+                index = ResourceHandleTraits<T>::Copy(handle.index);
+            }
+        }
+
+        Handle& operator=(const Handle& handle) {
+            if (this != &handle) {
+                if (index != UINT32_MAX) {
+                    ResourceHandleTraits<T>::Destroy(index);
+                }
+                if (handle.index != UINT32_MAX) {
+                    index = ResourceHandleTraits<T>::Copy(handle.index);
+                } else {
+                    index = UINT32_MAX;
+                }
+            }
+            return *this;
+        }
+
+        Handle(Handle&& handle) noexcept {
+            index = handle.index;
+            handle.index = UINT32_MAX;
+        }
+
+        Handle& operator=(Handle&& handle) noexcept {
+            if (this != &handle) {
+                if (index != UINT32_MAX) {
+                    ResourceHandleTraits<T>::Destroy(index);
+                }
+                index = handle.index;
+                handle.index = UINT32_MAX;
+            }
+            return *this;
+        }
     };
 
 
