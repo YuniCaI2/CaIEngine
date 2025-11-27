@@ -95,6 +95,15 @@ namespace FrameWork {
             return index;
         }
 
+        uint32_t GetRefNum(uint32_t index){
+            std::shared_lock lock(poolMutex);
+            if (index >= datas.size()) {
+                LOG_ERROR("index is out of range !");
+                return 0;
+            }
+            return datas[index].useCount;
+        }
+
     };
 
     template<typename T>

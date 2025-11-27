@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-
+if(MSVC)
+    # 强制 MSVC 将源文件视为 UTF-8，并将执行字符集也设为 UTF-8
+    add_compile_options("/utf-8")
+endif()
 
 project(CaIEngine)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

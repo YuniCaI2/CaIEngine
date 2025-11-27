@@ -733,33 +733,49 @@ public:
             }
         }
     }
+
     //ResourceWrapper 版本的模板函数
     template <FrameWork::VulkanResourceType T>
-    void DeleteResource(FrameWork::Handle<T>& handle) {
-        std::get<FrameWork::ResourcePool<T>>(resourceLists).Delete(handle);
+    void DeleteResource(uint32_t index) {
+        std::get<FrameWork::ResourcePool<T>>(resourceLists).Delete(index, [this](T* ptr){
+            this->DeleteResourceToQueue<T>(ptr); });
     }
+    
     template <FrameWork::VulkanResourceType T>
-    FrameWork::Handle<T> CreateResource() {
+    uint32_t CreateResource() {
         return std::get<FrameWork::ResourcePool<T>>(resourceLists).CreateResource();
     }
 
     template<FrameWork::VulkanResourceType T>
     T* GetResource(const FrameWork::Handle<T>& handle) {
-        return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetResource(handle);
+        return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetResource(handle.index);
     }
 
     template<FrameWork::VulkanResourceType T>
-    FrameWork::Handle<T> CopyResource(const FrameWork::Handle<T>& handle) {
-        auto newHandle = std::get<FrameWork::ResourcePool<T>>(resourceLists).Copy(handle);
-        return newHandle;
+    uint32_t CopyResource(const FrameWork::Handle<T>& handle) {
+        auto index = std::get<FrameWork::ResourcePool<T>>(resourceLists).Copy(handle.index);
+        return index;
     }
+
+    FrameWork::Handle<FrameWork::Texture> CreateTextureHandleTest(){
+        auto index = CreateResource<FrameWork::Texture>();
+        FrameWork::Handle<FrameWork::Texture> handle;
+        handle.index = index;
+        return handle;
+    }
+
+    //Debug接口
+    template<typename T> 
+    uint32_t GetRefNum(uint32_t index){
+        return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetRefNum(index);
+    }
+
 };
 //代替繁琐调用
 
 #define vulkanRenderAPI vulkanFrameWork::GetInstance()
 
 //对Handle进行偏特化
-//这玩意有个风险就是其生命周期要在static之前释放，不然释放可能会报错
 //这玩意有个风险就是其生命周期要在static之前释放，不然释放可能会报错
 template<FrameWork::VulkanResourceType T>
 struct Handle {
@@ -769,22 +785,18 @@ struct Handle {
     ~Handle(){
         //这里UINT32_MAX表示无效句柄，不进行释放
         if (index != UINT32_MAX) {
-            vulkanRenderAPI.DeleteResource<T>(*this); // 修正：传入 *this
+            vulkanRenderAPI.DeleteResource<T>(index); 
         }
     }
 
     Handle() {
-        
     };
 
     // 拷贝构造：必须接管 CopyResource 返回的临时对象的所有权
     Handle(const Handle& handle) {
         if (handle.index != UINT32_MAX) {
-            // CopyResource 内部增加了引用计数并返回一个 Handle
-            // 我们必须接管这个返回值的 index，并防止它析构时减少计数
-            auto temp = vulkanRenderAPI.CopyResource<T>(handle);
-            this->index = temp.index;
-            temp.index = UINT32_MAX; // 关键：剥夺临时对象的所有权，防止其析构时 DeleteResource
+            auto temp = vulkanRenderAPI.CopyResource<T>(handle.index);
+            this->index = temp;
         }
     }
 
@@ -793,13 +805,12 @@ struct Handle {
         if (this != &handle) {
             // 1. 释放当前持有的资源
             if (index != UINT32_MAX) {
-                vulkanRenderAPI.DeleteResource<T>(*this);
+                vulkanRenderAPI.DeleteResource<T>(index);
             }
             // 2. 拷贝新资源
             if (handle.index != UINT32_MAX) {
-                auto temp = vulkanRenderAPI.CopyResource<T>(handle);
-                this->index = temp.index;
-                temp.index = UINT32_MAX; // 接管所有权
+                auto tempIndex = vulkanRenderAPI.CopyResource<T>(handle.index);
+                this->index = tempIndex;
             } else {
                 this->index = UINT32_MAX;
             }
@@ -810,7 +821,7 @@ struct Handle {
     // 移动构造：直接接管 index，不涉及引用计数操作
     Handle(Handle &&handle) noexcept {
         this->index = handle.index;
-        handle.index = UINT32_MAX; // 置空源对象，使其析构无效化
+        handle.index = UINT32_MAX; 
     }
 
     // 移动赋值
@@ -818,7 +829,7 @@ struct Handle {
         if (this != &handle) {
             // 1. 释放当前资源
             if (index != UINT32_MAX) {
-                vulkanRenderAPI.DeleteResource<T>(*this);
+                vulkanRenderAPI.DeleteResource<T>(index);
             }
             // 2. 接管源资源
             this->index = handle.index;

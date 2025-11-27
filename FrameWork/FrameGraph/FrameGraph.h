@@ -76,7 +76,7 @@ namespace FG {
             ~CommandPoolsCache(); //免得手动Destroy
             private:
                 size_t usingCount{0}; //正在使用的池的大小
-                std::atomic<size_t> currentBufferIndex{0};
+                std::atomic<size_t> currentBufferIndex{1};
         };
 
         CommandPoolsCache commandPoolsCache;
