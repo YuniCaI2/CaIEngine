@@ -7,9 +7,8 @@
 #include "PublicStruct.h"
 #include"vulkanFrameWork.h"
 #include <cstdint>
-#include <exception>
-#include <mutex>
 #include <stdexcept>
+#include <type_traits>
 
 //TODO: 添加错误处理保证后续热加载CaIShader时不影响原本的程序运行，比如使用默认的Shader etc.
 FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
@@ -70,6 +69,8 @@ bool FrameWork::CaIShader::exist(uint32_t id) {
     return false;
 }
 
+
+
 //支持Dynamic Rendering
 FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkFormat colorFormat) {
     auto opShaderInfo = vulkanRenderAPI.CreateVulkanPipeline(pipelineID, shaderPath, colorFormat);
@@ -121,74 +122,34 @@ uint32_t FrameWork::CaIShader::GetPipelineID() const {
     return pipelineID;
 }
 
+
 namespace FrameWork
 {
-    Handle<CaIShader> CaIShader::Create(const std::string& shaderPath, VkFormat colorFormat) {
-        std::scoped_lock lock(caiShaderWrappedPoolMutex);
-        Handle<CaIShader> handle{};
-        CaIShader* newShader{};
-        try{
-            newShader = new FrameWork::CaIShader(shaderPath, colorFormat);             
-        }catch (std::exception& e){
-            throw e;
-        }
-        for (int i = 0; i < caiShaderWrappedPool.size(); i++) {
-            auto& ptr = caiShaderWrappedPool[i].ptr;
-            if (ptr == nullptr || ! caiShaderWrappedPool[i].useCount) {
-                handle.index = i;
-                ptr = newShader;
-                caiShaderWrappedPool[i].useCount = 1;
-                }else {
-                return handle;
-            }
-        }
-        ResourceWrapper<CaIShader> wrapper{};
-        handle.index = caiShaderWrappedPool.size();
-        wrapper.index = caiShaderWrappedPool.size();
-        wrapper.ptr = newShader;
-        wrapper.useCount = 1;
-        caiShaderWrappedPool.push_back(wrapper);
+
+
+    Handle<CaIShader> CaIShader::CreateHandle(const std::string& shaderPath, VkFormat colorFormat) {
+        uint32_t index = caiShaderWrappedPool.CreateResource(shaderPath, colorFormat);
+        Handle<CaIShader> handle;
+        handle.index = index;
         return handle;
     }
-    
-    void CaIShader::Destroy(Handle<CaIShader>& handle) {
-        std::scoped_lock lock(caiShaderWrappedPoolMutex);
-        if(handle.index >= caiShaderWrappedPool.size()){
-            LOG_ERROR("Handle Index {} is larger than caishader wrapped pool {}", handle.index, caiShaderWrappedPool.size());
-            throw std::runtime_error("Handle Index is larger than caishader wrappeed pool");
-        } 
-        if(caiShaderWrappedPool[handle.index].ptr != nullptr){
-            caiShaderWrappedPool[handle.index].useCount = 0;
-            delete caiShaderWrappedPool[handle.index].ptr;
-            caiShaderWrappedPool[handle.index].ptr = nullptr;
-        }
-    }
-    
-    //这个函数不保证线程安全
-    CaIShader* CaIShader::Get(Handle<CaIShader>& handle) {
-        std::scoped_lock lock(caiShaderWrappedPoolMutex);
-        if(handle.index != UINT32_MAX && handle.index < caiShaderWrappedPool.size())
-            return caiShaderWrappedPool[handle.index].ptr;
-        return nullptr;
-    }
-    
-    bool CaIShader::exist(Handle<CaIShader>& handle) {
-        std::scoped_lock lock(caiShaderWrappedPoolMutex);
-        if(handle.index < caiShaderWrappedPool.size())
+
+    bool CaIShader::Bind(Handle<CaIShader>& handle, const VkCommandBuffer& cmdBuffer){
+        if (!handle) {
+            LOG_ERROR("Trying to bind a non-existent CaIShader handle");
             return false;
-        return caiShaderWrappedPool[handle.index].ptr != nullptr
-         && caiShaderWrappedPool[handle.index].useCount > 0;
-    }
-    
-    Handle<CaIShader> CaIShader::Copy(const Handle<CaIShader>& handle) {
-        std::scoped_lock lock(caiShaderWrappedPoolMutex);
-        if(handle.index >= caiShaderWrappedPool.size()){
-            LOG_ERROR("Handle Index {} is larger than caishader wrapped pool {}", handle.index, caiShaderWrappedPool.size());
-            throw std::runtime_error("Handle Index is larger than caishader wrappeed pool");
         }
-        Handle<CaIShader> rt{};
-        rt.index = handle.index;
-        caiShaderWrappedPool[handle.index].useCount++;
-        return rt; 
+        auto shader = CaIShader::caiShaderWrappedPool.GetResource(handle.index);
+        if (shader) {
+            shader->Bind(cmdBuffer);
+        } else {
+            LOG_ERROR("CaIShader with index {} does not exist", handle.index);
+            return false;
+        }
+        return true;
     }
+    uint32_t CaIShader::GetRef(uint32_t id) {
+        return CaIShader::caiShaderWrappedPool.GetRefNum(id);
+    }
+
 }

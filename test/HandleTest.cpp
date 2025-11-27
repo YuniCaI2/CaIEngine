@@ -3,19 +3,25 @@
 //
 #include<vulkanFrameWork.h>
 #include"Logger.h"
-#include "PublicStruct.h"
+#include "CaIShader.h"
 
 
 int main() {
 	LOG.Run();
-    FrameWork::Handle<FrameWork::Texture> textureHandle = vulkanRenderAPI.CreateTextureHandleTest();
-    auto *ptr = vulkanRenderAPI.GetResource(textureHandle);
+    vulkanRenderAPI.initVulkan();
     {
-        auto textureCopy = textureHandle;
-        LOG_TRACE("Ref: {}", vulkanRenderAPI.GetRefNum<FrameWork::Texture>(textureCopy.index));
+        auto handle = FrameWork::CaIShader::CreateHandle("../../resources/CaIShaders/BaseScene/BaseScene.caishader", VK_FORMAT_R8G8B8A8_SRGB);
+        LOG_TRACE("Ref : {}", FrameWork::CaIShader::GetRef(handle.index));
+        auto copyHandle = handle;
+        LOG_TRACE("Ref : {}", FrameWork::CaIShader::GetRef(handle.index));
+        {
+            auto copyHandle = handle;
+            LOG_TRACE("Ref : {}", FrameWork::CaIShader::GetRef(handle.index));
+        }
+        LOG_TRACE("Ref : {}", FrameWork::CaIShader::GetRef(handle.index));
     }
-    LOG_TRACE("Ref: {}", vulkanRenderAPI.GetRefNum<FrameWork::Texture>(textureHandle.index));
-    LOG_TRACE("index: {}", textureHandle.index);
+    vulkanRenderAPI.DestroyAll();
+
 
 	LOG.Stop();
 

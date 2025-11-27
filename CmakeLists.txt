@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(CaIEngine)
-if(MSVC)
-    # 为所有目标添加 /utf-8 选项
-    add_compile_options("/utf-8")
-endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

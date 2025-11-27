@@ -15,7 +15,6 @@
 #include <vector>
 #include <unordered_map>
 #include<nlohmann/json.hpp>
-#include<functional>
 
 namespace FrameWork {
     //Vulkan Resource
@@ -28,18 +27,20 @@ namespace FrameWork {
 
     template<typename T>
     struct ResourceWrapper {
+        static_assert(!std::is_pointer_v<T>, "ResourceWrapper<T>: T must not be a pointer type");
         T *ptr{nullptr};
         uint32_t index{}; //需要记住索引位置
         uint32_t useCount{0}; 
     };
 
-    //这里这个池不直接操作
     template<typename T>
     struct ResourcePool {
     private:
+        static_assert(!std::is_pointer_v<T>, "ResourcePool<T>: T must not be a pointer type; use the pointee type instead.");
         std::shared_mutex poolMutex; //池锁
         std::vector<ResourceWrapper<T>> datas;
         std::deque<uint32_t> freeIndices; //空闲索引
+    public: 
     public: 
         ResourcePool() = default;
         T* GetResource(uint32_t index) {
@@ -52,15 +53,25 @@ namespace FrameWork {
         }
 
         //这个函数只是创建一个内存区域
-        uint32_t CreateResource() {
+        template<typename... Args> //处理RAII自带的构造函数
+        uint32_t CreateResource(Args&&... args) {
             std::scoped_lock lock(poolMutex);
             if(! freeIndices.empty()) {
-                uint32_t index = freeIndices.front();
-                freeIndices.pop_front();
-                datas[index].useCount = 1;
-                return index;
+                if(sizeof...(args) > 0) {
+                    auto idx = freeIndices.front();
+                    freeIndices.pop_front();
+                    auto ptr = new T(std::forward<Args>(args)...);
+                    datas[idx].ptr = ptr;
+                    datas[idx].useCount = 1;
+                    return idx;
+                }else{
+                    auto idx = freeIndices.front();
+                    freeIndices.pop_front();
+                    datas[idx].useCount = 1;
+                    return idx;
+                }
             }
-            auto ptr = new T;
+            auto ptr = new T(std::forward<Args>(args)...);
             ResourceWrapper<T> resourceWrapper;
             resourceWrapper.ptr = ptr;
             resourceWrapper.useCount = 1;
@@ -71,7 +82,8 @@ namespace FrameWork {
         }
 
         //传入一个析构器，例如GPU资源需要延迟释放，以及GPU资源析构需要调用对应函数
-        void Delete(uint32_t index, std::function<void(T*)> deleter) {
+        template<typename Func>
+        void Delete(uint32_t index, Func deleter) {
             std::scoped_lock lock(poolMutex);
             if (index >= datas.size()) {
                 LOG_ERROR("index is out of range !");
@@ -104,6 +116,14 @@ namespace FrameWork {
             return datas[index].useCount;
         }
 
+        bool Exist(uint32_t index){
+            std::shared_lock lock(poolMutex);
+            if (index >= datas.size()) {
+                return false;
+            }
+            return datas[index].ptr != nullptr && datas[index].useCount > 0;
+        }
+
     };
 
 
@@ -116,6 +136,10 @@ namespace FrameWork {
         static uint32_t Copy(uint32_t index) {
             // Default behavior: just copy the index
             return index;
+        }
+
+        static bool exist(uint32_t index) {
+            return false;
         }
     };
 
@@ -166,6 +190,11 @@ namespace FrameWork {
             }
             return *this;
         }
+
+        operator bool() const {
+            return ResourceHandleTraits<T>::exist(index);
+        }
+
     };
 
 

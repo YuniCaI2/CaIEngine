@@ -16,12 +16,11 @@ namespace FrameWork {
         static CaIShader* Get(uint32_t id);
         static void DestroyAll();
         static bool exist(uint32_t id);
+        static uint32_t GetRef(uint32_t id);
 
-        static Handle<CaIShader> Create(const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
-        static void Destroy(Handle<CaIShader>& handle);
-        static CaIShader* Get(Handle<CaIShader>& handle);
-        static bool exist(Handle<CaIShader>& handle);
-        static Handle<CaIShader> Copy(const Handle<CaIShader>& handle);
+
+        static Handle<CaIShader> CreateHandle(const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
+        static bool Bind(Handle<CaIShader>& handle, const VkCommandBuffer& cmdBuffer);
 
 
 
@@ -40,6 +39,12 @@ namespace FrameWork {
         ShaderInfo GetShaderInfo() const;
         uint32_t GetPipelineID() const;
     private:
+
+        
+        template<typename T, typename Enable> 
+        friend struct ResourceHandleTraits;
+        template<typename T>
+        friend struct ResourcePool;
         CaIShader(const std::string& shaderPath, VkFormat colorFormat);
         std::string shaderPath{};
         ShaderInfo shaderInfo{};
@@ -47,18 +52,23 @@ namespace FrameWork {
 
         inline static std::vector<CaIShader*> caiShaderPool{};
         inline static std::mutex caiShaderWrappedPoolMutex{};
-        inline static std::vector<ResourceWrapper<CaIShader>> caiShaderWrappedPool{};
+        inline static ResourcePool<CaIShader> caiShaderWrappedPool;
     };
-    template <>
-    struct Handle<CaIShader> {
-        uint32_t index{UINT32_MAX};
 
-        Handle() = default;
-        Handle(const Handle& handle) {
+    template<typename T> //后面这个槽位用来实现SFINAE
+    struct ResourceHandleTraits <T, std::enable_if_t<std::is_same_v<CaIShader, T>>>{
+        static void Destroy(uint32_t index) {
+            CaIShader::caiShaderWrappedPool.Delete(index, [](T* ptr){
+                delete ptr;
+            });
         }
-        Handle &operator=(const Handle &handle) = default;
-        Handle(Handle &&handle) noexcept = default;
-        Handle &operator=(Handle &&handle) noexcept = default; //Handle拷贝不在这
+        static uint32_t Copy(uint32_t index) {
+            return CaIShader::caiShaderWrappedPool.Copy(index);
+        }
+
+        static bool exist(uint32_t index) {
+            return CaIShader::caiShaderWrappedPool.Exist(index);
+        }
     };
 }
 

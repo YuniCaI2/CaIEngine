@@ -756,18 +756,23 @@ public:
         return std::get<FrameWork::ResourcePool<T>>(resourceLists).Copy(index);
     }
 
-    FrameWork::Handle<FrameWork::Texture> CreateTextureHandleTest(){
-        auto index = CreateResource<FrameWork::Texture>();
-        FrameWork::Handle<FrameWork::Texture> handle;
-        handle.index = index;
-        return handle;
+    template<FrameWork::VulkanResourceType T>
+    bool ExistResource(uint32_t index) {
+        return std::get<FrameWork::ResourcePool<T>>(resourceLists).Exist(index);
     }
 
-    //Debug接口
-    template<typename T> 
-    uint32_t GetRefNum(uint32_t index){
-        return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetRefNum(index);
-    }
+    // FrameWork::Handle<FrameWork::Texture> CreateTextureHandleTest(){
+    //     auto index = CreateResource<FrameWork::Texture>();
+    //     FrameWork::Handle<FrameWork::Texture> handle;
+    //     handle.index = index;
+    //     return handle;
+    // }
+
+    // //Debug接口
+    // template<typename T> 
+    // uint32_t GetRefNum(uint32_t index){
+    //     return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetRefNum(index);
+    // }
 
 };
 //代替繁琐调用
@@ -782,6 +787,9 @@ namespace FrameWork {
         }
         static uint32_t Copy(uint32_t index) {
             return vulkanRenderAPI.CopyResource<T>(index);
+        }
+        static bool exist(uint32_t index) {
+            return vulkanRenderAPI.ExistResource<T>(index);
         }
     };
 }
