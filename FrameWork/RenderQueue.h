@@ -5,7 +5,6 @@
 #ifndef CAIENGINE_RENDERQUEUE_H
 #define CAIENGINE_RENDERQUEUE_H
 #include<vector>
-#include<iostream>
 
 #include "Camera.h"
 #include"PublicStruct.h"

@@ -49,7 +49,7 @@ TODO：后续需要修改为新接口。
 
 ### Compiling阶段
 此阶段分为以下操作
-```
+```cpp
 FG::FrameGraph &FG::FrameGraph::Compile() {
     usingResourceNodes.clear();
     usingPassNodes.clear();
