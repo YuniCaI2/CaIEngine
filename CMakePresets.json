@@ -1,0 +1,22 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows MSVC x64",
+      "description": "Target Windows with MSVC compiler using Ninja",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-vs",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_TOOLCHAIN_FILE": "C:/Users/51092/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      },
+      "environment": {}
+    }
+  ]
+}

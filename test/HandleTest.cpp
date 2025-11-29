@@ -10,7 +10,7 @@ int main() {
 	LOG.Run();
     vulkanRenderAPI.initVulkan();
     {
-        auto handle = FrameWork::CaIShader::CreateHandle("../../resources/CaIShaders/BaseScene/BaseScene.caishader", VK_FORMAT_R8G8B8A8_SRGB);
+        auto handle = FrameWork::CaIShader::CreateHandle("../resources/CaIShaders/BaseScene/BaseScene.caishader", VK_FORMAT_R8G8B8A8_SRGB);
         LOG_TRACE("Ref : {}", FrameWork::CaIShader::GetRef(handle.index));
         auto copyHandle = handle;
         LOG_TRACE("Ref : {}", FrameWork::CaIShader::GetRef(handle.index));

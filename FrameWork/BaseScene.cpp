@@ -4,11 +4,8 @@
 
 #include "BaseScene.h"
 #include "vulkanFrameWork.h"
-#include <iostream>
 
-#include "CompShader.h"
 #include "FrameGraph/FrameGraph.h"
-#include "CompMaterial.h"
 
 BaseScene::BaseScene(FrameWork::Camera& camera) {
     cameraPtr = &camera;
@@ -49,26 +46,21 @@ void BaseScene::CreateFrameGraphResource() {
     std::string testShaderPath = "../resources/CaIShaders/TestFrameGraph/forward.caishader";
     std::string testCompShaderPath = "../resources/CaIShaders/Bloom/downSample.compshader";
 
-    FrameWork::CaIShader::Create(caiShaderID, shaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
-    FrameWork::CompShader::Create(compShaderID, testCompShaderPath);
-    compMaterials.resize(7);
-    for (auto& compMaterial : compMaterials) {
-        FrameWork::CompMaterial::Create(compMaterial, compShaderID);
-    }
+    shaderHandle = FrameWork::CaIShader::CreateHandle(shaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
     vulkanRenderAPI.LoadVulkanModel(vulkanModelID, "cocona", ModelType::OBJ, DiffuseColor,
         {0,0, 0}, 1.0f);
     auto model = vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(vulkanModelID);
     // 绑定静态纹理
-     materials.resize(model->meshIDs.size());
+     materialHandles.resize(model->meshIDs.size());
      for (int i = 0; i < model->meshIDs.size(); i++) {
-         FrameWork::CaIMaterial::Create(materials[i], caiShaderID);
-         FrameWork::CaIMaterial::Get(materials[i])->SetTexture("colorSampler", model->textures[i][DiffuseColor]);
+         materialHandles[i] = FrameWork::CaIMaterial::CreateHandle(shaderHandle);
+         FrameWork::CaIMaterial::SetTexture(materialHandles[i], "colorSampler", model->textures[i][DiffuseColor]);
      }
     std::string presentShaderPath = "../resources/CaIShaders/Present/Present.caishader";
-    FrameWork::CaIShader::Create(presentShaderID, presentShaderPath, vulkanRenderAPI.GetVulkanSwapChain().colorFormat);
-    FrameWork::CaIShader::Create(resolveShaderID, presentShaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
-    FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
-    FrameWork::CaIMaterial::Create(resolveMaterialID, resolveShaderID);
+    presentShaderHandle = FrameWork::CaIShader::CreateHandle(presentShaderPath, vulkanRenderAPI.GetVulkanSwapChain().colorFormat);
+    resolveShaderHandle = FrameWork::CaIShader::CreateHandle(presentShaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
+    presentMaterialHandle = FrameWork::CaIMaterial::CreateHandle(presentShaderHandle);
+    resolveMaterialHandle = FrameWork::CaIMaterial::CreateHandle(resolveShaderHandle);
 
     //创建FrameGraph资源
     colorAttachment = frameGraph->GetResourceManager().RegisterResource(
@@ -121,7 +113,8 @@ void BaseScene::CreateFrameGraphResource() {
     auto forwardPass = frameGraph->GetRenderPassManager().RegisterRenderPass([this](std::unique_ptr<FG::RenderPass> &renderPass) {
     renderPass->SetName("forwardPass");
     renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
-            FrameWork::CaIShader::Get(caiShaderID)->Bind(cmdBuffer);
+            // FrameWork::CaIShader::Get(caiShaderID)->Bind(cmdBuffer);
+            FrameWork::CaIShader::Bind(shaderHandle, cmdBuffer);
             auto model = vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(vulkanModelID);
             glm::mat4 projection = glm::perspective(glm::radians(cameraPtr->Zoom),
                                   (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
@@ -129,11 +122,19 @@ void BaseScene::CreateFrameGraphResource() {
             projection[1][1] *= -1;
             glm::mat4 pos = glm::translate(glm::mat4(1.0), model->position);
             for (int i = 0; i < model->meshIDs.size(); i++) {
-                auto material = FrameWork::CaIMaterial::Get(materials[i]);
-                material->SetParam("viewMatrix", cameraPtr->GetViewMatrix(), 0);
-                material->SetParam("projectionMatrix", projection, 0);
-                material->SetParam("modelMatrix", pos, 0);
-                material->Bind(cmdBuffer);
+                // auto material = FrameWork::CaIMaterial::Get(materials[i]);
+                // material->SetParam("viewMatrix", cameraPtr->GetViewMatrix(), 0);
+                // material->SetParam("projectionMatrix", projection, 0);
+                // material->SetParam("modelMatrix", pos, 0);
+                // material->Bind(cmdBuffer);
+
+                //Handle
+                FrameWork::CaIMaterial::SetParam(materialHandles[i], "viewMatrix",
+                    cameraPtr->GetViewMatrix(), 0);
+                FrameWork::CaIMaterial::SetParam(materialHandles[i], "projectionMatrix", projection, 0);
+                FrameWork::CaIMaterial::SetParam(materialHandles[i], "modelMatrix", pos, 0);
+                FrameWork::CaIMaterial::Bind(materialHandles[i], cmdBuffer);
+
                 VkDeviceSize offsets[] = {0};
                 auto mesh = vulkanRenderAPI.getByIndex<FrameWork::Mesh>(model->meshIDs[i]);
                 vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &mesh->VertexBuffer.buffer, offsets);
@@ -168,9 +169,10 @@ void BaseScene::CreateFrameGraphResource() {
         renderPass->SetName("presentPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
             //绑定对应imageView
-            FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-            FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", frameGraph->GetResourceManager().GetVulkanIndex(resolveAttachment));
-            FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
+            FrameWork::CaIShader::Bind(presentShaderHandle, cmdBuffer);
+            FrameWork::CaIMaterial::SetAttachment(presentMaterialHandle, "colorTexture", frameGraph->GetResourceManager().GetVulkanIndex(resolveAttachment));
+            FrameWork::CaIMaterial::Bind(presentMaterialHandle, cmdBuffer);
+
             vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
         });
     });

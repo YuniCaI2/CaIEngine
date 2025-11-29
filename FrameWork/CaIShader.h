@@ -8,6 +8,7 @@
 #include <mutex>
 
 namespace FrameWork {
+    class CaIMaterial;
     class CaIShader {
     public:
         //类似Vulkan中的资源
@@ -21,6 +22,9 @@ namespace FrameWork {
 
         static Handle<CaIShader> CreateHandle(const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
         static bool Bind(Handle<CaIShader>& handle, const VkCommandBuffer& cmdBuffer);
+        static ShaderInfo GetInfo(const Handle<CaIShader>& shaderHandle);
+        static void* GetShaderPropertyAddress(const Handle<CaIShader>& shaderHandle, const Handle<CaIMaterial>& materialHandle, const std::string& name, uint32_t id = 0);
+        static uint32_t GetPipelineID(const Handle<CaIShader>& pipelineShader);
 
 
 
@@ -40,8 +44,8 @@ namespace FrameWork {
         uint32_t GetPipelineID() const;
     private:
 
-        
-        template<typename T, typename Enable> 
+
+        template<typename T, typename Enable>
         friend struct ResourceHandleTraits;
         template<typename T>
         friend struct ResourcePool;

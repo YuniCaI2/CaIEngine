@@ -81,7 +81,7 @@ namespace FrameWork {
             return datas.size() - 1;
         }
 
-        //传入一个析构器，例如GPU资源需要延迟释放，以及GPU资源析构需要调用对应函数
+        //传入一个析构器，例如GPU资源需要延迟释放，以及GPU资源析构需要调用对应函数,这里需要传入自定义析构函数
         template<typename Func>
         void Delete(uint32_t index, Func deleter) {
             std::scoped_lock lock(poolMutex);

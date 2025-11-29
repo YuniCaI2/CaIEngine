@@ -295,7 +295,7 @@ bool vulkanFrameWork::initVulkan() {
     deviceFeatures2.pNext = &dynamicRenderingFeatures;
 
     vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
-    
+
     if(! dynamicRenderingFeatures.dynamicRendering){
         LOG_ERROR("The Physical Device does not support dynamic rendering");
         return false;
@@ -626,7 +626,7 @@ VkResult vulkanFrameWork::createInstance() {
     VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
     if (result != VK_SUCCESS) {
         std::cerr << "Failed to create Vulkan instance. Error code: " << result << std::endl;
-        
+
         // 提供详细的错误信息
         switch (result) {
             case VK_ERROR_INCOMPATIBLE_DRIVER:
@@ -643,7 +643,7 @@ VkResult vulkanFrameWork::createInstance() {
                 break;
         }
         return result;
-    }    
+    }
 
     //设置可捕获信息的验证层，并且对其进行初始化
     if (std::find(supportedInstanceExtensions.begin(), supportedInstanceExtensions.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) !=
@@ -1662,11 +1662,11 @@ void vulkanFrameWork::CreateMaterial(uint32_t &materialIdx, const std::vector<Fr
 
 void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
     auto shaderRef = caiMaterial.GetShader();
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef->GetPipelineID());
+    auto shaderInfo = shaderRef->GetShaderInfo();
     caiMaterial.dataID = getNextIndex<FrameWork::MaterialData>();
     auto materialData = getByIndex<FrameWork::MaterialData>(caiMaterial.dataID);
     materialData->inUse = true;
-    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef->GetPipelineID());
-    auto shaderInfo = shaderRef->GetShaderInfo();
 
 
     if (!shaderInfo.vertProperties.baseProperties.empty()) {
@@ -1737,6 +1737,83 @@ void vulkanFrameWork::CreateMaterialData(FrameWork::CaIMaterial &caiMaterial) {
         //对于纹理，后续需要添加鲁棒性，可以使用一个默认纹理来防止验证层报错
     }
 
+}
+void vulkanFrameWork::CreateMaterialData(uint32_t& dataID, const FrameWork::Handle<FrameWork::CaIShader>& shaderHandle){
+    using namespace FrameWork;
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(CaIShader::GetPipelineID(shaderHandle));
+    auto shaderInfo = CaIShader::GetInfo(shaderHandle);
+    dataID = getNextIndex<FrameWork::MaterialData>();
+    auto materialData = getByIndex<FrameWork::MaterialData>(dataID);
+    materialData->inUse = true;
+
+
+    if (!shaderInfo.vertProperties.baseProperties.empty()) {
+        materialData->vertexUniformBuffers.resize(MAX_FRAME);
+    }
+    if (!shaderInfo.fragProperties.baseProperties.empty()) {
+        materialData->fragmentUniformBuffers.resize(MAX_FRAME);
+    }
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        if(!shaderInfo.vertProperties.baseProperties.empty()) {
+            materialData->vertexUniformBuffers[i] =
+                CreateUniformBuffer(shaderInfo.vertProperties.baseProperties);
+        }
+        if (!shaderInfo.fragProperties.baseProperties.empty()) {
+            materialData->fragmentUniformBuffers[i] =
+                CreateUniformBuffer(shaderInfo.fragProperties.baseProperties);
+        }
+    }
+
+    //AllocateDescriptorSet
+    materialData->descriptorSets.resize(MAX_FRAME);
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+    std::vector<VkDescriptorType> descriptorTypes;
+    descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    if (!shaderInfo.vertProperties.textureProperties.empty() || !shaderInfo.fragProperties.textureProperties.empty()) {
+        descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    }
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        vulkanDescriptorPool.AllocateDescriptorSet(pipeline->descriptorSetLayouts.back(),
+            descriptorTypes, materialData->descriptorSets[i]
+            );
+
+        if (!materialData->vertexUniformBuffers.empty()) {
+            VkWriteDescriptorSet descriptorWrite = {
+               .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+               .pNext = nullptr,
+               .dstSet = materialData->descriptorSets[i],
+               .dstBinding = shaderInfo.vertProperties.baseProperties[0].binding, //绑定点是首位
+               .dstArrayElement = 0,
+               .descriptorCount = 1,
+               .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+               .pImageInfo = nullptr,
+               .pBufferInfo = &materialData->vertexUniformBuffers[i].descriptor,
+            };
+            descriptorWrites.push_back(descriptorWrite);
+        }
+
+        if (!materialData->fragmentUniformBuffers.empty()) {
+            VkWriteDescriptorSet descriptorWrite = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = materialData->descriptorSets[i],
+                .dstBinding = shaderInfo.fragProperties.baseProperties[0].binding,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &materialData->fragmentUniformBuffers[i].descriptor,
+            };
+            descriptorWrites.push_back(descriptorWrite);
+        }
+
+        vkUpdateDescriptorSets(device,
+            static_cast<uint32_t>(descriptorWrites.size()),
+            descriptorWrites.data(), 0, nullptr
+            );
+
+        //对于纹理，后续需要添加鲁棒性，可以使用一个默认纹理来防止验证层报错
+    }
 }
 
 void vulkanFrameWork::CreateCompMaterialData(FrameWork::CompMaterial &compMaterial) {

@@ -1,0 +1,138 @@
+Detecting compiler hash for triplet x64-windows...
+-- Using %HTTP(S)_PROXY% in environment variables.
+Compiler found: D:/APP/Visual Studio/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+The following packages will be built and installed:
+    assimp:x64-windows@6.0.2#1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\assimp\c5281ba1740ef8aeff54f666fbe1c60c0deac076
+  * directxmath:x64-windows@2025-04-03 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\directxmath\b199edaeaf0b2b92a634dfeb1289879ea5eeae7f
+    directxtex[core,dx11]:x64-windows@2025-10-27 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\directxtex\41b5ffdbd741c2ac94ff954463fac9176572dd88
+  * draco:x64-windows@1.5.7 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\draco\06799add74da6e9e4634e4c7f27b82b1149a8bb6
+    entt:x64-windows@3.15.0 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\entt\b27478e44a27785f939170cfb8c910d87194b289
+    glfw3:x64-windows@3.4#1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\glfw3\d4bbd4f27c2ca619f57778985120cddcedadb1cc
+  * jhasse-poly2tri:x64-windows@2023-12-27#2 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\jhasse-poly2tri\d94a24dde4173f85d1aaeb16b3eecc71b100b5be
+  * kubazip:x64-windows@0.3.5 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\kubazip\f6a191f1346675cf2a6683141e8a24f3052a1d27
+  * minizip:x64-windows@1.3.1#1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\minizip\bb8016593efa5220d1b877c27cd8612862c13d81
+    nlohmann-json:x64-windows@3.12.0#1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\nlohmann-json\f89a58e6478ca1e39120e93e7ed535c4aaf8198c
+    openssl:x64-windows@3.6.0#3 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\openssl\21c1dabbf149eaa75b6c8b6ba9c3c6edb4f47ea7
+  * polyclipping:x64-windows@6.4.2#13 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\polyclipping\2388298c7ad673550c7492454666dd3a34ada895
+  * pugixml:x64-windows@1.15#1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\pugixml\e210d4650721b32c1e83bf0da6a0cf4c145bbbd9
+  * rapidjson:x64-windows@2025-02-26 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\rapidjson\4297a243aa0e3ed6c3a4c307579914593da5751d
+  * stb:x64-windows@2024-07-29#1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\stb\c362152d1d02973e7b1ce777960f8a6876656560
+  * utfcpp:x64-windows@4.0.6 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\utfcpp\f73420a80f760312a45c40fce2b350009991c674
+  * vcpkg-cmake:x64-windows@2024-04-23 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\vcpkg-cmake\e74aa1e8f93278a8e71372f1fa08c3df420eb840
+  * vcpkg-cmake-config:x64-windows@2024-05-23 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\vcpkg-cmake-config\97a63e4bc1a17422ffe4eff71da53b4b561a7841
+  * vcpkg-cmake-get-vars:x64-windows@2025-05-29 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\vcpkg-cmake-get-vars\d6510f888dd526c7828f6b973349e7f30be51254
+  * zlib:x64-windows@1.3.1 -- C:\Users\51092\vcpkg\buildtrees\versioning_\versions\zlib\3f05e04b9aededb96786a911a16193cdb711f0c9
+Additional packages (*) will be modified to complete this operation.
+Restored 20 package(s) from C:\Users\51092\AppData\Local\vcpkg\archives in 1.4 s. Use --debug to see more details.
+Installing 1/20 vcpkg-cmake:x64-windows@2024-04-23...
+Elapsed time to handle vcpkg-cmake:x64-windows: 5.74 ms
+vcpkg-cmake:x64-windows package ABI: 9b47cb550ebbfdb38b79b1cd70d3c1e243a8516b3832979d871fd51e6bb7f6f0
+Installing 2/20 zlib:x64-windows@1.3.1...
+Elapsed time to handle zlib:x64-windows: 11 ms
+zlib:x64-windows package ABI: 1d206cbae990ebdaca9e013559a6ed97a6795ec2e0d11a17f099db35ffa0688e
+Installing 3/20 vcpkg-cmake-config:x64-windows@2024-05-23...
+Elapsed time to handle vcpkg-cmake-config:x64-windows: 4.03 ms
+vcpkg-cmake-config:x64-windows package ABI: 61be4f007e7520f96e7bdb5aad463f040b09dfefda76377ddcd6563660f7146f
+Installing 4/20 utfcpp:x64-windows@4.0.6...
+Elapsed time to handle utfcpp:x64-windows: 8.22 ms
+utfcpp:x64-windows package ABI: 32e6ce90ff86585e2c46f656df6a98662ca5e185e1fc1465ff38cf19eb248c38
+Installing 5/20 stb:x64-windows@2024-07-29#1...
+Elapsed time to handle stb:x64-windows: 15.7 ms
+stb:x64-windows package ABI: 11b9ff97cd9ed463fd7d8cc1dfe549b61616520af143561c0c6bb3cbbf8686ff
+Installing 6/20 rapidjson:x64-windows@2025-02-26...
+Elapsed time to handle rapidjson:x64-windows: 23.6 ms
+rapidjson:x64-windows package ABI: c823b4c3c8bfcd2993d16bd009dbb7a7d4d15ca4c32a86fd82ab25fc0aa2b9df
+Installing 7/20 pugixml:x64-windows@1.15#1...
+Elapsed time to handle pugixml:x64-windows: 14.5 ms
+pugixml:x64-windows package ABI: 85b4d7fdf0a9f0803e9d572bee8b686ef0b29f26e23019df13ebbf8af9e5e2fc
+Installing 8/20 polyclipping:x64-windows@6.4.2#13...
+Elapsed time to handle polyclipping:x64-windows: 12.4 ms
+polyclipping:x64-windows package ABI: 79601996dfdf9bd58b93b6e305a8e244ebf06e118ebee61ee6448366bbf2e91c
+Installing 9/20 vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+Elapsed time to handle vcpkg-cmake-get-vars:x64-windows: 5.93 ms
+vcpkg-cmake-get-vars:x64-windows package ABI: 1f3adac98151523fce679a359a14c2747c29f51e3edc8ff1fedb42fe43f2c90b
+Installing 10/20 minizip:x64-windows@1.3.1#1...
+Elapsed time to handle minizip:x64-windows: 17.7 ms
+minizip:x64-windows package ABI: f7cddc61c2b4d67c904dfb8d952c660631d794502240d6e977e963c20d7fb957
+Installing 11/20 kubazip:x64-windows@0.3.5...
+Elapsed time to handle kubazip:x64-windows: 11.8 ms
+kubazip:x64-windows package ABI: da267054a14dcc70261f71debb5c177f865b91030fc6455ac23f371178e193df
+Installing 12/20 jhasse-poly2tri:x64-windows@2023-12-27#2...
+Elapsed time to handle jhasse-poly2tri:x64-windows: 13.9 ms
+jhasse-poly2tri:x64-windows package ABI: 54da52cb53641399275d32af878a15bbaa119456ec14a6eb4c30d6436f2b5331
+Installing 13/20 draco:x64-windows@1.5.7...
+Elapsed time to handle draco:x64-windows: 132 ms
+draco:x64-windows package ABI: fb494af4ad41379ac5c68b6f8687a21a2ee0eca4d7dd5532889cc12c949e2105
+Installing 14/20 assimp:x64-windows@6.0.2#1...
+Elapsed time to handle assimp:x64-windows: 102 ms
+assimp:x64-windows package ABI: 5b520e9f1887ed8c6ac63d81eeb703b6b5191e4ddd56fc34e70e99baae2906ca
+Installing 15/20 directxmath:x64-windows@2025-04-03...
+Elapsed time to handle directxmath:x64-windows: 14.8 ms
+directxmath:x64-windows package ABI: e4fbf85de940dda25dd72c842fec21a360dd7f99ccb7998a6ca8e0b331fab093
+Installing 16/20 directxtex[core,dx11]:x64-windows@2025-10-27...
+Elapsed time to handle directxtex:x64-windows: 13.8 ms
+directxtex:x64-windows package ABI: 2f38b3907788dc4bae68791adafeb62234ab496e227ca1d79799ed92922ba1cb
+Installing 17/20 entt:x64-windows@3.15.0...
+Elapsed time to handle entt:x64-windows: 47.6 ms
+entt:x64-windows package ABI: 7c8bc80c502edeb4e1cef24beae9eb35ea1fda79111426c83c8040554f404f23
+Installing 18/20 glfw3:x64-windows@3.4#1...
+Elapsed time to handle glfw3:x64-windows: 12.1 ms
+glfw3:x64-windows package ABI: a37433d67485b1ef4b886243fcc298c845a5762cbf6bb5476824567fad18acda
+Installing 19/20 nlohmann-json:x64-windows@3.12.0#1...
+Elapsed time to handle nlohmann-json:x64-windows: 29.3 ms
+nlohmann-json:x64-windows package ABI: 8295331982c2fd65ed9be1ed9bd2de722e2da59eaa44a75bdfd23cd6ea9124a9
+Installing 20/20 openssl:x64-windows@3.6.0#3...
+Elapsed time to handle openssl:x64-windows: 105 ms
+openssl:x64-windows package ABI: 106da8a1d3ecf354bad3fe570cfdaa841eae3db17dd6a5c1698605d267489773
+Total install time: 606 ms
+assimp provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(assimp CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE assimp::assimp)
+
+assimp provides pkg-config modules:
+
+  # Import various well-known 3D model formats in an uniform manner.
+  assimp
+
+The DirectXTex package provides CMake targets:
+
+    find_package(directxtex CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE Microsoft::DirectXTex)
+
+entt provides CMake targets:
+
+    find_package(EnTT CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE EnTT::EnTT)
+
+glfw3 provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(glfw3 CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE glfw)
+
+glfw3 provides pkg-config modules:
+
+  # A multi-platform library for OpenGL, window and input
+  glfw3
+
+The package nlohmann-json provides CMake targets:
+
+    find_package(nlohmann_json CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE nlohmann_json::nlohmann_json)
+
+The package nlohmann-json can be configured to not provide implicit conversions via a custom triplet file:
+
+    set(nlohmann-json_IMPLICIT_CONVERSIONS OFF)
+
+For more information, see the docs here:
+    
+    https://json.nlohmann.me/api/macros/json_use_implicit_conversions/
+
+openssl is compatible with built-in CMake targets:
+
+  find_package(OpenSSL REQUIRED)
+  target_link_libraries(main PRIVATE OpenSSL::SSL)
+  target_link_libraries(main PRIVATE OpenSSL::Crypto)
+

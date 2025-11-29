@@ -60181,3 +60181,15 @@
 [Trace] [2025-09-19 16:21:38.9858991] : "Model position: 0, 0, 0" 
  from [file: D:\Visual Studio Project\CaIEngine\FrameWork\BaseScene.cpp line: 285] 
 
+[Trace] [2025-11-28 15:23:58.1192830] : "Ref : 1" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\HandleTest.cpp line: 14] 
+
+[Trace] [2025-11-28 15:23:58.1192939] : "Ref : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\HandleTest.cpp line: 16] 
+
+[Trace] [2025-11-28 15:23:58.1192966] : "Ref : 3" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\HandleTest.cpp line: 19] 
+
+[Trace] [2025-11-28 15:23:58.1193178] : "Ref : 2" 
+ from [file: D:\Visual Studio Project\CaIEngine\test\HandleTest.cpp line: 21] 
+

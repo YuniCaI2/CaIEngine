@@ -10,10 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
 #include "VulkanDebug.h"
-#include "FrameGraph/RenderPassManager.h"
 #include "FrameGraph/ResourceManager.h"
-#include "FrameGraph/UniformPass/BloomingPass.h"
-#include "FrameGraph/UniformPass/DownSamplingPass.h"
 
 class BaseScene : public FrameWork::Scene{
 public:
@@ -35,12 +32,6 @@ private:
     uint32_t globalSlotID = -1;
     std::vector<uint32_t> modelID;
     uint32_t presentColorAttachment = -1;
-
-
-    //MSAA Resource
-    uint32_t msaaPipelineID = -1;
-    uint32_t msaaFrameBufferID = -1;
-
     //SSAA Resource
     float ssaa = 1.0f;
 
@@ -50,7 +41,7 @@ private:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
-    
+
     // 场景数据
     bool useMSAA = false;
     FrameWork::Camera* cameraPtr{};
@@ -66,15 +57,13 @@ private:
     std::unique_ptr<FG::FrameGraph> frameGraph;
     //持久资源
     uint32_t vulkanModelID = -1;
-    uint32_t presentMaterialID = -1;
-    uint32_t resolveMaterialID = -1; // 本质和present
+    FrameWork::Handle<FrameWork::CaIMaterial> presentMaterialHandle;
+    FrameWork::Handle<FrameWork::CaIMaterial> resolveMaterialHandle;
     //这边是一个模型对应一个Material
-    uint32_t caiShaderID = -1;
-    std::vector<uint32_t> materials; //这个对应每个mesh
-    uint32_t presentShaderID = -1;
-    uint32_t resolveShaderID = -1;
-    uint32_t testShader = -1;
-    uint32_t compShaderID = -1;
+    FrameWork::Handle<FrameWork::CaIShader> shaderHandle;
+    std::vector<FrameWork::Handle<FrameWork::CaIMaterial>> materialHandles;
+    FrameWork::Handle<FrameWork::CaIShader> presentShaderHandle;
+    FrameWork::Handle<FrameWork::CaIShader> resolveShaderHandle;
 
 
     uint32_t colorAttachment = 0;
@@ -83,7 +72,6 @@ private:
     uint32_t bloomingAttachment = 0;
     uint32_t swapChainAttachment = 0;
     std::vector<uint32_t> generateMipAttachments;
-    std::vector<uint32_t> compMaterials;//和pass对应起来
 };
 
 

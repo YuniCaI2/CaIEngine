@@ -204,7 +204,7 @@ protected:
         >;
 
     ReleaseQueueList releaseQueueList;
-    
+
 
     template<FrameWork::VulkanResourceType T>
     void DeleteResourceToQueue(T* ptr) { //这个指针待删除
@@ -425,6 +425,8 @@ public:
     void CreateMaterial(uint32_t &materialIdx, const std::vector<FrameWork::TextureFullData> &texDatas);
 
     void CreateMaterialData(FrameWork::CaIMaterial& caiMaterial);
+
+    void CreateMaterialData(uint32_t& materialDataID, const FrameWork::Handle<FrameWork::CaIShader>& shaderHandle);
 
     void CreateCompMaterialData(FrameWork::CompMaterial& compMaterial);
 
@@ -740,7 +742,7 @@ public:
         std::get<FrameWork::ResourcePool<T>>(resourceLists).Delete(index, [this](T* ptr){
             this->DeleteResourceToQueue<T>(ptr); });
     }
-    
+
     template <FrameWork::VulkanResourceType T>
     uint32_t CreateResource() {
         return std::get<FrameWork::ResourcePool<T>>(resourceLists).CreateResource();
@@ -769,7 +771,7 @@ public:
     // }
 
     // //Debug接口
-    // template<typename T> 
+    // template<typename T>
     // uint32_t GetRefNum(uint32_t index){
     //     return std::get<FrameWork::ResourcePool<T>>(resourceLists).GetRefNum(index);
     // }

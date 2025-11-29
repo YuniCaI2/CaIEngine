@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"D:/Visual Studio Project/CaIEngine/build-vs/cmake_install.cmake",
+		"D:/Visual Studio Project/CaIEngine/build-vs/FrameWork/cmake_install.cmake",
+		"D:/Visual Studio Project/CaIEngine/build-vs/FrameWork/thirdPart/cmake_install.cmake",
+		"D:/Visual Studio Project/CaIEngine/build-vs/FrameWork/thirdPart/glm/cmake_install.cmake",
+		"D:/Visual Studio Project/CaIEngine/build-vs/FrameWork/thirdPart/imgui/cmake_install.cmake",
+		"D:/Visual Studio Project/CaIEngine/build-vs/test/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

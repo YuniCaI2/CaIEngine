@@ -8,7 +8,6 @@
 #include"vulkanFrameWork.h"
 #include <cstdint>
 #include <stdexcept>
-#include <type_traits>
 
 //TODO: 添加错误处理保证后续热加载CaIShader时不影响原本的程序运行，比如使用默认的Shader etc.
 FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
@@ -36,7 +35,6 @@ FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::stri
         return caiShaderPool.back();
     }
 }
-
 
 void FrameWork::CaIShader::Destroy(uint32_t &id) {
     if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
@@ -107,6 +105,7 @@ void * FrameWork::CaIShader::GetShaderPropertyAddress(uint32_t materialDataID, c
     return nullptr;
 }
 
+
 void FrameWork::CaIShader::Bind(const VkCommandBuffer &cmdBuffer) const {
     auto pipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipeline;
     vkCmdBindPipeline(
@@ -152,4 +151,34 @@ namespace FrameWork
         return CaIShader::caiShaderWrappedPool.GetRefNum(id);
     }
 
+    ShaderInfo CaIShader::GetInfo(const Handle<CaIShader>& shaderHandle) {
+        return CaIShader::caiShaderWrappedPool.GetResource(shaderHandle.index)->GetShaderInfo();
+    }
+
+    uint32_t CaIShader::GetPipelineID(const Handle<CaIShader>& pipelineShader){
+        return CaIShader::caiShaderWrappedPool.GetResource(pipelineShader.index)->pipelineID;
+    }
+
+    void* CaIShader::GetShaderPropertyAddress(const Handle<CaIShader>& shaderHandle, const Handle<CaIMaterial>& materialHandle, const std::string& name, uint32_t id){
+        auto materialData = vulkanRenderAPI.getByIndex<FrameWork::MaterialData>(
+            CaIMaterial::GetMaterialDataID(materialHandle)
+        );
+        auto shaderInfo = CaIShader::GetInfo(shaderHandle);
+        auto shaderPath = CaIShader::caiShaderWrappedPool.GetResource(shaderHandle.index)->shaderPath;
+        //根据name遍历找到对应的地址
+        for (auto& property :  shaderInfo.vertProperties.baseProperties) {
+            if (property.name == name) {
+                return reinterpret_cast<char*>
+                (materialData->vertexUniformBuffers[vulkanRenderAPI.currentFrame].mapped) + property.offset + property.arrayOffset * id;
+            }
+        }
+        for (auto& property : shaderInfo.fragProperties.baseProperties) {
+            if (property.name == name) {
+                return reinterpret_cast<char*>
+                (materialData->fragmentUniformBuffers[vulkanRenderAPI.currentFrame].mapped) + property.offset + property.arrayOffset * id;
+            }
+        }
+        LOG_ERROR("Can't find shader property name : {} in {}", name, shaderPath);
+        return nullptr;
+    }
 }
