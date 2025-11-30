@@ -5,6 +5,7 @@
 #ifndef CAIENGINE_DOWNSAMPLINGPASS_H
 #define CAIENGINE_DOWNSAMPLINGPASS_H
 #include "UniformPass.h"
+#include "../../PublicStruct.h"
 
 namespace FG  {
     class DownSamplingPass : public UniformPass{
@@ -20,8 +21,11 @@ namespace FG  {
         uint32_t mipmapLevels{};
         std::vector<uint32_t> generateMipAttachments;
         std::vector<uint32_t> compMaterials;
+        std::vector<FrameWork::Handle<FrameWork::CompMaterial>> compMaterialHandles{};
         std::vector<uint32_t> generateMipPasses;
+
         uint32_t compShaderID{};
+        FrameWork::Handle<FrameWork::CompShader> compShaderHandle{};
 
         FrameGraph* frameGraph{};
         uint32_t colorAttachment{};

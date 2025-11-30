@@ -32,10 +32,10 @@ namespace FG {
 
 namespace FrameWork {
     class CompMaterial;
+    class CompShader;
 }
 
 class VulkanSwapChain;
-
 class vulkanFrameWork {
 private:
     vulkanFrameWork();
@@ -429,6 +429,8 @@ public:
     void CreateMaterialData(uint32_t& materialDataID, const FrameWork::Handle<FrameWork::CaIShader>& shaderHandle);
 
     void CreateCompMaterialData(FrameWork::CompMaterial& compMaterial);
+
+    void CreateCompMaterialData(uint32_t& compMaterialDataID, const FrameWork::Handle<FrameWork::CompShader>& shaderHandle);
 
     void UpdateUniformBuffer(const std::vector<FrameWork::Buffer> &uniformBuffer, const std::vector<void *> &data,
                              const std::vector<uint32_t> &sizes, uint32_t offset);

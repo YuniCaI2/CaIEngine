@@ -3,6 +3,7 @@
 //
 
 #include "CompMaterial.h"
+#include "vulkanFrameWork.h"
 
 FrameWork::CompMaterial * FrameWork::CompMaterial::Create(uint32_t& materialID, uint32_t &shaderID) {
     for (int i = 0; i < compMaterialPool.size(); i++) {
@@ -254,4 +255,38 @@ void FrameWork::CompMaterial::Bind(const VkCommandBuffer &commandBuffer) const {
 FrameWork::CompMaterial::CompMaterial(uint32_t shaderRef) {
     this->shaderRef = shaderRef;
     vulkanRenderAPI.CreateCompMaterialData(*this);
+}
+FrameWork::CompMaterial::CompMaterial(const Handle<CompShader>& shaderHandle) {
+    this->shaderHandle = shaderHandle;
+    vulkanRenderAPI.CreateCompMaterialData(compDataID, shaderHandle);
+}
+
+namespace FrameWork
+{
+    Handle<CompMaterial> CompMaterial::CreateHandle(const Handle<CompShader>& shaderHandle){
+        uint32_t index = compMaterialWrappedPool.CreateResource(shaderHandle);
+        Handle<CompMaterial> handle;
+        handle.index = index;
+        return handle;
+    }
+    bool CompMaterial::Bind(Handle<CompMaterial>& handle, const VkCommandBuffer& cmdBuffer) {
+        if (!handle) {
+            LOG_ERROR("Trying to bind a non-existent CompMaterial handle");
+            return false;
+        }
+        auto material = compMaterialWrappedPool.GetResource(handle.index);
+        if (material) {
+            material->Bind(cmdBuffer);
+        } else {
+            LOG_ERROR("CompMaterial with index {} does not exist", handle.index);
+            return false;
+        }
+        return true;
+    }
+    uint32_t& CompMaterial::GetMaterialDataID(const Handle<CompMaterial>& handle) {
+        return compMaterialWrappedPool.GetResource(handle.index)->compDataID;
+    }
+    Handle<CompShader> CompMaterial::GetShaderHandle(const Handle<CompMaterial>& handle){
+        return compMaterialWrappedPool.GetResource(handle.index)->shaderHandle;
+    }
 }

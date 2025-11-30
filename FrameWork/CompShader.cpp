@@ -3,6 +3,8 @@
 //
 
 #include "CompShader.h"
+#include "vulkanFrameWork.h"
+#include "CompMaterial.h"
 
 FrameWork::CompShader* FrameWork::CompShader::Create(uint32_t& shaderID, const std::string& shaderPath) {
     for (int i = 0; i < compShaderPool.size(); i++) {
@@ -96,4 +98,54 @@ void FrameWork::CompShader::Bind(const VkCommandBuffer &cmdBuffer) const {
 FrameWork::CompShader::CompShader(const std::string &shaderPath) {
     this->shaderPath = shaderPath;
     compShaderInfo = vulkanRenderAPI.CreateCompPipeline(pipelineID, shaderPath);
+}
+
+namespace FrameWork {
+    Handle<CompShader> CompShader::CreateHandle(const std::string& shaderPath){
+        uint32_t index = compShaderWrappedPool.CreateResource(shaderPath);
+        Handle<CompShader> handle;
+        handle.index = index;
+        return handle;
+    }
+    bool CompShader::Bind(Handle<CompShader>& handle, const VkCommandBuffer& cmdBuffer){
+        if (!handle) {
+            LOG_ERROR("Trying to bind a non-existent CompShader handle");
+            return false;
+        }
+        auto shader = compShaderWrappedPool.GetResource(handle.index);
+        if (shader) {
+            shader->Bind(cmdBuffer);
+        } else {
+            LOG_ERROR("CaIShader with index {} does not exist", handle.index);
+            return false;
+        }
+        return true;
+    }
+    CompShaderInfo CompShader::GetInfo(const Handle<CompShader>& shaderHandle){
+        return compShaderWrappedPool.GetResource(shaderHandle.index)->GetShaderInfo();
+    }
+    void* CompShader::GetShaderPropertyAddress(const Handle<CompShader>& shaderHandle, const Handle<CompMaterial>& materialHandle,
+        const std::string& name, uint32_t id){
+        auto materialData = vulkanRenderAPI.getByIndex<FrameWork::CompMaterialData>(
+            CompMaterial::GetMaterialDataID(materialHandle)
+        );
+        auto compShaderInfo = CompShader::GetInfo(shaderHandle);
+        auto shaderPath = CompShader::compShaderWrappedPool.GetResource(shaderHandle.index)->shaderPath;
+        //根据name遍历找到对应的地址
+        //先绑定property
+        for (auto& property : compShaderInfo.shaderProperties.baseProperties) {
+            if (property.name == name) {
+                return reinterpret_cast<char*>
+                (materialData->uniformBuffers[vulkanRenderAPI.currentFrame].mapped) +
+                    property.offset + property.arrayOffset * id;
+            }
+        }
+        LOG_ERROR("PropertyName : {} not found in shader", name);
+        return nullptr;
+        LOG_ERROR("Can't find shader property name : {} in {}", name, shaderPath);
+        return nullptr;
+    }
+    uint32_t CompShader::GetPipelineID(const Handle<CompShader>& pipelineShader){
+        return compShaderWrappedPool.GetResource(pipelineShader.index)->pipelineID;
+    }
 }

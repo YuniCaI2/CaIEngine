@@ -19,7 +19,6 @@
 #include "VulkanTool.h"
 #include "VulkanWindow.h"
 #include "FrameGraph/ResourceManager.h"
-#include "FrameGraph/ThreadPool.h"
 #define VOLK_IMPLEMENTATION
 #define _VALIDATION
 
@@ -1824,6 +1823,77 @@ void vulkanFrameWork::CreateCompMaterialData(FrameWork::CompMaterial &compMateri
     auto pipeline = getByIndex<FrameWork::VulkanPipeline>(shaderRef->GetPipelineID());
     auto shaderInfo = shaderRef->GetShaderInfo();
 
+
+    //创建uniformBuffer
+    if (!shaderInfo.shaderProperties.baseProperties.empty()) {
+        compData->uniformBuffers.resize(MAX_FRAME);
+    }
+
+    for (int i = 0; i < MAX_FRAME; i++) {
+        if (!shaderInfo.shaderProperties.baseProperties.empty()) {
+            compData->uniformBuffers[i] =
+                CreateUniformBuffer(shaderInfo.shaderProperties.baseProperties);
+        }
+    }
+
+    //Allocate DescriptorSet
+    compData->descriptorSets.resize(MAX_FRAME);
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+    std::vector<VkDescriptorType> descriptorTypes;
+
+    if (!shaderInfo.shaderProperties.baseProperties.empty()) {
+        descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    }
+    if (!shaderInfo.shaderProperties.textureProperties.empty()) {
+        descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    }
+    if (!shaderInfo.ssbos.empty()) {
+        for (auto& ssbo : shaderInfo.ssbos) {
+            if (ssbo.type == StorageObjectType::Buffer) {
+                descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            }else {
+                descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            }
+        }
+    }
+
+    for (uint32_t i = 0; i < MAX_FRAME; i++) {
+        vulkanDescriptorPool.AllocateDescriptorSet(pipeline->descriptorSetLayouts.back(),
+            descriptorTypes, compData->descriptorSets[i]
+        );
+
+        if (!compData->uniformBuffers.empty()) {
+            VkWriteDescriptorSet descriptorWrite = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = compData->descriptorSets[i],
+                .dstBinding = shaderInfo.shaderProperties.baseProperties[0].binding, //绑定点是首位
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &compData->uniformBuffers[i].descriptor,
+             };
+            descriptorWrites.push_back(descriptorWrite);
+        }
+
+        vkUpdateDescriptorSets(device,
+        static_cast<uint32_t>(descriptorWrites.size()),
+        descriptorWrites.data(), 0, nullptr
+        );
+    }
+
+    //Texture 和 SSBO需要在后续Set绑定
+}
+
+void vulkanFrameWork::CreateCompMaterialData(uint32_t& compMaterialDataID, const FrameWork::Handle<FrameWork::CompShader>& shaderHandle) {
+    compMaterialDataID = getNextIndex<FrameWork::CompMaterialData>();
+    auto compData = getByIndex<FrameWork::CompMaterialData>(compMaterialDataID);
+    compData->inUse = true;
+    auto pipeline = getByIndex<FrameWork::VulkanPipeline>(
+        FrameWork::CompShader::GetPipelineID(shaderHandle)
+    );
+    auto shaderInfo = FrameWork::CompShader::GetInfo(shaderHandle);
 
     //创建uniformBuffer
     if (!shaderInfo.shaderProperties.baseProperties.empty()) {

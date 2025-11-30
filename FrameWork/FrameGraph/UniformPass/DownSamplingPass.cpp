@@ -19,15 +19,17 @@ FG::DownSamplingPass::DownSamplingPass(FrameGraph* frameGraph, uint32_t mipmapLe
     this->frameGraph = frameGraph;
 
     compMaterials.resize(mipmapLevels - 1);
+    compMaterialHandles.resize(mipmapLevels - 1);
     //创建外部变量
     FrameWork::CompShader::Create(compShaderID, shaderPath.data());
+    compShaderHandle = FrameWork::CompShader::CreateHandle(shaderPath.data());
     for (int i = 0; i < mipmapLevels - 1; i++) {
         FrameWork::CompMaterial::Create(compMaterials[i], compShaderID);
+        compMaterialHandles[i] = FrameWork::CompMaterial::CreateHandle(compShaderHandle);
     }
     //创建纹理
     generateMipAttachments.resize(mipmapLevels - 1);
     generateMipPasses.resize(mipmapLevels - 1);
-
 
 }
 
@@ -80,6 +82,9 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                     width = desc->width / std::pow(2, i + 1);
                     height = desc->height / std::pow(2, i + 1);
                     FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
+
+                    //Handle
+                    FrameWork::CompShader::Bind(compShaderHandle, cmdBuffer);
                     if (i != 0) {
                         compMaterial->SetAttachment(
                             "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i - 1]));
@@ -93,6 +98,9 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                     compMaterial->SetParam("dstScale", glm::vec2(width, height));
                     compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
                     compMaterial->Bind(cmdBuffer);
+
+                    //MaterialHandle
+
                     vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                         (height + 15) / 16, 1);
                 });

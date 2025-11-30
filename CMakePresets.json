@@ -2,11 +2,11 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "windows-msvc",
-      "displayName": "Windows MSVC x64",
-      "description": "Target Windows with MSVC compiler using Ninja",
+      "name": "windows-base",
+      "hidden": false,
+      "description": "Base configuration for Windows x64 using Ninja and Vcpkg",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build-vs",
+      "binaryDir": "${sourceDir}/build/",
       "architecture": {
         "value": "x64",
         "strategy": "external"
@@ -14,9 +14,35 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_TOOLCHAIN_FILE": "C:/Users/51092/vcpkg/scripts/buildsystems/vcpkg.cmake"
-      },
-      "environment": {}
+        "CMAKE_TOOLCHAIN_FILE": "C:/Users/51092/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
+      }
+    },
+    {
+      "name": "msvc",
+      "displayName": "MSVC (cl.exe)",
+      "description": "Use native MSVC compiler",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "Embedded"
+      }
+    },
+    {
+      "name": "clang",
+      "displayName": "Clang (GNU-style Frontend)",
+      "description": "Use clang++.exe",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang.exe",
+        "CMAKE_CXX_COMPILER": "clang++.exe",
+        "OpenMP_C_FLAGS": "-Xclang -fopenmp",
+        "OpenMP_CXX_FLAGS": "-Xclang -fopenmp",
+        "OpenMP_C_LIB_NAMES": "libomp",
+        "OpenMP_CXX_LIB_NAMES": "libomp",
+        "OpenMP_libomp_LIBRARY": "C:/CppTool/llvm-mingw/x86_64-w64-mingw32/lib/libomp.dll.a"
+      }
     }
   ]
 }

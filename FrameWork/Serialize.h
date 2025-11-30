@@ -140,7 +140,7 @@ struct nlohmann::adl_serializer<std::shared_ptr<T>> {
     struct nlohmann::adl_serializer<std::filesystem::file_time_type> {
         static void to_json(nlohmann::json& j, const std::filesystem::file_time_type& p) {
             using namespace std::chrono;
-#ifdef _WIN32
+#ifdef _MSC_VER
             // MSVC：file_clock <-> utc_time
             const auto utc_tp = file_clock::to_utc(p); // utc_time<file_clock::duration>
             const auto utc_ns = time_point_cast<nanoseconds>(utc_tp);
@@ -157,7 +157,7 @@ struct nlohmann::adl_serializer<std::shared_ptr<T>> {
             using namespace std::chrono;
             long long ns = 0;
             j.get_to(ns);
-#ifdef _WIN32
+#ifdef _MSC_VER
             // 先还原为 utc_time<nanoseconds>，再按 file_clock::duration 截断/转换
             utc_time<nanoseconds> utc_tp{nanoseconds{ns}};
             auto utc_tp_fc_res = time_point_cast<file_clock::duration>(utc_tp);

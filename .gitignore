@@ -151,3 +151,4 @@ x64-Debug
 .idea
 CMakeSettings.json
 .clangd
+build-vs

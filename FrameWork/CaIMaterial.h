@@ -43,10 +43,11 @@ namespace FrameWork {
         template<typename Param>
         static void SetParam(const Handle<CaIMaterial>& handle, const std::string& name, const Param& param, uint32_t index = 0) {
             FrameWork::CaIMaterial* material = caiMaterialWrappedPool.GetResource(handle.index);
-            if (CaIShader::Get(material->shaderHandle) == nullptr) {
+            if (!material->shaderHandle) {
                 LOG_ERROR("Can't set the param {} ,the material Shader has been destroyed", name);
             }
-            auto address = CaIShader::Get(material->shaderHandle)->GetShaderPropertyAddress(material->dataID, name, index);
+            auto address = CaIShader::GetShaderPropertyAddress(
+                material->shaderHandle, handle, name, index);
             if (address != nullptr) {
                 memcpy(address, &param, sizeof(Param));
             }
