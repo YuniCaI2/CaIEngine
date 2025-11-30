@@ -3,13 +3,18 @@
   "configurePresets": [
     {
       "name": "windows-base",
-      "hidden": false,
+      "hidden": true,
       "description": "Base configuration for Windows x64 using Ninja and Vcpkg",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/",
       "architecture": {
         "value": "x64",
         "strategy": "external"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -19,9 +24,26 @@
       }
     },
     {
-      "name": "msvc",
-      "displayName": "MSVC (cl.exe)",
-      "description": "Use native MSVC compiler",
+      "name": "linux-base",
+      "hidden": true,
+      "description": "Base configuration for Linux x64 using Ninja and Vcpkg",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "win-msvc",
+      "displayName": "Windows MSVC",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl.exe",
@@ -30,9 +52,8 @@
       }
     },
     {
-      "name": "clang",
-      "displayName": "Clang (GNU-style Frontend)",
-      "description": "Use clang++.exe",
+      "name": "win-clang",
+      "displayName": "Windows Clang",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang.exe",
@@ -42,6 +63,24 @@
         "OpenMP_C_LIB_NAMES": "libomp",
         "OpenMP_CXX_LIB_NAMES": "libomp",
         "OpenMP_libomp_LIBRARY": "C:/CppTool/llvm-mingw/x86_64-w64-mingw32/lib/libomp.dll.a"
+      }
+    },
+    {
+      "name": "linux-gcc",
+      "displayName": "Linux GCC",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "linux-clang",
+      "displayName": "Linux Clang",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
       }
     }
   ]

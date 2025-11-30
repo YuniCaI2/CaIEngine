@@ -4,7 +4,6 @@
 
 #include "LTCScene.h"
 #include <vulkanFrameWork.h>
-#include <array>
 
 LTCScene::LTCScene(FrameWork::Camera *camera) {
     auto& api = vulkanRenderAPI;

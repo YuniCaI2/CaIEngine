@@ -4,7 +4,7 @@
 
 #ifndef LTCSCENE_H
 #define LTCSCENE_H
-#include "Scene.h"
+#include "../FrameWork/Scene.h"
 #include "FrameGraph/FrameGraph.h"
 #include "FrameGraph/UniformPass/BloomingPass.h"
 

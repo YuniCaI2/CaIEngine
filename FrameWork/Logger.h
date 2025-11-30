@@ -17,6 +17,7 @@
 #include <print>
 #include<thread>
 #include <filesystem>
+#include<condition_variable>
 
 //此Logger类使用单例实现
 class Logger {

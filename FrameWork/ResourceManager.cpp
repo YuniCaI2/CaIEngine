@@ -16,9 +16,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "ShaderParse.h"
-#ifdef _WIN32
 #include <DirectXTex.h>
-#endif
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <stb_image.h>
@@ -445,7 +443,6 @@ FrameWork::TextureFullData FrameWork::ResourceManager::LoadTextureFullData(const
 
 FrameWork::TextureFullData FrameWork::ResourceManager::LoadDDSTexture(const std::string &filePath, TextureTypeFlagBits type) {
     TextureFullData texData{};
-#ifdef _WIN32
     using namespace DirectX;
     texData.path = filePath;
     texData.type = type;
@@ -491,7 +488,6 @@ FrameWork::TextureFullData FrameWork::ResourceManager::LoadDDSTexture(const std:
     texData.height = static_cast<int>(metadata.height);
     texData.numChannels = 4; // DDS文件我们只支持4通道
     texData.data = data;
-#endif
 
 
     return texData;
@@ -521,7 +517,6 @@ FrameWork::TextureFullData FrameWork::ResourceManager::LoadSTBTexture(const std:
 }
 
 void FrameWork::ResourceManager::LoadDDSTextureAsset(const std::string &filePath, TextureAsset &textureAsset) {
-#ifdef _WIN32
     using namespace DirectX;
     textureAsset.sourcePath = filePath;
 
@@ -566,7 +561,6 @@ void FrameWork::ResourceManager::LoadDDSTextureAsset(const std::string &filePath
     textureAsset.height = static_cast<int>(metadata.height);
     textureAsset.numChannel = 4; // DDS文件我们只支持4通道
     textureAsset.data = data;
-#endif
 }
 
 void FrameWork::ResourceManager::LoadSTBTextureAsset(const std::string &filePath, TextureAsset &textureAsset) {

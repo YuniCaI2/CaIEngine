@@ -56,7 +56,7 @@ void BaseScene::CreateFrameGraphResource() {
          materialHandles[i] = FrameWork::CaIMaterial::CreateHandle(shaderHandle);
          FrameWork::CaIMaterial::SetTexture(materialHandles[i], "colorSampler", model->textures[i][DiffuseColor]);
      }
-    std::string presentShaderPath = "../resources/CaIShaders/Present/Present.caishader";
+    std::string presentShaderPath = "../resources/CaIShaders/Present/present.caishader";
     presentShaderHandle = FrameWork::CaIShader::CreateHandle(presentShaderPath, vulkanRenderAPI.GetVulkanSwapChain().colorFormat);
     resolveShaderHandle = FrameWork::CaIShader::CreateHandle(presentShaderPath, VK_FORMAT_R16G16B16A16_SFLOAT);
     presentMaterialHandle = FrameWork::CaIMaterial::CreateHandle(presentShaderHandle);

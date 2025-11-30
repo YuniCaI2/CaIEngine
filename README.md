@@ -110,7 +110,7 @@
          FrameWork::CaIMaterial::Create(materials[i], caiShaderID);
          FrameWork::CaIMaterial::Get(materials[i])->SetTexture("colorSampler", model->textures[i][DiffuseColor]);
      }
-    std::string presentShaderPath = "../resources/CaIShaders/Present/Present.caishader";
+    std::string presentShaderPath = "../resources/CaIShaders/Present/present.caishader";
     FrameWork::CaIShader::Create(presentShaderID, presentShaderPath);
     FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
 
@@ -222,4 +222,3 @@
   以下是LTC场景的展示
 
   <img width="1275" height="716" alt="image" src="https://github.com/user-attachments/assets/b34611ca-60a6-4478-a27a-c26e47100517" />
-

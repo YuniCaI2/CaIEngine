@@ -13,8 +13,8 @@ endif ()
 
 
 file(GLOB scenePath CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/scene/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Scene/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Scene/*.cpp"
 )
 
 add_subdirectory(FrameWork)

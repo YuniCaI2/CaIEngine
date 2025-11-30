@@ -46,10 +46,10 @@ public:
         //创建场景
         auto scene1 = std::make_unique<BaseScene>(camera);
         scenes.push_back(std::move(scene1));
-#ifdef _WIN32
+
         auto scene2 = std::make_unique<LTCScene>(&camera);
         scenes.push_back(std::move(scene2));
-#endif
+
         GUI.InitFrameWorkGUI();
         SetGUI();
     }

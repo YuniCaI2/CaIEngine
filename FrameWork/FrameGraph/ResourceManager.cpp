@@ -3,7 +3,6 @@
 //
 
 #include "ResourceManager.h"
-#include "ThreadPool.h"
 
 
 uint32_t FG::ResourceManager::RegisterResource(const std::function<void(std::unique_ptr<ResourceDescription>&)> &Func) {
@@ -179,4 +178,3 @@ uint32_t FG::ResourceManager::GetVulkanIndex(uint32_t resourceIndex) {
 std::vector<std::unique_ptr<FG::AliasGroup>> & FG::ResourceManager::GetAliasGroups() {
     return aliasGroups;
 }
-

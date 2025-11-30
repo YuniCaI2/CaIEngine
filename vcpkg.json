@@ -6,6 +6,9 @@
       "name": "assimp"
     },
     {
+      "name": "glm"
+    },
+    {
       "name": "glfw3"
     },
     {

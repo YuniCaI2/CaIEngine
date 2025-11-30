@@ -10,8 +10,10 @@ find_package(EnTT CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-if(WIN32)
-    find_package(directxtex CONFIG REQUIRED)
+find_package(directxtex CONFIG REQUIRED)
+if(LINUX)
+    # Linux-specific settings (if any)
+    find_package(X11 REQUIRED)
 endif()
 
 add_subdirectory(thirdPart)
@@ -67,6 +69,9 @@ add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${EC
         CompShader.h
         Editor/Panel.h
 )
+if(LINUX)
+    target_link_libraries(FrameWork PUBLIC X11::X11)
+endif()
 if (MSVC)
     target_compile_options(FrameWork PRIVATE /bigobj)
 endif()
@@ -83,10 +88,7 @@ target_link_libraries(FrameWork PUBLIC
 )
 
 # 平台特定的库和配置
-if(WIN32)
-    target_link_libraries(FrameWork PRIVATE Microsoft::DirectXTex)
-elseif(APPLE)
-endif()
+target_link_libraries(FrameWork PRIVATE Microsoft::DirectXTex)
 target_link_libraries(FrameWork PUBLIC imgui)
 
 # 第三方库头文件路径

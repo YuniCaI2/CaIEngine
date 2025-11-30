@@ -61,7 +61,7 @@ struct adl_serializer<glm::vec<L, T, Q>> {
 
 // JSON: 行优先（R 个数组，每个数组长度 C）
 template<glm::length_t C, glm::length_t R, class T, glm::qualifier Q>
-struct nlohmann::adl_serializer<glm::mat<C, R, T, Q>> {
+struct adl_serializer<glm::mat<C, R, T, Q>> {
     static void to_json(nlohmann::json& j, const glm::mat<C, R, T, Q>& m) {
         j = nlohmann::json::array();
         for (glm::length_t r = 0; r < R; ++r) {
@@ -105,7 +105,7 @@ struct adl_serializer<glm::qua<T, Q>> {
 
 //智能指针
 template<typename T>
-struct nlohmann::adl_serializer<std::unique_ptr<T>> {
+struct adl_serializer<std::unique_ptr<T>> {
     static void to_json(nlohmann::json& j, const std::unique_ptr<T>& p) {
         if (p != nullptr)
             j = *p;
@@ -121,7 +121,7 @@ struct nlohmann::adl_serializer<std::unique_ptr<T>> {
 };
 
 template<typename T>
-struct nlohmann::adl_serializer<std::shared_ptr<T>> {
+struct adl_serializer<std::shared_ptr<T>> {
     static void to_json(nlohmann::json& j, const std::shared_ptr<T>& p) {
         if (p != nullptr)
             j = *p;
@@ -137,7 +137,7 @@ struct nlohmann::adl_serializer<std::shared_ptr<T>> {
 };
 
     template<>
-    struct nlohmann::adl_serializer<std::filesystem::file_time_type> {
+    struct adl_serializer<std::filesystem::file_time_type> {
         static void to_json(nlohmann::json& j, const std::filesystem::file_time_type& p) {
             using namespace std::chrono;
 #ifdef _MSC_VER
