@@ -2641,7 +2641,6 @@ void vulkanFrameWork::windowResize() {
 
 void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
     vkWaitForFences(device, 1, &waitFences[currentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(device, 1, &waitFences[currentFrame]);
     frameCounter++;
     frameTimer = deltaMilliTime /1000.0f;
 
@@ -2668,6 +2667,7 @@ void vulkanFrameWork::prepareFrame(double deltaMilliTime) {
     else {
         VK_CHECK_RESULT(result);
     }
+    vkResetFences(device, 1, &waitFences[currentFrame]);
     vkResetCommandBuffer(drawCmdBuffers[currentFrame], 0);
 }
 
