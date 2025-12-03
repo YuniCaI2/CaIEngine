@@ -47,6 +47,18 @@ FrameWork::CompShader * FrameWork::CompShader::Get(uint32_t id) {
     return compShaderPool[id];
 }
 
+FrameWork::CompShader *FrameWork::CompShader::Get(const Handle<CompShader> &handle) {
+    if (!handle) {
+        LOG_ERROR("Trying to access non-existent CompShader handle");
+        return nullptr;
+    }
+    auto shader = compShaderWrappedPool.GetResource(handle.index);
+    if (shader == nullptr) {
+        LOG_ERROR("CompShader handle {} is nullptr", handle.index);
+    }
+    return shader;
+}
+
 bool FrameWork::CompShader::exist(uint32_t id) {
     if (id >= compShaderPool.size()) {
         LOG_ERROR("CompShader ID : {} out of range", id);

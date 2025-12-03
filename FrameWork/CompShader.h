@@ -14,6 +14,7 @@ namespace FrameWork {
         static void Destroy(const uint32_t &id);
         static void DestroyAll();
         static CompShader* Get(uint32_t id);
+        static CompShader* Get(const Handle<CompShader>& handle);
         static bool exist(uint32_t id);
 
         //Handle

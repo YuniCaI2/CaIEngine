@@ -4,6 +4,9 @@
 
 #ifndef CAIENGINE_BLOOMINGPASS_H
 #define CAIENGINE_BLOOMINGPASS_H
+#include "../../CompMaterial.h"
+#include "../../CompShader.h"
+#include "../../PublicStruct.h"
 #include "UniformPass.h"
 #include "DownSamplingPass.h"
 
@@ -25,19 +28,27 @@ namespace FG {
 
         std::vector<uint32_t> compRowMaterials;
         std::vector<uint32_t> compColMaterials;
+        std::vector<FrameWork::Handle<FrameWork::CompMaterial>> compRowMaterialHandles;
+        std::vector<FrameWork::Handle<FrameWork::CompMaterial>> compColMaterialHandles;
         uint32_t getSpecMaterialID;
         uint32_t blendMaterialID;
-
+        FrameWork::Handle<FrameWork::CompMaterial> getSpecMaterialHandle;
+        FrameWork::Handle<FrameWork::CompMaterial> blendMaterialHandle;
         uint32_t generatePass;
         uint32_t specPass;
         uint32_t upRowPass;
         uint32_t upColPass;
         std::vector<uint32_t> upSamplingPass;
         uint32_t blendPass;
+
         uint32_t rowShaderID;
         uint32_t colShaderID;
         uint32_t specShaderID;
         uint32_t blendShaderID;
+        FrameWork::Handle<FrameWork::CompShader> rowShaderHandle;
+        FrameWork::Handle<FrameWork::CompShader> colShaderHandle;
+        FrameWork::Handle<FrameWork::CompShader> specShaderHandle;
+        FrameWork::Handle<FrameWork::CompShader> blendShaderHandle;
 
         FrameGraph* frameGraph;
         uint32_t colorAttachment;//附件不需要MipmapLevel

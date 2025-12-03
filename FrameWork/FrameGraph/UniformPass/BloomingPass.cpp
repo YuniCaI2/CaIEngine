@@ -7,12 +7,6 @@
 #include "../../CompMaterial.h"
 
 FG::BloomingPass::~BloomingPass() {
-    for (int i = 0; i < mipmapLevels; i++) {
-        FrameWork::CompMaterial::Destroy(compRowMaterials[i]);
-        FrameWork::CompMaterial::Destroy(compColMaterials[i]);
-    }
-    FrameWork::CompShader::Destroy(colShaderID);
-    FrameWork::CompShader::Destroy(rowShaderID);
 }
 
 FG::BloomingPass::BloomingPass(FrameGraph *frameGraph, uint32_t mipmapLevels, float*  thres): downSampling(frameGraph, mipmapLevels) {
@@ -20,20 +14,25 @@ FG::BloomingPass::BloomingPass(FrameGraph *frameGraph, uint32_t mipmapLevels, fl
     this->frameGraph = frameGraph;
     this->threshold = thres;
 
-    compColMaterials.resize(mipmapLevels);
-    compRowMaterials.resize(mipmapLevels);
 
-    //创建管线资源
-    FrameWork::CompShader::Create(rowShaderID, rowShaderPath.data());
-    FrameWork::CompShader::Create(colShaderID, colShaderPath.data());
-    FrameWork::CompShader::Create(specShaderID, specShaderPath.data());
-    FrameWork::CompShader::Create(blendShaderID, blendShaderPath.data());
+    //MaterialHandle
+    compColMaterialHandles.resize(mipmapLevels);
+    compRowMaterialHandles.resize(mipmapLevels);
+
+
+    //ShaderHandle
+    rowShaderHandle = FrameWork::CompShader::CreateHandle(rowShaderPath.data());
+    colShaderHandle = FrameWork::CompShader::CreateHandle(colShaderPath.data());
+    specShaderHandle = FrameWork::CompShader::CreateHandle(specShaderPath.data());
+    blendShaderHandle = FrameWork::CompShader::CreateHandle(blendShaderPath.data());
     for (int i = 0; i < mipmapLevels; i++) {
-        FrameWork::CompMaterial::Create(compColMaterials[i], colShaderID);
-        FrameWork::CompMaterial::Create(compRowMaterials[i], rowShaderID);
+        //MaterialHandle
+        compColMaterialHandles[i] = FrameWork::CompMaterial::CreateHandle(colShaderHandle);
+        compRowMaterialHandles[i] = FrameWork::CompMaterial::CreateHandle(rowShaderHandle);
     }
-    FrameWork::CompMaterial::Create(getSpecMaterialID, specShaderID);
-    FrameWork::CompMaterial::Create(blendMaterialID, blendShaderID);
+    //MaterialHandle
+    getSpecMaterialHandle = FrameWork::CompMaterial::CreateHandle(specShaderHandle);
+    blendMaterialHandle = FrameWork::CompMaterial::CreateHandle(blendShaderHandle);
 
 }
 
@@ -132,21 +131,25 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
             .SetPassType(PassType::Compute)
             .SetExec(
                 [&, texDesc](VkCommandBuffer cmdBuffer) {
+                    float thres = threshold ? *threshold : 1.0f;
                     uint32_t width = texDesc->width;
                     uint32_t height = texDesc->height;
-                    FrameWork::CompShader::Get(specShaderID)->Bind(cmdBuffer);
-                    auto material = FrameWork::CompMaterial::Get(getSpecMaterialID);
-                    material->SetAttachment(
+                    //Handle
+                    FrameWork::CompShader::Bind(specShaderHandle, cmdBuffer);
+                    //MaterialHandle
+                    FrameWork::CompMaterial::SetAttachment(getSpecMaterialHandle,
                         "srcImage", resourceManager.GetVulkanIndex(colorAttachment)
                         );
-                    material->SetStorageImage2D(
+                    FrameWork::CompMaterial::SetStorageImage2D(getSpecMaterialHandle,
                         "dstImage", resourceManager.GetVulkanIndex(specAttachment)
                         );
-                    float thres = threshold ? *threshold : 1.0f;
-                    material->SetParam("threshold", thres);
-                    material->SetParam("dstScale", glm::vec2(width, height));
-                    material->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-                    material->Bind(cmdBuffer);
+
+                    FrameWork::CompMaterial::SetParam(getSpecMaterialHandle, "threshold", thres);
+                    FrameWork::CompMaterial::SetParam(getSpecMaterialHandle, "dstScale", glm::vec2(width, height));
+                    FrameWork::CompMaterial::SetParam(getSpecMaterialHandle, "invDstScale", glm::vec2(1.0f / width, 1.0f / height));
+                    FrameWork::CompMaterial::Bind(getSpecMaterialHandle, cmdBuffer);
+
+
                     vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                         (height + 15) / 16, 1);
                 });
@@ -167,14 +170,17 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
                 for (int i = mipmapLevels - 1; i >= 0; i--) {
                     uint32_t width = (double)texDesc->width / std::pow(2, i);
                     uint32_t height = (double)texDesc->height / std::pow(2, i);
-                    auto rowMaterial = FrameWork::CompMaterial::Get(compRowMaterials[i]);
-                    rowMaterial->SetStorageImage2D("dstImage", resourceManager.GetVulkanIndex(generateRowAttachment), i);
-                    rowMaterial->SetTexture("srcImage", resourceManager.GetVulkanIndex(downSamplingAttachment));
-                    rowMaterial->SetParam("dstLod", static_cast<float>(i));
-                    rowMaterial->SetParam("dstScale", glm::vec2(width, height));
-                    rowMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-                    FrameWork::CompShader::Get(rowShaderID)->Bind(cmdBuffer);
-                    rowMaterial->Bind(cmdBuffer);
+                    //ShaderHandle
+                    FrameWork::CompShader::Bind(rowShaderHandle, cmdBuffer);
+
+                    //MaterialHandle
+                    FrameWork::CompMaterial::SetStorageImage2D(compRowMaterialHandles[i],"dstImage", resourceManager.GetVulkanIndex(generateRowAttachment), i);
+                    FrameWork::CompMaterial::SetTexture(compRowMaterialHandles[i],"srcImage", resourceManager.GetVulkanIndex(downSamplingAttachment));
+                    FrameWork::CompMaterial::SetParam(compRowMaterialHandles[i],"dstLod", static_cast<float>(i));
+                    FrameWork::CompMaterial::SetParam(compRowMaterialHandles[i],"dstScale", glm::vec2(width, height));
+                    FrameWork::CompMaterial::SetParam(compRowMaterialHandles[i],"invDstScale", glm::vec2(1.0f / width, 1.0f / height));
+                    FrameWork::CompMaterial::Bind(compRowMaterialHandles[i], cmdBuffer);
+                    
                     vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                     (height + 15) / 16, 1);
                 }
@@ -193,16 +199,18 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
                 .SetExec([&, i, texDesc](VkCommandBuffer cmdBuffer) {
                     uint32_t width = (double)texDesc->width / std::pow(2, i);
                     uint32_t height = (double)texDesc->height / std::pow(2, i);
-                    auto colMaterial = FrameWork::CompMaterial::Get(compColMaterials[i]);
-                    colMaterial->SetStorageImage2D("dstImage", resourceManager.GetVulkanIndex(generateColAttachments[i]), i);
-                    colMaterial->SetTexture("srcImage", resourceManager.GetVulkanIndex(generateRowAttachment));
-                    colMaterial->SetTexture("blendImage", resourceManager.GetVulkanIndex(generateColAttachments[i]));
-                    colMaterial->SetParam("maxLod", static_cast<float>(mipmapLevels - 1));
-                    colMaterial->SetParam("dstLod", static_cast<float>(i));
-                    colMaterial->SetParam("dstScale", glm::vec2(width, height));
-                    colMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-                    FrameWork::CompShader::Get(colShaderID)->Bind(cmdBuffer);
-                    colMaterial->Bind(cmdBuffer);
+                    //Handle
+                    FrameWork::CompShader::Bind(colShaderHandle, cmdBuffer);
+                    //MaterialHandle
+                    FrameWork::CompMaterial::SetStorageImage2D(compColMaterialHandles[i],"dstImage", resourceManager.GetVulkanIndex(generateColAttachments[i]), i);
+                    FrameWork::CompMaterial::SetTexture(compColMaterialHandles[i],"srcImage", resourceManager.GetVulkanIndex(generateRowAttachment));
+                    FrameWork::CompMaterial::SetTexture(compColMaterialHandles[i],"blendImage", resourceManager.GetVulkanIndex(generateColAttachments[i]));
+                    FrameWork::CompMaterial::SetParam(compColMaterialHandles[i],"maxLod", static_cast<float>(mipmapLevels - 1));
+                    FrameWork::CompMaterial::SetParam(compColMaterialHandles[i],"dstLod", static_cast<float>(i));
+                    FrameWork::CompMaterial::SetParam(compColMaterialHandles[i],"dstScale", glm::vec2(width, height));
+                    FrameWork::CompMaterial::SetParam(compColMaterialHandles[i],"invDstScale", glm::vec2(1.0f / width, 1.0f / height));
+                    FrameWork::CompMaterial::Bind(compColMaterialHandles[i], cmdBuffer);
+
                     vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                     (height + 15) / 16, 1);
                 });
@@ -219,33 +227,6 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
         }
     }
 
-    // upColPass = renderPassManager.RegisterRenderPass(
-    //     [&, texDesc](std::unique_ptr<RenderPass>& renderPass) {
-    //         renderPass->SetName("upColPass")
-    //         .SetPassType(PassType::Compute)
-    //         .SetExec([&, texDesc](VkCommandBuffer cmdBuffer) {
-    //             for (int i = mipmapLevels - 1; i >= 0; i--) {
-    //                 uint32_t width = (double)texDesc->width / std::pow(2, i);
-    //                 uint32_t height = (double)texDesc->height / std::pow(2, i);
-    //                 auto colMaterial = FrameWork::CompMaterial::Get(compColMaterials[i]);
-    //                 colMaterial->SetStorageImage2D("dstImage", resourceManager.GetVulkanIndex(generateColAttachment), i);
-    //                 colMaterial->SetTexture("srcImage", resourceManager.GetVulkanIndex(generateRowAttachment));
-    //                 colMaterial->SetTexture("blendImage", resourceManager.GetVulkanIndex(generateColAttachment));
-    //                 colMaterial->SetParam("maxLod", mipmapLevels - 1);
-    //                 colMaterial->SetParam("dstLod", static_cast<float>(i));
-    //                 colMaterial->SetParam("dstScale", glm::vec2(width, height));
-    //                 colMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-    //                 FrameWork::CompShader::Get(colShaderID)->Bind(cmdBuffer);
-    //                 colMaterial->Bind(cmdBuffer);
-    //                 vkCmdDispatch(cmdBuffer, (width + 15) / 16,
-    //                 (height + 15) / 16, 1);
-    //             }
-    //             });
-    //     }
-    //     );
-    // renderPassManager.FindRenderPass(upColPass)->SetReadResource(generateRowAttachment).SetCreateResource(generateColAttachment);
-    // frameGraph->AddRenderPassNode(upColPass).AddResourceNode(generateColAttachment);
-
     //Blend
     blendPass = renderPassManager.RegisterRenderPass(
         [&](std::unique_ptr<RenderPass>& renderPass) {
@@ -254,13 +235,15 @@ void FG::BloomingPass::SetInputOutputResource(const uint32_t &index0, uint32_t &
             .SetExec([&, texDesc](VkCommandBuffer cmdBuffer) {
                 uint32_t width = texDesc->width;
                 uint32_t height = texDesc->height;
-                auto material = FrameWork::CompMaterial::Get(blendMaterialID);
-                material->SetTexture("srcImage", resourceManager.GetVulkanIndex(generateColAttachments[0]));
-                material->SetStorageImage2D("dstImage", resourceManager.GetVulkanIndex(colorAttachment), 0);
-                material->SetParam("dstScale", glm::vec2(width, height));
-                material->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-                FrameWork::CompShader::Get(blendShaderID)->Bind(cmdBuffer);
-                material->Bind(cmdBuffer);
+                //Handle
+                FrameWork::CompShader::Bind(blendShaderHandle, cmdBuffer);
+                //MaterialHandle
+                FrameWork::CompMaterial::SetTexture(blendMaterialHandle, "srcImage", resourceManager.GetVulkanIndex(generateColAttachments[0]));
+                FrameWork::CompMaterial::SetStorageImage2D(blendMaterialHandle, "dstImage", resourceManager.GetVulkanIndex(colorAttachment), 0);
+                FrameWork::CompMaterial::SetParam(blendMaterialHandle, "dstScale", glm::vec2(width, height));
+                FrameWork::CompMaterial::SetParam(blendMaterialHandle, "invDstScale", glm::vec2(1.0f / width, 1.0f / height));
+                FrameWork::CompMaterial::Bind(blendMaterialHandle, cmdBuffer);
+
                 vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                 (height + 15) / 16, 1);
             });

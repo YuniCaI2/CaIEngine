@@ -133,7 +133,6 @@ build/FrameWork/thirdPart/volk/volk.lib
 build/FrameWork/thirdPart/volk/CMakeFiles/volk.dir/volk.c.o
 build/FrameWork/thirdPart/volk/CMakeFiles/volk.dir/volk.c.obj
 build/FrameWork/thirdPart/volk/CMakeFiles/volk.dir/volk.pdb
-.vscode
 cmake-build-debug
 cmake-build-release
 build
@@ -152,3 +151,6 @@ x64-Debug
 CMakeSettings.json
 .clangd
 build-vs
+.vscode
+
+

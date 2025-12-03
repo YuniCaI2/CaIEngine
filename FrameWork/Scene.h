@@ -4,11 +4,9 @@
 
 #ifndef SCENE_H
 #define SCENE_H
-#include<vector>
-
-#include "Camera.h"
-#include "Light.h"
-#include "PublicStruct.h"
+#include <vulkan/vulkan_core.h>
+#include <functional>
+#include <string>
 
 namespace FrameWork{
     class Scene {

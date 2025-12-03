@@ -15,6 +15,7 @@ namespace FrameWork {
         static CaIShader* Create(uint32_t& id, const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
         static void Destroy(uint32_t& id);
         static CaIShader* Get(uint32_t id);
+        static CaIShader* Get(const Handle<CaIShader>& handle);
         static void DestroyAll();
         static bool exist(uint32_t id);
         static uint32_t GetRef(uint32_t id);

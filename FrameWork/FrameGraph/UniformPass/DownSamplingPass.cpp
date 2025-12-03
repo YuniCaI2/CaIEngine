@@ -76,30 +76,47 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
 
                 renderPass->SetName(name).SetPassType(FG::PassType::Compute)
                 .SetExec([&, i](VkCommandBuffer cmdBuffer) {
-                    auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
                     auto desc = frameGraph->GetResourceManager().FindResource(generateMipAttachments[i])->GetDescription<FG::TextureDescription>();
                     uint32_t width, height;
                     width = desc->width / std::pow(2, i + 1);
                     height = desc->height / std::pow(2, i + 1);
-                    FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
+                    // FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
 
-                    //Handle
+                    // //Handle
+                    // FrameWork::CompShader::Bind(compShaderHandle, cmdBuffeVr);
+
+                    // auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
+                    // if (i != 0) {
+                    //     compMaterial->SetAttachment(
+                    //         "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i - 1]));
+                    // }else {
+                    //     compMaterial->SetAttachment(
+                    //         "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment));
+                    // }
+                    // compMaterial->SetStorageImage2D(
+                    //     "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i]), i + 1);
+                    // compMaterial->SetParam("srcLod", i);
+                    // compMaterial->SetParam("dstScale", glm::vec2(width, height));
+                    // compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
+                    // compMaterial->Bind(cmdBuffer);
+
+                    // //Handle
                     FrameWork::CompShader::Bind(compShaderHandle, cmdBuffer);
+                    //MaterialHandle
+                    auto& materialHandle = compMaterialHandles[i];
                     if (i != 0) {
-                        compMaterial->SetAttachment(
+                        FrameWork::CompMaterial::SetAttachment(materialHandle,
                             "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i - 1]));
                     }else {
-                        compMaterial->SetAttachment(
+                        FrameWork::CompMaterial::SetAttachment(materialHandle,
                             "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment));
                     }
-                    compMaterial->SetStorageImage2D(
+                    FrameWork::CompMaterial::SetStorageImage2D(materialHandle,
                         "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i]), i + 1);
-                    compMaterial->SetParam("srcLod", i);
-                    compMaterial->SetParam("dstScale", glm::vec2(width, height));
-                    compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-                    compMaterial->Bind(cmdBuffer);
-
-                    //MaterialHandle
+                    FrameWork::CompMaterial::SetParam(materialHandle, "srcLod", i);
+                    FrameWork::CompMaterial::SetParam(materialHandle, "dstScale", glm::vec2(width, height));
+                    FrameWork::CompMaterial::SetParam(materialHandle, "invDstScale", glm::vec2(1.0f / width, 1.0f / height));
+                    FrameWork::CompMaterial::Bind(materialHandle, cmdBuffer);
 
                     vkCmdDispatch(cmdBuffer, (width + 15) / 16,
                         (height + 15) / 16, 1);

@@ -4,24 +4,23 @@
 
 #ifndef BASESCENE_H
 #define BASESCENE_H
-#include "Scene.h"
 #include "Camera.h"
+#include "FrameGraph/ResourceManager.h"
+#include "Scene.h"
+#include "VulkanDebug.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
-#include "VulkanDebug.h"
-#include "FrameGraph/ResourceManager.h"
 
-class BaseScene : public FrameWork::Scene{
-public:
-
-    BaseScene(FrameWork::Camera& camera);
+class BaseScene : public FrameWork::Scene {
+  public:
+    BaseScene(FrameWork::Camera &camera);
     virtual ~BaseScene() override;
-    virtual void Render(const VkCommandBuffer& cmdBuffer) override;
-    virtual const std::function<void()>& GetRenderFunction() override;
+    virtual void Render(const VkCommandBuffer &cmdBuffer) override;
+    virtual const std::function<void()> &GetRenderFunction() override;
     virtual std::string GetName() const override;
 
-private:
+  private:
     void CreateFrameGraphResource();
 
     std::string sceneName{};
@@ -32,7 +31,7 @@ private:
     uint32_t globalSlotID = -1;
     std::vector<uint32_t> modelID;
     uint32_t presentColorAttachment = -1;
-    //SSAA Resource
+    // SSAA Resource
     float ssaa = 1.0f;
 
     // Vulkan对象
@@ -41,30 +40,27 @@ private:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
-
     // 场景数据
     bool useMSAA = false;
-    FrameWork::Camera* cameraPtr{};
+    FrameWork::Camera *cameraPtr{};
 
     FrameWork::AABBDeBugging aabbDeBugging{};
     bool displayAABB = false;
 
+    std::function<void()> GUIFunc; // 设置GUI函数，在Renderer中与GUI对象交互
 
-    std::function<void()> GUIFunc;//设置GUI函数，在Renderer中与GUI对象交互
-
-    //FrameGraph设置
+    // FrameGraph设置
     uint32_t vulkanModelDataIndex = -1;
     std::unique_ptr<FG::FrameGraph> frameGraph;
-    //持久资源
+    // 持久资源
     uint32_t vulkanModelID = -1;
     FrameWork::Handle<FrameWork::CaIMaterial> presentMaterialHandle;
     FrameWork::Handle<FrameWork::CaIMaterial> resolveMaterialHandle;
-    //这边是一个模型对应一个Material
+    // 这边是一个模型对应一个Material
     FrameWork::Handle<FrameWork::CaIShader> shaderHandle;
     std::vector<FrameWork::Handle<FrameWork::CaIMaterial>> materialHandles;
     FrameWork::Handle<FrameWork::CaIShader> presentShaderHandle;
     FrameWork::Handle<FrameWork::CaIShader> resolveShaderHandle;
-
 
     uint32_t colorAttachment = 0;
     uint32_t depthAttachment = 0;
@@ -74,6 +70,4 @@ private:
     std::vector<uint32_t> generateMipAttachments;
 };
 
-
-
-#endif //BASESCENE_H
+#endif // BASESCENE_H

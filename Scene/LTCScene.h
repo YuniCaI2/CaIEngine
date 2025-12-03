@@ -50,13 +50,15 @@ private:
     std::unique_ptr<FG::FrameGraph> frameGraph;
     void CreateFrameGraphResource();
 
-    uint32_t ltcFaceShaderID = -1;
-    uint32_t ltcLightShaderID = -1;
-    uint32_t presentShaderID = -1;
+    //Shader Handle
+    FrameWork::Handle<FrameWork::CaIShader> ltcFaceShaderHandle{};
+    FrameWork::Handle<FrameWork::CaIShader> ltcLightShaderHandle{};
+    FrameWork::Handle<FrameWork::CaIShader> presentShaderHandle{};
 
-    uint32_t ltcFaceMaterialID = -1;
-    uint32_t ltcLightMaterialID = -1;
-    uint32_t presentMaterialID = -1;
+    //Material Handle
+    FrameWork::Handle<FrameWork::CaIMaterial> ltcFaceMaterialHandle{};
+    FrameWork::Handle<FrameWork::CaIMaterial> ltcLightMaterialHandle{};
+    FrameWork::Handle<FrameWork::CaIMaterial> presentMaterialHandle{};
 
     uint32_t ltcFaceModelID = -1;
     uint32_t ltcLightModelID = -1;

@@ -52,12 +52,16 @@ void LTCScene::CreateFrameGraphResource() {
     std::string ltcLightPath = "../resources/CaIShaders/LTC/LTCLight.caishader";
     std::string presentPath = "../resources/CaIShaders/Present/present.caishader";
 
-    FrameWork::CaIShader::Create(ltcLightShaderID, ltcLightPath, VK_FORMAT_R16G16B16A16_SFLOAT);
-    FrameWork::CaIShader::Create(ltcFaceShaderID, ltcFacePath, VK_FORMAT_R16G16B16A16_SFLOAT);
-    FrameWork::CaIShader::Create(presentShaderID, presentPath);
-    FrameWork::CaIMaterial::Create(presentMaterialID, presentShaderID);
-    FrameWork::CaIMaterial::Create(ltcFaceMaterialID, ltcFaceShaderID);
-    FrameWork::CaIMaterial::Create(ltcLightMaterialID, ltcLightShaderID);
+    //Shader Handle
+    ltcLightShaderHandle = FrameWork::CaIShader::CreateHandle(ltcLightPath, VK_FORMAT_R16G16B16A16_SFLOAT);
+    ltcFaceShaderHandle = FrameWork::CaIShader::CreateHandle(ltcFacePath, VK_FORMAT_R16G16B16A16_SFLOAT);
+    presentShaderHandle = FrameWork::CaIShader::CreateHandle(presentPath);
+
+    //Material Handle
+    presentMaterialHandle = FrameWork::CaIMaterial::CreateHandle(presentShaderHandle);
+    ltcFaceMaterialHandle = FrameWork::CaIMaterial::CreateHandle(ltcFaceShaderHandle);
+    ltcLightMaterialHandle = FrameWork::CaIMaterial::CreateHandle(ltcLightShaderHandle);
+
     bloomPass = std::make_unique<FG::BloomingPass>(frameGraph.get(), 8, &threshold);
 
 
@@ -123,41 +127,39 @@ void LTCScene::CreateFrameGraphResource() {
         desc->vulkanIndex = vulkanRenderAPI.GetSwapChainTextures()[0];
     });
 
-    auto BindCamera = [](uint32_t materialID, FrameWork::Camera* camera,uint32_t modelID) {
+    auto BindCamera = [](FrameWork::Handle<FrameWork::CaIMaterial> materialHandle, FrameWork::Camera* camera,uint32_t modelID) {
         auto model = vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(modelID);
         glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom),
                               (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
                               0.01f, 100.0f);
         projection[1][1] *= -1;
         glm::mat4 pos = glm::translate(glm::mat4(1.0), model->position);
-        auto material = FrameWork::CaIMaterial::Get(materialID);
-        material->SetParam("viewMatrix", camera->GetViewMatrix(), 0);
-        material->SetParam("projectionMatrix", projection, 0);
-        material->SetParam("modelMatrix", pos, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "viewMatrix", camera->GetViewMatrix(), 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "projectionMatrix", projection, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "modelMatrix", pos, 0);
     };
 
-    auto UpdateLightUniform = [this, BindCamera](uint32_t materialID, FrameWork::Camera* camera, uint32_t modelID) {
-        BindCamera(materialID, camera, modelID);
+    auto UpdateLightUniform = [this, BindCamera](FrameWork::Handle<FrameWork::CaIMaterial> materialHandle, FrameWork::Camera* camera, uint32_t modelID) {
+        BindCamera(materialHandle, camera, modelID);
         auto rotateY = glm::rotate(glm::mat4(1.0f), glm::radians(lightRotateY
         ), glm::vec3(0.0f, 1.0f, 0.0f));
         auto rotateX = glm::rotate(glm::mat4(1.0f), glm::radians(lightRotateX), glm::vec3(1.0f, 0.0f, 0.0f));
         auto scale = glm::scale(glm::mat4(1.0f), glm::vec3(lightScaleX, lightScaleY, 1.0f));
         auto pos = glm::translate(glm::mat4(1.0f), vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(ltcLightModelID)->position);
         auto modelMatrix = pos * rotateX * rotateY * scale * glm::mat4(1.0f);
-        auto material = FrameWork::CaIMaterial::Get(materialID);
-        material->SetParam("lightMatrix", modelMatrix, 0)
-        .SetParam("lightPosition", lightPos, 0)
-        .SetParam("lightHeight", 1.0f, 0)
-        .SetParam("lightWidth", 1.0f, 0)
-        .SetParam("lightIntensity", intensity_, 0)
-        .SetParam("cameraPos", camera_->Position, 0)
-        .SetParam("materialDiffuse", diffuse, 0)
-        .SetParam("lightColor", lightColor, 0)
-        .SetParam("materialF0", F0, 0)
-        .SetParam("materialRoughness", roughness, 0)
-        .SetTexture("LTC1", LTCTex1ID_)
-        .SetTexture("LTC2", LTCTex2ID_)
-        .SetTexture("lightTexture", vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(ltcLightModelID)->textures.back()[DiffuseColor]);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "lightMatrix", modelMatrix, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "lightPosition", lightPos, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "lightHeight", 1.0f, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "lightWidth", 1.0f, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "lightIntensity", intensity_, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "cameraPos", camera->Position, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "materialDiffuse", diffuse, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "lightColor", lightColor, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "materialF0", F0, 0);
+        FrameWork::CaIMaterial::SetParam(materialHandle, "materialRoughness", roughness, 0);
+        FrameWork::CaIMaterial::SetTexture(materialHandle, "LTC1", LTCTex1ID_);
+        FrameWork::CaIMaterial::SetTexture(materialHandle, "LTC2", LTCTex2ID_);
+        FrameWork::CaIMaterial::SetTexture(materialHandle, "lightTexture", vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(ltcLightModelID)->textures.back()[DiffuseColor]);
 
 
     };
@@ -167,10 +169,9 @@ void LTCScene::CreateFrameGraphResource() {
             renderPass->SetName("ltcFacePass");
             renderPass->SetExec(
                 [this , UpdateLightUniform](VkCommandBuffer cmdBuffer) {
-                    FrameWork::CaIShader::Get(ltcFaceShaderID)->Bind(cmdBuffer);
-                    auto material = FrameWork::CaIMaterial::Get(ltcFaceMaterialID);
-                    UpdateLightUniform(ltcFaceMaterialID, camera_, ltcFaceModelID);
-                    material->Bind(cmdBuffer);
+                    FrameWork::CaIShader::Bind(ltcFaceShaderHandle, cmdBuffer);
+                    UpdateLightUniform(ltcFaceMaterialHandle, camera_, ltcFaceModelID);
+                    FrameWork::CaIMaterial::Bind(ltcFaceMaterialHandle, cmdBuffer);
                     auto meshID = vulkanRenderAPI.
                     getByIndex<FrameWork::VulkanModelData>(ltcFaceModelID)->meshIDs[0];
                     vulkanRenderAPI.BindMesh(cmdBuffer, meshID);
@@ -183,7 +184,6 @@ void LTCScene::CreateFrameGraphResource() {
         [&](std::unique_ptr<FG::RenderPass>& renderPass) {
             renderPass->SetName("ltcLightPass")
             .SetExec([this](VkCommandBuffer cmdBuffer) {
-                auto material = FrameWork::CaIMaterial::Get(ltcLightMaterialID);
                 auto rotateY = glm::rotate(glm::mat4(1.0f), glm::radians(lightRotateY
                 ), glm::vec3(0.0f, 1.0f, 0.0f));
                 auto rotateX = glm::rotate(glm::mat4(1.0f), glm::radians(lightRotateX), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -194,13 +194,13 @@ void LTCScene::CreateFrameGraphResource() {
                       (float) vulkanRenderAPI.windowWidth / (float) vulkanRenderAPI.windowHeight,
                       0.01f, 100.0f);
                 projection[1][1] *= -1;
-                material->SetParam("viewMatrix", camera_->GetViewMatrix(), 0);
-                material->SetParam("projectionMatrix", projection, 0);
-                material->SetParam("modelMatrix", modelMatrix, 0);
-                material->SetParam("intensity", intensity_, 0)
-                .SetTexture("colorSampler", vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(ltcLightModelID)->textures.back()[DiffuseColor]);
-                FrameWork::CaIShader::Get(ltcLightShaderID)->Bind(cmdBuffer);
-                material->Bind(cmdBuffer);
+                FrameWork::CaIMaterial::SetParam(ltcLightMaterialHandle, "viewMatrix", camera_->GetViewMatrix(), 0);
+                FrameWork::CaIMaterial::SetParam(ltcLightMaterialHandle, "projectionMatrix", projection, 0);
+                FrameWork::CaIMaterial::SetParam(ltcLightMaterialHandle, "modelMatrix", modelMatrix, 0);
+                FrameWork::CaIMaterial::SetParam(ltcLightMaterialHandle, "intensity", intensity_, 0);
+                FrameWork::CaIMaterial::SetTexture(ltcLightMaterialHandle, "colorSampler", vulkanRenderAPI.getByIndex<FrameWork::VulkanModelData>(ltcLightModelID)->textures.back()[DiffuseColor]);
+                FrameWork::CaIShader::Bind(ltcLightShaderHandle, cmdBuffer);
+                FrameWork::CaIMaterial::Bind(ltcLightMaterialHandle, cmdBuffer);
                 auto meshID = vulkanRenderAPI.
                 getByIndex<FrameWork::VulkanModelData>(ltcLightModelID)->meshIDs[0];
                 vulkanRenderAPI.BindMesh(cmdBuffer, meshID);
@@ -213,9 +213,9 @@ void LTCScene::CreateFrameGraphResource() {
         renderPass->SetName("presentPass");
         renderPass->SetExec([&](VkCommandBuffer cmdBuffer) {
         //绑定对应imageView
-        FrameWork::CaIShader::Get(presentShaderID)->Bind(cmdBuffer);
-        FrameWork::CaIMaterial::Get(presentMaterialID)->SetAttachment("colorTexture", frameGraph->GetResourceManager().GetVulkanIndex(bloomingAttachment));
-        FrameWork::CaIMaterial::Get(presentMaterialID)->Bind(cmdBuffer);
+        FrameWork::CaIShader::Bind(presentShaderHandle, cmdBuffer);
+        FrameWork::CaIMaterial::SetAttachment(presentMaterialHandle, "colorTexture", frameGraph->GetResourceManager().GetVulkanIndex(bloomingAttachment));
+        FrameWork::CaIMaterial::Bind(presentMaterialHandle, cmdBuffer);
         vkCmdDraw(cmdBuffer, 6, 1, 0, 0);
             });
         });

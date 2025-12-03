@@ -54,6 +54,18 @@ FrameWork::CaIShader * FrameWork::CaIShader::Get(uint32_t id) {
     return nullptr;
 }
 
+FrameWork::CaIShader *FrameWork::CaIShader::Get(const Handle<CaIShader> &handle) {
+    if (!handle) {
+        LOG_ERROR("Trying to access non-existent CaIShader handle");
+        return nullptr;
+    }
+    auto shader = caiShaderWrappedPool.GetResource(handle.index);
+    if (shader == nullptr) {
+        LOG_ERROR("CaIShader handle {} is nullptr", handle.index);
+    }
+    return shader;
+}
+
 void FrameWork::CaIShader::DestroyAll() {
     for (auto& shader: caiShaderPool) {
         delete shader;
