@@ -25,21 +25,6 @@ class BaseScene : public FrameWork::Scene {
 
     std::string sceneName{};
 
-    // Pipeline资源
-    uint32_t pipelineID = -1;
-    uint32_t frameBufferID = -1;
-    uint32_t globalSlotID = -1;
-    std::vector<uint32_t> modelID;
-    uint32_t presentColorAttachment = -1;
-    // SSAA Resource
-    float ssaa = 1.0f;
-
-    // Vulkan对象
-    VkDescriptorSetLayout dynamicDescriptorSetLayout = VK_NULL_HANDLE;
-    VkDescriptorSetLayout textureDescriptorSetLayout = VK_NULL_HANDLE;
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-    VkPipeline graphicsPipeline = VK_NULL_HANDLE;
-
     // 场景数据
     bool useMSAA = false;
     FrameWork::Camera *cameraPtr{};

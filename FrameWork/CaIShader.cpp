@@ -10,76 +10,8 @@
 #include <stdexcept>
 
 //TODO: 添加错误处理保证后续热加载CaIShader时不影响原本的程序运行，比如使用默认的Shader etc.
-FrameWork::CaIShader* FrameWork::CaIShader::Create(uint32_t &id, const std::string &shaderPath, VkFormat colorFormat) {
-    for (int i = 0; i < caiShaderPool.size(); i++) {
-        if (caiShaderPool[i] == nullptr) {
-            id = i;
-            caiShaderPool[i] = new FrameWork::CaIShader(shaderPath, colorFormat);
-            if (caiShaderPool[i]->shaderPath != shaderPath) {
-                delete caiShaderPool[i];
-                caiShaderPool[i] = nullptr;
-                throw std::runtime_error("Can't Create Shader By :" + shaderPath);
-            }else {
-                return caiShaderPool[i];
-            }
-        }
-    }
-
-    caiShaderPool.push_back(new FrameWork::CaIShader(shaderPath, colorFormat));
-    if (caiShaderPool.back()->shaderPath != shaderPath) {
-        delete caiShaderPool.back();
-        caiShaderPool.back() = nullptr;
-        throw std::runtime_error("Can't Create Shader By :" + shaderPath);
-    }else {
-        id = caiShaderPool.size() - 1;
-        return caiShaderPool.back();
-    }
-}
-
-void FrameWork::CaIShader::Destroy(uint32_t &id) {
-    if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
-        delete caiShaderPool[id];
-        caiShaderPool[id] = nullptr;
-        return;
-    }
-    LOG_WARNING("Destroy {} is not existed shader", id);
-}
 
 //这个函数不保证线程安全
-FrameWork::CaIShader * FrameWork::CaIShader::Get(uint32_t id) {
-    if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
-        return caiShaderPool[id];
-    }
-    LOG_ERROR("Trying to access non-existent shader id {}", id);
-    return nullptr;
-}
-
-FrameWork::CaIShader *FrameWork::CaIShader::Get(const Handle<CaIShader> &handle) {
-    if (!handle) {
-        LOG_ERROR("Trying to access non-existent CaIShader handle");
-        return nullptr;
-    }
-    auto shader = caiShaderWrappedPool.GetResource(handle.index);
-    if (shader == nullptr) {
-        LOG_ERROR("CaIShader handle {} is nullptr", handle.index);
-    }
-    return shader;
-}
-
-void FrameWork::CaIShader::DestroyAll() {
-    for (auto& shader: caiShaderPool) {
-        delete shader;
-    }
-}
-
-bool FrameWork::CaIShader::exist(uint32_t id) {
-    if (id < caiShaderPool.size() && caiShaderPool[id] != nullptr) {
-        return true;
-    }
-    return false;
-}
-
-
 
 //支持Dynamic Rendering
 FrameWork::CaIShader::CaIShader(const std::string &shaderPath, VkFormat colorFormat) {
@@ -97,26 +29,6 @@ FrameWork::CaIShader::~CaIShader() {
     if (pipelineID != UINT32_MAX)
         vulkanRenderAPI.DeletePipeline(pipelineID);
 }
-
-void * FrameWork::CaIShader::GetShaderPropertyAddress(uint32_t materialDataID, const std::string &name, uint32_t id) {
-    auto materialData = vulkanRenderAPI.getByIndex<FrameWork::MaterialData>(materialDataID);
-    //根据name遍历找到对应的地址
-    for (auto& property :  shaderInfo.vertProperties.baseProperties) {
-        if (property.name == name) {
-            return reinterpret_cast<char*>
-            (materialData->vertexUniformBuffers[vulkanRenderAPI.currentFrame].mapped) + property.offset + property.arrayOffset * id;
-        }
-    }
-    for (auto& property : shaderInfo.fragProperties.baseProperties) {
-        if (property.name == name) {
-            return reinterpret_cast<char*>
-            (materialData->fragmentUniformBuffers[vulkanRenderAPI.currentFrame].mapped) + property.offset + property.arrayOffset * id;
-        }
-    }
-    LOG_ERROR("Can't find shader property name : {} in {}", name, shaderPath);
-    return nullptr;
-}
-
 
 void FrameWork::CaIShader::Bind(const VkCommandBuffer &cmdBuffer) const {
     auto pipeline = vulkanRenderAPI.getByIndex<FrameWork::VulkanPipeline>(pipelineID)->pipeline;
@@ -158,9 +70,6 @@ namespace FrameWork
             return false;
         }
         return true;
-    }
-    uint32_t CaIShader::GetRef(uint32_t id) {
-        return CaIShader::caiShaderWrappedPool.GetRefNum(id);
     }
 
     ShaderInfo CaIShader::GetInfo(const Handle<CaIShader>& shaderHandle) {

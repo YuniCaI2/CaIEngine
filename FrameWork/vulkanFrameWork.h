@@ -424,11 +424,7 @@ public:
 
     void CreateMaterial(uint32_t &materialIdx, const std::vector<FrameWork::TextureFullData> &texDatas);
 
-    void CreateMaterialData(FrameWork::CaIMaterial& caiMaterial);
-
     void CreateMaterialData(uint32_t& materialDataID, const FrameWork::Handle<FrameWork::CaIShader>& shaderHandle);
-
-    void CreateCompMaterialData(FrameWork::CompMaterial& compMaterial);
 
     void CreateCompMaterialData(uint32_t& compMaterialDataID, const FrameWork::Handle<FrameWork::CompShader>& shaderHandle);
 

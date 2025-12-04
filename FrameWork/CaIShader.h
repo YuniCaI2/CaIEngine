@@ -12,15 +12,6 @@ namespace FrameWork {
     class CaIShader {
     public:
         //类似Vulkan中的资源
-        static CaIShader* Create(uint32_t& id, const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
-        static void Destroy(uint32_t& id);
-        static CaIShader* Get(uint32_t id);
-        static CaIShader* Get(const Handle<CaIShader>& handle);
-        static void DestroyAll();
-        static bool exist(uint32_t id);
-        static uint32_t GetRef(uint32_t id);
-
-
         static Handle<CaIShader> CreateHandle(const std::string& shaderPath, VkFormat colorFormat = VK_FORMAT_UNDEFINED);
         static bool Bind(Handle<CaIShader>& handle, const VkCommandBuffer& cmdBuffer);
         static ShaderInfo GetInfo(const Handle<CaIShader>& shaderHandle);
@@ -36,8 +27,6 @@ namespace FrameWork {
         CaIShader& operator=(const CaIShader&) = delete;
         CaIShader(CaIShader&&) = default;
         CaIShader& operator=(CaIShader&&) = default;
-
-        void* GetShaderPropertyAddress(uint32_t materialDataID, const std::string& name, uint32_t id = 0);//得到对应的地址方便映射
 
         void Bind(const VkCommandBuffer& cmdBuffer) const;
         //获取Shader
@@ -55,7 +44,6 @@ namespace FrameWork {
         ShaderInfo shaderInfo{};
         uint32_t pipelineID{UINT32_MAX};
 
-        inline static std::vector<CaIShader*> caiShaderPool{};
         inline static std::mutex caiShaderWrappedPoolMutex{};
         inline static ResourcePool<CaIShader> caiShaderWrappedPool;
     };

@@ -7,25 +7,17 @@
 #include "../../CompMaterial.h"
 
 FG::DownSamplingPass::~DownSamplingPass() {
-    for (int i = 0; i < mipmapLevels - 1; i++) {
-        FrameWork::CompMaterial::Destroy(compMaterials[i]);
-    }
-    FrameWork::CompShader::Destroy(compShaderID);
-    //释放等后面动态节点的时候考虑
 }
 
 FG::DownSamplingPass::DownSamplingPass(FrameGraph* frameGraph, uint32_t mipmapLevels) {
     this->mipmapLevels = mipmapLevels;
     this->frameGraph = frameGraph;
 
-    compMaterials.resize(mipmapLevels - 1);
     compMaterialHandles.resize(mipmapLevels - 1);
     //创建外部变量
-    FrameWork::CompShader::Create(compShaderID, shaderPath.data());
     compShaderHandle = FrameWork::CompShader::CreateHandle(shaderPath.data());
-    for (int i = 0; i < mipmapLevels - 1; i++) {
-        FrameWork::CompMaterial::Create(compMaterials[i], compShaderID);
-        compMaterialHandles[i] = FrameWork::CompMaterial::CreateHandle(compShaderHandle);
+    for(auto& compMaterialHandle : compMaterialHandles) {
+        compMaterialHandle = FrameWork::CompMaterial::CreateHandle(compShaderHandle);
     }
     //创建纹理
     generateMipAttachments.resize(mipmapLevels - 1);
@@ -80,26 +72,6 @@ void FG::DownSamplingPass::SetInputOutputResource(const uint32_t &index0, uint32
                     uint32_t width, height;
                     width = desc->width / std::pow(2, i + 1);
                     height = desc->height / std::pow(2, i + 1);
-                    // FrameWork::CompShader::Get(compShaderID)->Bind(cmdBuffer);
-
-                    // //Handle
-                    // FrameWork::CompShader::Bind(compShaderHandle, cmdBuffeVr);
-
-                    // auto compMaterial = FrameWork::CompMaterial::Get(compMaterials[i]);
-                    // if (i != 0) {
-                    //     compMaterial->SetAttachment(
-                    //         "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i - 1]));
-                    // }else {
-                    //     compMaterial->SetAttachment(
-                    //         "srcImage", frameGraph->GetResourceManager().GetVulkanIndex(colorAttachment));
-                    // }
-                    // compMaterial->SetStorageImage2D(
-                    //     "dstImage", frameGraph->GetResourceManager().GetVulkanIndex(generateMipAttachments[i]), i + 1);
-                    // compMaterial->SetParam("srcLod", i);
-                    // compMaterial->SetParam("dstScale", glm::vec2(width, height));
-                    // compMaterial->SetParam("invDstScale", glm::vec2(1.0f / width, 1.0f / height));
-                    // compMaterial->Bind(cmdBuffer);
-
                     // //Handle
                     FrameWork::CompShader::Bind(compShaderHandle, cmdBuffer);
                     //MaterialHandle
