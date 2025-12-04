@@ -48,9 +48,6 @@ file(GLOB EditorPath CONFIGURE_DEPENDS
 
 )
 
-file(GLOB AssetPath
-        "${CMAKE_CURRENT_SOURCE_DIR}/Asset/*.h"
-)
 
 add_library(FrameWork ${frameWorkPath} ${frameGraphPath} ${uniformPassPath} ${ECSPath} ${AssetPath} ${EditorPath}
         CaIMaterial.cpp

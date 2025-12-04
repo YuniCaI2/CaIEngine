@@ -1,0 +1,11 @@
+- [ ] vulkanFrameWork
+  - [ ] 对vulkanFrameWork模板函数进行修改
+  - [ ] 对vulkanFrameWork中的资源构建函数进行修改
+- [ ] BaseScene
+- [ ] CaIMaterial
+- [ ] CaIShader
+- [ ] Camera
+- [ ] CompShader
+- [ ] CompMaterial
+- [ ] FrameGraph
+- [ ] LTCScene
